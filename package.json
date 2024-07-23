@@ -1,0 +1,54 @@
+{
+  "name": "usmanagabot",
+  "version": "1.0.0",
+  "description": "UsmanAga discord bot",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mt190502/usmanagabot.git"
+  },
+  "keywords": [
+    "bot",
+    "discord",
+    "typescript",
+    "djs",
+    "discordjs"
+  ],
+  "author": "Taha (mt190502)",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/mt190502/usmanagabot/issues"
+  },
+  "homepage": "https://github.com/mt190502/usmanagabot#readme",
+  "dependencies": {
+    "dayjs": "^1.11.11",
+    "discord.js": "^14.15.3",
+    "glob": "^10.4.5",
+    "pg": "^8.12.0",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.20",
+    "uuid": "^9.0.1",
+    "yaml": "^2.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/uuid": "^9.0.8",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "prettier": "^3.3.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.3"
+  },
+  "main": "dist/main.js",
+  "scripts": {
+    "depInstall": "pnpm install && pnpm update",
+    "eslint": "eslint .",
+    "eslint:fix": "eslint . --fix",
+    "prettier": "prettier --config .prettierrc.json 'src/**/*.ts'",
+    "prettier:fix": "prettier --config .pretterrc.json 'src/**/*.ts' --write",
+    "start": "ts-node src/main.ts",
+    "test": "ts-node src/utils/configParser.ts"
+  }
+}
