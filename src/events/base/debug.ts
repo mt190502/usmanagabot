@@ -1,5 +1,5 @@
 import { Events } from 'discord.js';
-import { Events_t } from '../../types/interface/events';
+import { Event_t } from '../../types/interface/events';
 import { Logger } from '../../utils/logger';
 
 
@@ -11,4 +11,4 @@ export default {
     execute: async (info: string) => {
         Logger('debug', info);
     },
-} as Events_t;
+} as Event_t;

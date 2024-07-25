@@ -18,12 +18,10 @@ export const DatabaseLoader = (database: DatabaseConfiguration_t) => {
         migrations: globSync('src/types/database/migrations/*.ts', { ignore: 'src/types/database/migrations/base.ts' }),
     });
 
-    dataSource.initialize().then(() => {
-            Logger('info', 'Database initialized')
-        }).catch((err: Error) => {
-            Logger('error', err.message);
-        });
-
+    dataSource.initialize()
+        .then(() => { Logger('info', 'Database initialized') })
+        .catch((err: Error) => { Logger('error', err.message); });
+    
     return dataSource;
 };
 

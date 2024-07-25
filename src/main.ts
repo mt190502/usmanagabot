@@ -1,19 +1,21 @@
 import { Client, Collection, GatewayIntentBits, Partials } from "discord.js";
 import { DataSource } from "typeorm";
+import { RegisterCommands } from "./commands/loader";
 import { EventLoader } from "./events/loader";
-import { Commands_t } from "./types/interface/commands";
+import { Command_t } from "./types/interface/commands";
 import { BotConfiguration_t } from "./types/interface/config";
 import { DatabaseConfiguration_t } from "./types/interface/database";
-import { Events_t } from "./types/interface/events";
+import { Event_t } from "./types/interface/events";
 import { ConfigLoader } from "./utils/config";
 import { DatabaseLoader } from "./utils/database";
+import { InitialSetup } from "./utils/setup";
 
 export const BotConfiguration: BotConfiguration_t = ConfigLoader('../config', 'bot.yml');
 export const DatabaseConfiguration: DatabaseConfiguration_t = ConfigLoader('../config', 'database.yml');
 export const DatabaseConnection: DataSource = DatabaseLoader(DatabaseConfiguration);
 
-export const BotCommands: Collection<string, Commands_t> = new Collection();
-export const BotEvents: Collection<string, Events_t> = new Collection();
+export const BotCommands: Collection<number, Collection<string, Command_t>> = new Collection();
+export const BotEvents: Collection<string, Event_t> = new Collection();
 
 export const BotClient = new Client({
     intents: [
@@ -30,6 +32,8 @@ export const BotClient = new Client({
 });
 
 (async () => {
+    await InitialSetup();
+    await RegisterCommands();
     await EventLoader();
     BotClient.login(BotConfiguration.token);
 })();

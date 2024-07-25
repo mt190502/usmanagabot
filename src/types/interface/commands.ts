@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, CommandInteraction, Interaction, SlashCommandBuilder } from "discord.js";
 import { Guilds } from "../database/guilds";
 
-export interface Commands_t {
+export interface Command_t {
     enabled: boolean;
     name: string;
     type: 'customizable' | 'standard';

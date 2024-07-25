@@ -1,5 +1,5 @@
 import { CommandInteraction, SlashCommandBuilder } from 'discord.js';
-import { BotCommand } from '../../types/interfaces/commands';
+import { Command_t } from '../../types/interface/commands';
 
 const exec = async (interaction: CommandInteraction) => {
     interaction.reply(`Pong! 🏓\n${interaction.client.ws.ping}ms`);
@@ -21,4 +21,4 @@ export default {
 
     data: scb,
     execute: exec,
-} as BotCommand;
+} as Command_t;

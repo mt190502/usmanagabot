@@ -8,4 +8,4 @@ type EventMethods<K extends keyof ClientEvents> = {
     execute: (...args: ClientEvents[K]) => Awaitable<void>;
 };
 
-export type Events_t = { [K in keyof ClientEvents]: EventMethods<K> }[keyof ClientEvents];
+export type Event_t = { [K in keyof ClientEvents]: EventMethods<K> }[keyof ClientEvents];
