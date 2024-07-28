@@ -7,9 +7,7 @@ import { Logger } from "./logger";
 
 
 export const InitialSetup = async () => {
-    while (!DatabaseConnection.isInitialized) {
-        await timers.setTimeout(1000);
-    }
+    while (!DatabaseConnection.isInitialized) await timers.setTimeout(1000);
 
     const guilds = await DatabaseConnection.manager.find(Guilds)
     if (guilds.length === 0) {
@@ -20,8 +18,8 @@ export const InitialSetup = async () => {
             try {
                 for (const guild of client.guilds.cache) {
                     const newGuild = new Guilds();
-                    newGuild.guildName = (guild[1] as Guild).name;
-                    newGuild.guildID = <number><unknown>guild[0];
+                    newGuild.name = (guild[1] as Guild).name;
+                    newGuild.gid = guild[0];
                     await DatabaseConnection.manager.save(newGuild);
                 }
             } catch (error) {

@@ -1,4 +1,5 @@
 import { Column, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Channels } from './channels';
 import { Guilds } from './guilds';
 import { Users } from './users';
 
@@ -6,17 +7,18 @@ export class Base {
     @PrimaryGeneratedColumn({ type: 'smallint' })
     id: number;
 
-    @Column({ type: 'date' })
-    date: string;
+    @ManyToOne(() => Users, { nullable: false, eager: true })
+    @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
+    from_user: Users;
 
-    @Column({ type: 'time' })
-    time: string;
+    @ManyToOne(() => Channels, { nullable: false, eager: true })
+    @JoinColumn({ name: 'from_channel', referencedColumnName: 'id' })
+    from_channel: Channels;
 
-    @ManyToOne(() => Users, { nullable: false })
-    @JoinColumn({ name: 'fromUser' })
-    fromUser: number;
+    @ManyToOne(() => Guilds, { nullable: false, eager: true })
+    @JoinColumn({ name: 'from_guild', referencedColumnName: 'id' })
+    from_guild: Guilds;
 
-    @ManyToOne(() => Guilds, { nullable: false })
-    @JoinColumn({ name: 'fromGuild' })
-    fromGuild: number;
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    timestamp: Date;
 }

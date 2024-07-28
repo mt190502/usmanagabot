@@ -12,7 +12,7 @@ import { InitialSetup } from "./utils/setup";
 
 export const BotConfiguration: BotConfiguration_t = ConfigLoader('../config', 'bot.yml');
 export const DatabaseConfiguration: DatabaseConfiguration_t = ConfigLoader('../config', 'database.yml');
-export const DatabaseConnection: DataSource = DatabaseLoader(DatabaseConfiguration);
+export var DatabaseConnection: DataSource; // = DatabaseLoader(DatabaseConfiguration);
 
 export const BotCommands: Collection<number, Collection<string, Command_t>> = new Collection();
 export const BotEvents: Collection<string, Event_t> = new Collection();
@@ -27,11 +27,13 @@ export const BotClient = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildModeration,
         GatewayIntentBits.Guilds,
+        GatewayIntentBits.MessageContent,
     ],
     partials: [Partials.Channel, Partials.GuildMember, Partials.Message, Partials.Reaction, Partials.User],
 });
 
 (async () => {
+    DatabaseConnection = await DatabaseLoader(DatabaseConfiguration);
     await InitialSetup();
     await RegisterCommands();
     await EventLoader();

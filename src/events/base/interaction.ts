@@ -19,7 +19,7 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
             if (interaction.commandGuildId === null) {
                 command = BotCommands.get(0).get(interaction.commandName);
             } else {
-                command = BotCommands.get(<number><unknown>interaction.commandGuildId).get(interaction.commandName);
+                command = BotCommands.get(Number(interaction.commandGuildId)).get(interaction.commandName);
             }
 
             if (!command) return;
@@ -29,8 +29,8 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
             const timestamps = interactionCooldown.get(command.name);
             const cooldownAmount = (command.cooldown ?? 5) * 1000;
 
-            if (timestamps.has(<number>(<unknown>interaction.user.id))) {
-                const expirationTime = timestamps.get(<number>(<unknown>interaction.user.id)) + cooldownAmount;
+            if (timestamps.has(Number(interaction.user.id))) {
+                const expirationTime = timestamps.get(Number(interaction.user.id)) + cooldownAmount;
 
                 if (now < expirationTime) {
                     const timeLeft = (expirationTime - now) / 1000;
@@ -40,8 +40,8 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
                     });
                 }
             }
-            timestamps.set(<number>(<unknown>interaction.user.id), now);
-            setTimeout(() => timestamps.delete(<number>(<unknown>interaction.user.id)), cooldownAmount);
+            timestamps.set(Number(interaction.user.id), now);
+            setTimeout(() => timestamps.delete(Number(interaction.user.id)), cooldownAmount);
 
             try {
                 await command.execute(interaction);
