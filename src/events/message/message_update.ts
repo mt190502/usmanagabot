@@ -3,9 +3,13 @@ import { DatabaseConnection } from "../../main";
 import { Messages } from "../../types/database/messages";
 import { Event_t } from "../../types/interface/events";
 import { Logger } from "../../utils/logger";
+import { CheckAndAddUser, CheckAndAddChannel } from "../../utils/common";
 
 const exec = async (oldMessage: Message, newMessage: Message) => {
     if (oldMessage.author?.bot && newMessage.author?.bot) return;
+
+    await CheckAndAddUser(oldMessage);
+    await CheckAndAddChannel(oldMessage);
 
     const oldMsgInDB = await DatabaseConnection.manager.findOne(Messages, { where: { message_id: Number(oldMessage.id) } });
     if (!oldMsgInDB) {
