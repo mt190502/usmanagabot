@@ -1,10 +1,9 @@
-import { Client, Events, Guild } from 'discord.js';
+import { Client, Events, Guild } from "discord.js";
 import timers from 'timers/promises';
-import { RESTCommandLoader } from '../commands/loader';
+import { RESTCommandLoader } from "../commands/loader";
 import { BotClient, BotConfiguration, DatabaseConnection } from "../main";
 import { Guilds } from "../types/database/guilds";
 import { Logger } from "./logger";
-
 
 export const InitialSetup = async () => {
     while (!DatabaseConnection.isInitialized) await timers.setTimeout(1000);
@@ -29,10 +28,8 @@ export const InitialSetup = async () => {
         });
 
         BotClient.login(BotConfiguration.token);
-        while (!BotClient.isReady()) {
-            await timers.setTimeout(1000);
-        }
-
+        while (!BotClient.isReady()) await timers.setTimeout(1000);
+        
         await RESTCommandLoader();
         
         Logger('warn', 'Initial setup completed, please restart the bot to apply changes...');

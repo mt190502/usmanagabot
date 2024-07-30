@@ -1,6 +1,6 @@
 import { Client, Collection, GatewayIntentBits, Partials } from "discord.js";
 import { DataSource } from "typeorm";
-import { RegisterCommands } from "./commands/loader";
+import { CommandLoader } from "./commands/loader";
 import { EventLoader } from "./events/loader";
 import { Command_t } from "./types/interface/commands";
 import { BotConfiguration_t } from "./types/interface/config";
@@ -35,7 +35,7 @@ export const BotClient = new Client({
 (async () => {
     DatabaseConnection = await DatabaseLoader(DatabaseConfiguration);
     await InitialSetup();
-    await RegisterCommands();
+    await CommandLoader();
     await EventLoader();
     BotClient.login(BotConfiguration.token);
 })();

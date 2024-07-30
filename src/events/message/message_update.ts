@@ -2,11 +2,11 @@ import { Events, Message } from "discord.js";
 import { DatabaseConnection } from "../../main";
 import { Messages } from "../../types/database/messages";
 import { Event_t } from "../../types/interface/events";
+import { CheckAndAddChannel, CheckAndAddUser } from "../../utils/common";
 import { Logger } from "../../utils/logger";
-import { CheckAndAddUser, CheckAndAddChannel } from "../../utils/common";
 
 const exec = async (oldMessage: Message, newMessage: Message) => {
-    if (oldMessage.author?.bot && newMessage.author?.bot) return;
+    if (oldMessage.author?.bot && newMessage.author?.bot && !oldMessage.id && !newMessage.id) return;
 
     await CheckAndAddUser(oldMessage);
     await CheckAndAddChannel(oldMessage);

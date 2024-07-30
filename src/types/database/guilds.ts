@@ -11,6 +11,6 @@ export class Guilds {
     @Column({ type: 'bigint', nullable: false, unique: true })
     gid: string;
 
-    @Column({ type: 'smallint', nullable: false, default: 0 })
-    user_count: number;
+    @Column({ type: 'simple-array', nullable: false, default: [] })
+    commands: string[];
 }
