@@ -12,5 +12,5 @@ export class Guilds {
     gid: string;
 
     @Column({ type: 'simple-array', nullable: false, default: [] })
-    commands: string[];
+    disabled_commands: string;
 }

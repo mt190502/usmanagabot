@@ -36,6 +36,19 @@ const settings = async (interaction: any) => {
     );
     const row = new ActionRowBuilder().addComponents(menu);
 
+    if (engines.length === 0) {
+        const default_engines = [{ key: "Google", value: "https://google.com/search?q=" }, { key: "DuckDuckGo", value: "https://duckduckgo.com/?q=" }];
+        for (const engine of default_engines) {
+            const new_engine = new Search();
+            new_engine.engine_name = engine.key;
+            new_engine.engine_url = engine.value;
+            new_engine.from_guild = guild;
+            new_engine.from_channel = channel;
+            new_engine.from_user = user;
+            await DatabaseConnection.manager.save(new_engine);
+        } 
+    }
+
     switch (menu_path[0]) {
         case '1':
             await interaction.showModal(new ModalBuilder().setCustomId('settings:search:11').setTitle('Add Engine').addComponents(
@@ -133,7 +146,6 @@ const scb = async (guild: Guilds): Promise<Omit<SlashCommandBuilder, 'addSubcomm
                 .setRequired(true)
                 .addChoices({ name: 'Google', value: 'https://google.com/search?q=' })
                 .addChoices({ name: 'DuckDuckGo', value: 'https://duckduckgo.com/?q=' })
-                .addChoices({ name: 'Brave', value: 'https://search.brave.com/search?q=' })
         );
         data.addStringOption((option) => option.setName('query').setDescription('Search query').setRequired(true));
         return data;

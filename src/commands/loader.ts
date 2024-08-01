@@ -23,6 +23,7 @@ export const CommandLoader = async () => {
             for (const guild of guilds) {
                 if (!BotCommands.has(Number(guild.gid))) BotCommands.set(Number(guild.gid), new Collection());
                 if (!restCMDs.has(guild.gid)) restCMDs.set(guild.gid, new Collection());
+                if (JSON.parse(guild.disabled_commands).includes(cmd.name)) continue;
                 BotCommands.get(Number(guild.gid)).set(cmd.name, cmd);
                 restCMDs.get(guild.gid).set(cmd.name, (await cmd.data(guild)).toJSON());
             }
@@ -42,13 +43,17 @@ export const RESTCommandLoader = async (custom_guild?: number) => {
         if (custom_guild && custom_guild != Number(guild)) continue;
         try {
             if (guild === '0') {
-                // await rest.put(Routes.applicationCommands(BotConfiguration.app_id), { body: [] });
-                // Logger('info', 'Successfully cleared global commands.');
+                if (BotConfiguration.clear_old_commands) {
+                    await rest.put(Routes.applicationCommands(BotConfiguration.app_id), { body: [] });
+                    Logger('info', 'Successfully cleared global commands.');
+                }
                 await rest.put(Routes.applicationCommands(BotConfiguration.app_id), { body: commands.toJSON() });
                 Logger('info', `Successfully reloaded global commands.`);
             } else {
-                // await rest.put(Routes.applicationGuildCommands(BotConfiguration.app_id, guild), { body: [] });
-                // Logger('info', `Successfully cleared commands for guild: ${guild}.`);
+                if (BotConfiguration.clear_old_commands || JSON.parse((await DatabaseConnection.manager.findOne(Guilds, { where: { gid: guild } }))?.disabled_commands).length > 0) {
+                    await rest.put(Routes.applicationGuildCommands(BotConfiguration.app_id, guild), { body: [] });
+                    Logger('info', `Successfully cleared commands for guild: ${guild}.`);
+                }
                 await rest.put(Routes.applicationGuildCommands(BotConfiguration.app_id, guild), { body: commands.toJSON() });
                 Logger('info', `Successfully reloaded commands for guild: ${guild}.`);
             }
