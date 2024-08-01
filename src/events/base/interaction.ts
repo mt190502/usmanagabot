@@ -9,7 +9,8 @@ const interactionCooldown: Collection<string, Collection<number, number>> = new 
 const exec = async (interaction: Interaction): Promise<void | InteractionResponse<boolean>> => {
     switch (true) {
         case interaction.isAnySelectMenu():
-            console.log('SelectMenu');
+            if (interaction.values[0] === 'settings') BotCommands.get(0).get('settings').execute(interaction);
+            else BotCommands.get(Number(interaction.guild.id)).get(interaction.values[0].split(':')[1]).settings(interaction);
             break;
         case interaction.isChannelSelectMenu():
             console.log('ChannelSelectMenu');
@@ -62,7 +63,8 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
             console.log('MessageComponent');
             break;
         case interaction.isRepliable():
-            console.log('Repliable');
+            if (interaction.customId === 'settings') BotCommands.get(0).get('settings').execute(interaction);
+            else BotCommands.get(Number(interaction.guild.id)).get(interaction.customId.split(':')[1]).settings(interaction);
             break;
         case interaction.isRoleSelectMenu():
             console.log('RoleSelectMenu');

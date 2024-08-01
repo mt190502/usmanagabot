@@ -35,19 +35,20 @@ export const CommandLoader = async () => {
     }
 }
 
-export const RESTCommandLoader = async () => {
+export const RESTCommandLoader = async (custom_guild?: number) => {
     await CommandLoader();
     rest.setToken(BotConfiguration.token);
     for (const [guild, commands] of restCMDs) {
+        if (custom_guild && custom_guild != Number(guild)) continue;
         try {
             if (guild === '0') {
-                await rest.put(Routes.applicationCommands(BotConfiguration.app_id), { body: [] });
-                Logger('info', 'Successfully cleared global commands.');
+                // await rest.put(Routes.applicationCommands(BotConfiguration.app_id), { body: [] });
+                // Logger('info', 'Successfully cleared global commands.');
                 await rest.put(Routes.applicationCommands(BotConfiguration.app_id), { body: commands.toJSON() });
                 Logger('info', `Successfully reloaded global commands.`);
             } else {
-                await rest.put(Routes.applicationGuildCommands(BotConfiguration.app_id, guild), { body: [] });
-                Logger('info', `Successfully cleared commands for guild: ${guild}.`);
+                // await rest.put(Routes.applicationGuildCommands(BotConfiguration.app_id, guild), { body: [] });
+                // Logger('info', `Successfully cleared commands for guild: ${guild}.`);
                 await rest.put(Routes.applicationGuildCommands(BotConfiguration.app_id, guild), { body: commands.toJSON() });
                 Logger('info', `Successfully reloaded commands for guild: ${guild}.`);
             }
