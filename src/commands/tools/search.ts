@@ -1,6 +1,5 @@
 import { ActionRowBuilder, APIActionRowComponent, APIMessageActionRowComponent, CommandInteraction, ModalActionRowComponentBuilder, ModalBuilder, SlashCommandBuilder, SlashCommandStringOption, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 import { DatabaseConnection } from "../../main";
-import { Channels } from "../../types/database/channels";
 import { Guilds } from "../../types/database/guilds";
 import { Search } from "../../types/database/search";
 import { Users } from "../../types/database/users";
@@ -21,7 +20,6 @@ import { RESTCommandLoader } from "../loader";
 const settings = async (interaction: any) => {
     const guild: Guilds = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } });
     const user: Users = await DatabaseConnection.manager.findOne(Users, { where: { uid: Number(interaction.user.id) } });
-    const channel: Channels = await DatabaseConnection.manager.findOne(Channels, { where: { cid: Number(interaction.channel.id) } });
     const engines: Search[] = await DatabaseConnection.manager.find(Search, { where: { from_guild: { id: guild.id } } });
 
     const engine_name = new TextInputBuilder().setCustomId('engine_name').setLabel('Engine Name').setStyle(TextInputStyle.Short)
@@ -43,7 +41,6 @@ const settings = async (interaction: any) => {
             new_engine.engine_name = engine.key;
             new_engine.engine_url = engine.value;
             new_engine.from_guild = guild;
-            new_engine.from_channel = channel;
             new_engine.from_user = user;
             await DatabaseConnection.manager.save(new_engine);
         } 
@@ -81,7 +78,6 @@ const settings = async (interaction: any) => {
             new_engine.engine_name = interaction.fields.getTextInputValue('engine_name');
             new_engine.engine_url = interaction.fields.getTextInputValue('engine_url');
             new_engine.from_guild = guild;
-            new_engine.from_channel = channel;
             new_engine.from_user = user;
             await DatabaseConnection.manager.save(new_engine).then(() => {
                 interaction.update('Engine added');

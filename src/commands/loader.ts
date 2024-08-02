@@ -1,3 +1,6 @@
+import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
 import { Collection, REST, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from "discord.js";
 import { globSync } from "glob";
 import path from "path";
@@ -23,8 +26,8 @@ export const CommandLoader = async () => {
             for (const guild of guilds) {
                 if (!BotCommands.has(Number(guild.gid))) BotCommands.set(Number(guild.gid), new Collection());
                 if (!restCMDs.has(guild.gid)) restCMDs.set(guild.gid, new Collection());
-                if (JSON.parse(guild.disabled_commands).includes(cmd.name)) continue;
                 BotCommands.get(Number(guild.gid)).set(cmd.name, cmd);
+                if (JSON.parse(guild.disabled_commands).includes(cmd.name)) continue;
                 restCMDs.get(guild.gid).set(cmd.name, (await cmd.data(guild)).toJSON());
             }
         } else {
@@ -61,7 +64,11 @@ export const RESTCommandLoader = async (custom_guild?: number) => {
             Logger('error', error);
         }
     }
+
+    dayjs.extend(utc);
+    dayjs.extend(timezone);
+    dayjs.tz.setDefault(BotConfiguration.timezone)
     const last_command_refresh_date = await DatabaseConnection.manager.findOne(BotData, { where: { key: 'last_command_refresh_date' } });
-    last_command_refresh_date.value = new Date().toISOString();
+    last_command_refresh_date.value = dayjs().format('YYYY-MM-DDTHH:mm:ssZ');
     await DatabaseConnection.manager.save(last_command_refresh_date);
 }

@@ -13,4 +13,7 @@ export class Guilds {
 
     @Column({ type: 'simple-array', nullable: false, default: [] })
     disabled_commands: string;
+
+    @Column({ type: 'bigint', nullable: true, default: null })
+    report_channel_id: string;
 }

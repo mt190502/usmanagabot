@@ -2,6 +2,7 @@ import { Collection, Events, Interaction, InteractionResponse } from 'discord.js
 import { BotCommands } from '../../main';
 import { Command_t } from '../../types/interface/commands';
 import { Event_t } from '../../types/interface/events';
+import { CheckAndAddChannel, CheckAndAddUser } from '../../utils/common';
 import { Logger } from '../../utils/logger';
 
 const interactionCooldown: Collection<string, Collection<number, number>> = new Collection();
@@ -82,6 +83,8 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
             console.log('Unknown');
             break;
     }
+    await CheckAndAddUser(null, interaction);
+    await CheckAndAddChannel(null, interaction);
 }
 
 export default {

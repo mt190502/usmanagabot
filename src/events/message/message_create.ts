@@ -13,8 +13,8 @@ const exec = async (message: Message) => {
     newMessage.message = message.content;
     if (message.attachments.size > 0) newMessage.attachments = message.attachments.map((attachment) => attachment.url);
     newMessage.message_id = Number(message.id);
-    newMessage.from_channel = await CheckAndAddChannel(message);
-    newMessage.from_user = await CheckAndAddUser(message);
+    newMessage.from_channel = await CheckAndAddChannel(message, null);
+    newMessage.from_user = await CheckAndAddUser(message, null);
     newMessage.from_guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: message.guild?.id } });
     await DatabaseConnection.manager.save(newMessage);
 };
