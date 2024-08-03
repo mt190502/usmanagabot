@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ModalActionRowComponentBuilder, ModalBuilder, SlashCommandBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
+import { ActionRowBuilder, EmbedBuilder, ModalActionRowComponentBuilder, ModalBuilder, SlashCommandBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 import { DatabaseConnection } from "../../main";
 import { Guilds } from "../../types/database/guilds";
 import { Command_t } from "../../types/interface/commands";
@@ -66,25 +66,34 @@ const settings = async (interaction: any) => {
 
 const exec = async (interaction: any): Promise<void> => {
     const user = interaction.options.getUser('user');
+    const reporter = interaction.user;
     const reason = interaction.options.getString('reason');
-    const message_url = interaction.options.getString('message_url');
-    const channel_id = (await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } })).report_channel_id;
-
-    if (!channel_id) return await interaction.reply({ content: 'Report channel not set', ephemeral: true });
-
-    const channel = interaction.guild.channels.cache.get(channel_id);
-    if (!channel) return await interaction.reply({ content: 'Report channel not found', ephemeral: true });
-
-    await channel.send({ content: `User ${user} reported for ${reason}\n${message_url}` });
-
-    await interaction.reply({ content: `User ${user} reported for ${reason}`, ephemeral: true });
+    const message_url = (interaction.options.getString('message_url')).replace(/\s+/g, ' ').split(' ');
+    const pattern = /(https:\/\/discord.com\/channels\/\d+\/\d+\/\d+)/;
+    const report_channel_id = (await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } })).report_channel_id;
+    const message_channel_id = interaction.guild.channels.cache.get(report_channel_id);
+    const embed = new EmbedBuilder().setColor(0xEE82EE).setAuthor({ name: `${reporter.username} (${reporter.id})`, iconURL: reporter.displayAvatarURL() }).setThumbnail(user.displayAvatarURL());
+    
+    for (let i = 0; i < message_url.length; i++) {
+        if (!pattern.test(message_url[i])) {
+            await interaction.reply({ content: `Invalid message URL: ${message_url[i]}`, ephemeral: true });
+            return;
+        }
+    }
+    
+    if (!report_channel_id) return await interaction.reply({ content: 'Report channel is not set', ephemeral: true });
+    if (!message_channel_id) return await interaction.reply({ content: `Target channel (${report_channel_id}) not found`, ephemeral: true });
+    
+    embed.setDescription(`:mag: **Reported**: ${user.username} (ID ${user.id})\n:page_facing_up: **Reason**: ${reason}\n:envelope: **Messages**: ${message_url.join(' ')}\n:triangular_flag_on_post: **Channel**: <#${interaction.channel.id}>`);
+    await message_channel_id.send({ embeds: [embed] });
+    await interaction.reply({ content: `User ${user} reported\nReason: ${reason}`, ephemeral: true });
 }
 
 const scb = (): Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'> => {
     const data = new SlashCommandBuilder().setName('report').setDescription('Report a user to the moderators.')
     data.addUserOption((option) => option.setName('user').setDescription('User to report').setRequired(true))
     data.addStringOption((option) => option.setName('reason').setDescription('Reason for report').setRequired(true))
-    data.addStringOption((option) => option.setName('message_url').setDescription('Message URL').setRequired(true));
+    data.addStringOption((option) => option.setName('message_url').setDescription('Message URL/URLs').setRequired(true));
     return data;
 };
 
