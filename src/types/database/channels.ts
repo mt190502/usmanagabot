@@ -6,5 +6,5 @@ export class Channels {
     id: number;
 
     @Column({ type: 'bigint', nullable: false, unique: true })
-    cid: number;
+    cid: bigint;
 }

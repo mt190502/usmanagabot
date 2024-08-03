@@ -19,7 +19,7 @@ import { RESTCommandLoader } from "../loader";
 
 const settings = async (interaction: any) => {
     const guild: Guilds = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } });
-    const user: Users = await DatabaseConnection.manager.findOne(Users, { where: { uid: Number(interaction.user.id) } });
+    const user: Users = await DatabaseConnection.manager.findOne(Users, { where: { uid: BigInt(interaction.user.id) } });
     const engines: Search[] = await DatabaseConnection.manager.find(Search, { where: { from_guild: { id: guild.id } } });
 
     const engine_name = new TextInputBuilder().setCustomId('engine_name').setLabel('Engine Name').setStyle(TextInputStyle.Short)

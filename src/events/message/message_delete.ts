@@ -6,12 +6,12 @@ import { CheckAndAddChannel, CheckAndAddUser } from '../../utils/common';
 import { Logger } from '../../utils/logger';
 
 const exec = async (message: Message) => {
-    if (message.author?.bot && !message.id) return;
-    
+    if (message.author?.bot || !message.author?.id) return;
+
     await CheckAndAddUser(message, null);
     await CheckAndAddChannel(message, null);
     
-    await DatabaseConnection.manager.findOne(Messages, { where: { message_id: Number(message.id) } })
+    await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(message.id) } })
         .then(async (msgInDB) => {
             if (!msgInDB) {
                 Logger('warn', 'Message not found in database');

@@ -6,12 +6,12 @@ import { CheckAndAddChannel, CheckAndAddUser } from "../../utils/common";
 import { Logger } from "../../utils/logger";
 
 const exec = async (oldMessage: Message, newMessage: Message) => {
-    if (oldMessage.author?.bot && newMessage.author?.bot && !oldMessage.id && !newMessage.id) return;
+    if ((oldMessage.author?.bot && newMessage.author?.bot) || (!oldMessage.author?.id && newMessage.author?.id)) return;
 
     await CheckAndAddUser(oldMessage, null);
     await CheckAndAddChannel(oldMessage, null);
 
-    const oldMsgInDB = await DatabaseConnection.manager.findOne(Messages, { where: { message_id: Number(oldMessage.id) } });
+    const oldMsgInDB = await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(oldMessage.id) } });
     if (!oldMsgInDB) {
         Logger('warn', `Message ${oldMessage.id} not found in database`);
         return;

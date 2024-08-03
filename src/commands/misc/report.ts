@@ -1,6 +1,7 @@
 import { ActionRowBuilder, EmbedBuilder, ModalActionRowComponentBuilder, ModalBuilder, SlashCommandBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 import { DatabaseConnection } from "../../main";
 import { Guilds } from "../../types/database/guilds";
+import { Messages } from "../../types/database/messages";
 import { Command_t } from "../../types/interface/commands";
 import { RESTCommandLoader } from "../loader";
 
@@ -68,19 +69,37 @@ const exec = async (interaction: any): Promise<void> => {
     const user = interaction.options.getUser('user');
     const reporter = interaction.user;
     const reason = interaction.options.getString('reason');
-    const message_url = (interaction.options.getString('message_url')).replace(/\s+/g, ' ').split(' ');
     const pattern = /(https:\/\/discord.com\/channels\/\d+\/\d+\/\d+)/;
     const report_channel_id = (await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } })).report_channel_id;
     const message_channel_id = interaction.guild.channels.cache.get(report_channel_id);
     const embed = new EmbedBuilder().setColor(0xEE82EE).setAuthor({ name: `${reporter.username} (${reporter.id})`, iconURL: reporter.displayAvatarURL() }).setThumbnail(user.displayAvatarURL());
+    let message_url;
     
-    for (let i = 0; i < message_url.length; i++) {
-        if (!pattern.test(message_url[i])) {
-            await interaction.reply({ content: `Invalid message URL: ${message_url[i]}`, ephemeral: true });
+    if (interaction.options.getString('message_url')) {
+        message_url = interaction.options.getString('message_url').replace(/\s+/g, ' ').split(' ');
+        for (let i = 0; i < message_url.length; i++) {
+            if (!pattern.test(message_url[i])) {
+                await interaction.reply({ content: `Invalid message URL: ${message_url[i]}`, ephemeral: true });
+                return;
+            }
+        }
+    } else {
+        let message;
+        try {
+            message = await DatabaseConnection.manager.findOne(Messages, { where: { from_user: { uid: BigInt(user.id) }, message_is_deleted: false }, order: { id: 'DESC' } });
+        } catch (error) {
+            await interaction.reply({ content: 'Error fetching message from database', ephemeral: true });
             return;
         }
+
+        if (!message) {
+            await interaction.reply({ content: 'Message not found in database. Please provide a message URL.', ephemeral: true });
+            return;
+        }
+        const url = `https://discord.com/channels/${message.from_guild.gid}/${message.from_channel.cid}/${message.message_id}`;
+        message_url = [url];
     }
-    
+
     if (!report_channel_id) return await interaction.reply({ content: 'Report channel is not set', ephemeral: true });
     if (!message_channel_id) return await interaction.reply({ content: `Target channel (${report_channel_id}) not found`, ephemeral: true });
     
@@ -93,7 +112,7 @@ const scb = (): Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'
     const data = new SlashCommandBuilder().setName('report').setDescription('Report a user to the moderators.')
     data.addUserOption((option) => option.setName('user').setDescription('User to report').setRequired(true))
     data.addStringOption((option) => option.setName('reason').setDescription('Reason for report').setRequired(true))
-    data.addStringOption((option) => option.setName('message_url').setDescription('Message URL/URLs').setRequired(true));
+    data.addStringOption((option) => option.setName('message_url').setDescription('Message URL/URLs').setRequired(false));
     return data;
 };
 

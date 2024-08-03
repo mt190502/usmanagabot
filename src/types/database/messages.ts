@@ -33,7 +33,7 @@ export class Messages {
     old_attachments?: string[];
 
     @Column({ type: 'bigint', nullable: false })
-    message_id: number;
+    message_id: bigint;
 
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })

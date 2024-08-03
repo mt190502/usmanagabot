@@ -6,13 +6,13 @@ import { Event_t } from '../../types/interface/events';
 import { CheckAndAddChannel, CheckAndAddUser } from '../../utils/common';
 
 const exec = async (message: Message) => {
-    if (message.author?.bot) return;
+    if (message.author?.bot || !message.author?.id) return;
 
     const newMessage = new Messages();
     newMessage.timestamp = new Date(message.createdTimestamp);
     newMessage.message = message.content;
     if (message.attachments.size > 0) newMessage.attachments = message.attachments.map((attachment) => attachment.url);
-    newMessage.message_id = Number(message.id);
+    newMessage.message_id = BigInt(message.id);
     newMessage.from_channel = await CheckAndAddChannel(message, null);
     newMessage.from_user = await CheckAndAddUser(message, null);
     newMessage.from_guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: message.guild?.id } });
