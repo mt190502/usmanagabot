@@ -1,5 +1,4 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Channels } from './channels';
 import { Guilds } from './guilds';
 import { Users } from './users';
 
@@ -14,10 +13,6 @@ export class Afk {
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
     from_user: Users;
-
-    @ManyToOne(() => Channels, { nullable: false, eager: true })
-    @JoinColumn({ name: 'from_channel', referencedColumnName: 'id' })
-    from_channel: Channels;
 
     @ManyToOne(() => Guilds, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_guild', referencedColumnName: 'id' })

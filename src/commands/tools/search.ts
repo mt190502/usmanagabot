@@ -160,7 +160,7 @@ const scb = async (guild: Guilds): Promise<Omit<SlashCommandBuilder, 'addSubcomm
 const exec = async (interaction: CommandInteraction) => {
     const engine = interaction.options.data.find((option) => option.name === 'engine')?.value;
     const query = interaction.options.data.find((option) => option.name === 'query')?.value;
-    await interaction.reply(`${engine}${query}`);
+    await interaction.reply(`${engine}${query.toString().replace(/\s+/g, '+')}`);
 };
 
 export default {
