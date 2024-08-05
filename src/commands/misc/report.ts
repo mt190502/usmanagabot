@@ -36,7 +36,7 @@ const settings = async (interaction: any) => {
             status = JSON.parse(guild.disabled_commands).includes('report') ? 'Enable' : 'Disable';
             menu = new StringSelectMenuBuilder().setCustomId('settings:report:0').addOptions(...createMenuOptions());
             row = new ActionRowBuilder().addComponents(menu);
-            await RESTCommandLoader(Number(guild.gid))
+            await RESTCommandLoader(BigInt(guild.gid))
             await interaction.update({ 
                 content: `Report system ${status}d`,
                 components: [row] 
@@ -49,7 +49,7 @@ const settings = async (interaction: any) => {
             break;
         case '21':
             guild.report_channel_id = interaction.fields.getTextInputValue('channel_id');
-            await RESTCommandLoader(Number(guild.gid));
+            await RESTCommandLoader(BigInt(guild.gid));
             await DatabaseConnection.manager.save(guild).then(() => {
                 interaction.update({ content: `Report channel set to ${guild.report_channel_id}`, components: [row] });
             }).catch((error) => {
@@ -86,7 +86,7 @@ const exec = async (interaction: any): Promise<void> => {
     } else {
         let message;
         try {
-            message = await DatabaseConnection.manager.findOne(Messages, { where: { from_user: { uid: BigInt(user.id) }, message_is_deleted: false }, order: { id: 'DESC' } });
+            message = await DatabaseConnection.manager.findOne(Messages, { where: { from_user: { uid: BigInt(user.id) }, message_is_deleted: false, from_channel: { cid: BigInt(interaction.channel.id)} }, order: { id: 'DESC' } });
         } catch (error) {
             await interaction.reply({ content: 'Error fetching message from database', ephemeral: true });
             return;

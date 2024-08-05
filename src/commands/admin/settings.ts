@@ -3,7 +3,7 @@ import { BotCommands } from "../../main";
 import { Command_t } from "../../types/interface/commands";
 
 const exec = async (interaction: any) => {
-    const guildID = Number(interaction.guild.id);
+    const guildID = BigInt(interaction.guild.id);
     
     await interaction[interaction.isChatInputCommand() ? 'reply' : 'update']({
         ephemeral: true,

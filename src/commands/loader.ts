@@ -24,26 +24,26 @@ export const CommandLoader = async () => {
 
         if (cmd.type === 'customizable') {
             for (const guild of guilds) {
-                if (!BotCommands.has(Number(guild.gid))) BotCommands.set(Number(guild.gid), new Collection());
+                if (!BotCommands.has(BigInt(guild.gid))) BotCommands.set(BigInt(guild.gid), new Collection());
                 if (!restCMDs.has(guild.gid)) restCMDs.set(guild.gid, new Collection());
-                BotCommands.get(Number(guild.gid)).set(cmd.name, cmd);
+                BotCommands.get(BigInt(guild.gid)).set(cmd.name, cmd);
                 if (JSON.parse(guild.disabled_commands).includes(cmd.name)) continue;
                 restCMDs.get(guild.gid).set(cmd.name, (await cmd.data(guild)).toJSON());
             }
         } else {
-            if (!BotCommands.has(0)) BotCommands.set(0, new Collection());
+            if (!BotCommands.has(BigInt(0))) BotCommands.set(BigInt(0), new Collection());
             if (!restCMDs.has('0')) restCMDs.set('0', new Collection());
-            BotCommands.get(0).set(cmd.name, cmd);
+            BotCommands.get(BigInt(0)).set(cmd.name, cmd);
             restCMDs.get('0').set(cmd.name, (await cmd.data()).toJSON());
         }
     }
 }
 
-export const RESTCommandLoader = async (custom_guild?: number) => {
+export const RESTCommandLoader = async (custom_guild?: BigInt) => {
     await CommandLoader();
     rest.setToken(BotConfiguration.token);
     for (const [guild, commands] of restCMDs) {
-        if (custom_guild && custom_guild != Number(guild)) continue;
+        if (custom_guild && custom_guild != BigInt(guild)) continue;
         try {
             if (guild === '0') {
                 if (BotConfiguration.clear_old_commands) {

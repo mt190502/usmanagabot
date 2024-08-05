@@ -14,7 +14,7 @@ export const BotConfiguration: BotConfiguration_t = ConfigLoader('../config', 'b
 export const DatabaseConfiguration: DatabaseConfiguration_t = ConfigLoader('../config', 'database.yml');
 export var DatabaseConnection: DataSource; // = DatabaseLoader(DatabaseConfiguration);
 
-export const BotCommands: Collection<number, Collection<string, Command_t>> = new Collection();
+export const BotCommands: Collection<bigint, Collection<string, Command_t>> = new Collection();
 export const BotEvents: Collection<string, Event_t> = new Collection();
 
 export const BotClient = new Client({

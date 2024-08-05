@@ -5,13 +5,18 @@ import { Event_t } from '../../types/interface/events';
 import { CheckAndAddChannel, CheckAndAddUser } from '../../utils/common';
 import { Logger } from '../../utils/logger';
 
-const interactionCooldown: Collection<string, Collection<number, number>> = new Collection();
+const interactionCooldown: Collection<string, Collection<bigint, number>> = new Collection();
 
 const exec = async (interaction: Interaction): Promise<void | InteractionResponse<boolean>> => {
     switch (true) {
         case interaction.isAnySelectMenu():
-            if (interaction.values[0] === 'settings') BotCommands.get(0).get('settings').execute(interaction);
-            else BotCommands.get(Number(interaction.guild.id)).get(interaction.values[0].split(':')[1]).settings(interaction);
+            if (interaction.values[0] === 'settings') {
+                BotCommands.get(BigInt(0)).get('settings').execute(interaction);
+            } else if (interaction.values[0].split(':')[0] === 'settings') {
+                BotCommands.get(BigInt(interaction.guild.id)).get(interaction.values[0].split(':')[1]).settings(interaction);
+            } else if (interaction.values[0].split(':')[0] === 'execute') {
+                BotCommands.get(BigInt(interaction.guild.id)).get(interaction.values[0].split(':')[1]).execute(interaction);
+            }
             break;
         case interaction.isChannelSelectMenu():
             console.log('ChannelSelectMenu');
@@ -19,9 +24,9 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
         case interaction.isChatInputCommand():
             let command: Command_t;
             if (interaction.commandGuildId === null) {
-                command = BotCommands.get(0).get(interaction.commandName);
+                command = BotCommands.get(BigInt(0)).get(interaction.commandName);
             } else {
-                command = BotCommands.get(Number(interaction.commandGuildId)).get(interaction.commandName);
+                command = BotCommands.get(BigInt(interaction.commandGuildId)).get(interaction.commandName);
             }
 
             if (!command) return;
@@ -31,8 +36,8 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
             const timestamps = interactionCooldown.get(command.name);
             const cooldownAmount = (command.cooldown ?? 5) * 1000;
 
-            if (timestamps.has(Number(interaction.user.id))) {
-                const expirationTime = timestamps.get(Number(interaction.user.id)) + cooldownAmount;
+            if (timestamps.has(BigInt(interaction.user.id))) {
+                const expirationTime = timestamps.get(BigInt(interaction.user.id)) + cooldownAmount;
 
                 if (now < expirationTime) {
                     const timeLeft = (expirationTime - now) / 1000;
@@ -42,8 +47,8 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
                     });
                 }
             }
-            timestamps.set(Number(interaction.user.id), now);
-            setTimeout(() => timestamps.delete(Number(interaction.user.id)), cooldownAmount);
+            timestamps.set(BigInt(interaction.user.id), now);
+            setTimeout(() => timestamps.delete(BigInt(interaction.user.id)), cooldownAmount);
 
             try {
                 await command.execute(interaction);
@@ -64,8 +69,13 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
             console.log('MessageComponent');
             break;
         case interaction.isRepliable():
-            if (interaction.customId === 'settings') BotCommands.get(0).get('settings').execute(interaction);
-            else BotCommands.get(Number(interaction.guild.id)).get(interaction.customId.split(':')[1]).settings(interaction);
+            if (interaction.customId === 'settings') {
+                BotCommands.get(BigInt(0)).get('settings').execute(interaction);
+            } else if (interaction.customId.split(':')[0] === 'settings') {
+                BotCommands.get(BigInt(interaction.guild.id)).get(interaction.customId.split(':')[1]).settings(interaction);
+            } else if (interaction.customId.split(':')[0] === 'execute') {
+                BotCommands.get(BigInt(interaction.guild.id)).get(interaction.customId.split(':')[1]).execute(interaction);
+            }
             break;
         case interaction.isRoleSelectMenu():
             console.log('RoleSelectMenu');

@@ -84,7 +84,7 @@ const settings = async (interaction: any) => {
             }).catch((error) => {
                 interaction.update('Error adding engine: ' + error);
             });
-            await RESTCommandLoader(Number(guild.gid));
+            await RESTCommandLoader(BigInt(guild.gid));
             break;
         case '21':
             if (!menu_path[1]) break;
@@ -107,7 +107,7 @@ const settings = async (interaction: any) => {
             }).catch((error) => {
                 interaction.update('Error editing engine: ' + error);
             });
-            await RESTCommandLoader(Number(guild.gid));
+            await RESTCommandLoader(BigInt(guild.gid));
             break;
         case '31':
             if (!menu_path[1]) break;
@@ -120,7 +120,7 @@ const settings = async (interaction: any) => {
             }).catch((error) => {
                 interaction.update('Error removing engine: ' + error);
             });
-            await RESTCommandLoader(Number(guild.gid));
+            await RESTCommandLoader(BigInt(guild.gid));
             break;
         default:
             await interaction.update({

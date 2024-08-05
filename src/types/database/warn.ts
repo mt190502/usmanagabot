@@ -22,7 +22,7 @@ export class Warn {
 
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'target_user', referencedColumnName: 'id' })
-    target_user: number;
+    target_user: Users;
 
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })

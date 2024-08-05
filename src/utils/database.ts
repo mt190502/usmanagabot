@@ -13,9 +13,9 @@ export const DatabaseLoader = async (database: DatabaseConfiguration_t) => {
         password: database.password,
         synchronize: database.synchronize,
         logging: database.logging,
-        entities: await glob('src/types/database/*.ts', { ignore: 'src/types/database/base.ts' }),
-        subscribers: await glob('src/types/database/subscribers/*.ts', { ignore: 'src/types/database/subscribers/base.ts' }),
-        migrations: await glob('src/types/database/migrations/*.ts', { ignore: 'src/types/database/migrations/base.ts' }),
+        entities: await glob('src/types/database/*.ts'),
+        subscribers: await glob('src/types/database/subscribers/*.ts'),
+        migrations: await glob('src/types/database/migrations/*.ts'),
     });
 
     await dataSource.initialize()
