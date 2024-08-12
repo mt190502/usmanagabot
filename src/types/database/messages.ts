@@ -5,7 +5,7 @@ import { Users } from './users';
 
 @Entity()
 export class Messages {
-    @PrimaryGeneratedColumn({ type: 'smallint' })
+    @PrimaryGeneratedColumn({ type: 'int' })
     id: number;
 
     @Column({ type: 'varchar', nullable: false, length: 4000 })
