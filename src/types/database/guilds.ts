@@ -21,5 +21,11 @@ export class Guilds {
     message_logger_channel_id: string;
 
     @Column({ type: 'bigint', nullable: true, default: null })
+    message_logger_webhook_id: string;
+
+    @Column({ type: 'varchar', length: 128, nullable: true, default: null })
+    message_logger_webhook_token: string;
+
+    @Column({ type: 'bigint', nullable: true, default: null })
     report_channel_id: string;
 }

@@ -35,6 +35,9 @@ export class Messages {
     @Column({ type: 'bigint', nullable: false })
     message_id: bigint;
 
+    @Column({ type: 'bigint', nullable: true, default: null })
+    logged_message_id: bigint;
+
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
     from_user: Users;

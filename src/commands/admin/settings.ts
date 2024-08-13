@@ -1,7 +1,8 @@
-import { ActionRowBuilder, APIActionRowComponent, APIMessageActionRowComponent, ModalActionRowComponentBuilder, ModalBuilder, PermissionFlagsBits, SlashCommandBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
+import { ActionRowBuilder, APIActionRowComponent, APIMessageActionRowComponent, Channel, GuildChannel, ModalActionRowComponentBuilder, ModalBuilder, PermissionFlagsBits, SlashCommandBuilder, StringSelectMenuBuilder, TextChannel, TextInputBuilder, TextInputStyle, Webhook } from "discord.js";
 import { BotCommands, DatabaseConnection } from "../../main";
 import { Guilds } from "../../types/database/guilds";
 import { Command_t } from "../../types/interface/commands";
+import { Logger } from "../../utils/logger";
 
 const settings = async (interaction: any) => {
     const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } });
@@ -43,6 +44,16 @@ const settings = async (interaction: any) => {
             break;
         case '21':
             guild.message_logger_channel_id = interaction.fields.getTextInputValue('channel_id');
+            if ((guild.message_logger_webhook_id === null) || (guild.message_logger_webhook_token === null)) {
+                const channel: TextChannel = await interaction.guild.channels.fetch(guild.message_logger_channel_id);
+                await channel.createWebhook({ name: 'Message Logger' }).then((webhook: Webhook) => {
+                    guild.message_logger_webhook_id = webhook.id;
+                    guild.message_logger_webhook_token = webhook.token;
+
+                    Logger('info', `Created webhook ${webhook.id} with name ${webhook.name}`);
+                });
+            }
+
             await DatabaseConnection.manager.save(guild).then(() => {
                 interaction.update({ content: `Message logger channel set to <#${guild.message_logger_channel_id}>`, components: [row] });
             }).catch((error) => {
