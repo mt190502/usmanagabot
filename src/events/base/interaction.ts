@@ -10,13 +10,21 @@ const interactionCooldown: Collection<string, Collection<bigint, number>> = new 
 const exec = async (interaction: Interaction): Promise<void | InteractionResponse<boolean>> => {
     switch (true) {
         case interaction.isAnySelectMenu():
-            if (interaction.values[0] === 'settings') {
-                BotCommands.get(BigInt(0)).get('settings').execute(interaction);
-            } else if (interaction.values[0].split(':')[0] === 'settings') {
-                BotCommands.get(BigInt(interaction.guild.id)).get(interaction.values[0].split(':')[1]).settings(interaction);
-            } else if (interaction.values[0].split(':')[0] === 'execute') {
-                BotCommands.get(BigInt(interaction.guild.id)).get(interaction.values[0].split(':')[1]).execute(interaction);
+             if (interaction.values[0]?.includes(':')) {
+                const [type, name] = interaction.values[0].split(':');
+                if ((type == 'settings') && (name == 'settings')) {
+                    BotCommands.get(BigInt(0)).get('settings').settings(interaction);
+                } else if ((type == 'settings') && (name !== 'settings')) {
+                    BotCommands.get(BigInt(interaction.guild.id)).get(name).settings(interaction);
+                } 
+            } else {
+                if (interaction.values[0] == 'settings') {
+                    BotCommands.get(BigInt(0)).get(interaction.values[0]).execute(interaction);
+                } else {
+                    BotCommands.get(BigInt(interaction.guild.id)).get(interaction.values[0]).execute(interaction);
+                }
             }
+
             break;
         case interaction.isChannelSelectMenu():
             console.log('ChannelSelectMenu');
@@ -69,12 +77,19 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
             console.log('MessageComponent');
             break;
         case interaction.isRepliable():
-            if (interaction.customId === 'settings') {
-                BotCommands.get(BigInt(0)).get('settings').execute(interaction);
-            } else if (interaction.customId.split(':')[0] === 'settings') {
-                BotCommands.get(BigInt(interaction.guild.id)).get(interaction.customId.split(':')[1]).settings(interaction);
-            } else if (interaction.customId.split(':')[0] === 'execute') {
-                BotCommands.get(BigInt(interaction.guild.id)).get(interaction.customId.split(':')[1]).execute(interaction);
+            if (interaction.customId.includes(':')) {
+                const [type, name] = interaction.customId.split(':');
+                if ((type == 'settings') && (name == 'settings')) {
+                    BotCommands.get(BigInt(0)).get('settings').settings(interaction);
+                } else if ((type == 'settings') && (name !== 'settings')) {
+                    BotCommands.get(BigInt(interaction.guild.id)).get(name).settings(interaction);
+                }
+            } else {
+                if (interaction.customId == 'settings') {
+                    BotCommands.get(BigInt(0)).get(interaction.customId).execute(interaction);
+                } else {
+                    BotCommands.get(BigInt(interaction.guild.id)).get(interaction.customId).execute(interaction);
+                }
             }
             break;
         case interaction.isRoleSelectMenu():

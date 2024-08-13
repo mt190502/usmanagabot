@@ -12,7 +12,7 @@ import { InitialSetup } from "./utils/setup";
 
 export const BotConfiguration: BotConfiguration_t = ConfigLoader('../config', 'bot.yml');
 export const DatabaseConfiguration: DatabaseConfiguration_t = ConfigLoader('../config', 'database.yml');
-export var DatabaseConnection: DataSource; // = DatabaseLoader(DatabaseConfiguration);
+export var DatabaseConnection: DataSource;
 
 export const BotCommands: Collection<bigint, Collection<string, Command_t>> = new Collection();
 export const BotEvents: Collection<string, Event_t> = new Collection();

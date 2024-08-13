@@ -14,6 +14,12 @@ export class Guilds {
     @Column({ type: 'simple-array', nullable: false, default: [] })
     disabled_commands: string;
 
+    @Column({ type: 'boolean', nullable: false, default: false })
+    message_logger: boolean;
+
+    @Column({ type: 'bigint', nullable: true, default: null })
+    message_logger_channel_id: string;
+
     @Column({ type: 'bigint', nullable: true, default: null })
     report_channel_id: string;
 }

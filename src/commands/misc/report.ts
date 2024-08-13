@@ -11,7 +11,7 @@ const settings = async (interaction: any) => {
     
     let status = JSON.parse(guild.disabled_commands).includes('report') ? 'Enable' : 'Disable';
 
-    const menu_path = interaction.values ? interaction.values[0].split(':').at(-1).split('/') : interaction.customId.split(':').at(-1).split('/');
+    const menu_path = interaction.values ? interaction.values[0].split(':').at(-1) : interaction.customId.split(':').at(-1);
     
     const createMenuOptions = () => [
         { label: `${status} Report System`, description: `${status} the report system`, value: 'settings:report:1' },
@@ -22,7 +22,7 @@ const settings = async (interaction: any) => {
     let menu = new StringSelectMenuBuilder().setCustomId('settings:report:0').addOptions(...createMenuOptions());
     let row = new ActionRowBuilder().addComponents(menu);
 
-    switch (menu_path[0]) {
+    switch (menu_path) {
         case '1':
             if (status === 'Enable') {
                 guild.disabled_commands = JSON.stringify(JSON.parse(guild.disabled_commands).filter((command: string) => command !== 'report'));
@@ -51,7 +51,7 @@ const settings = async (interaction: any) => {
             guild.report_channel_id = interaction.fields.getTextInputValue('channel_id');
             await RESTCommandLoader(BigInt(guild.gid));
             await DatabaseConnection.manager.save(guild).then(() => {
-                interaction.update({ content: `Report channel set to ${guild.report_channel_id}`, components: [row] });
+                interaction.update({ content: `Report channel set to <#${guild.report_channel_id}>`, components: [row] });
             }).catch((error) => {
                 interaction.update({ content: 'Error setting report channel', components: [row] });
             });
