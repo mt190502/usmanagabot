@@ -1,4 +1,4 @@
-import { Events, Message, WebhookClient } from 'discord.js';
+import { Attachment, Events, Message, WebhookClient } from 'discord.js';
 import { DatabaseConnection } from '../../main';
 import { Guilds } from '../../types/database/guilds';
 import { Messages } from '../../types/database/messages';
@@ -11,7 +11,10 @@ const exec = async (message: Message) => {
     const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: message.guild?.id } });
     const webhookClient = new WebhookClient({ id: guild.message_logger_webhook_id, token: guild.message_logger_webhook_token });
     const newMessage = new Messages();
+    let messageAttachments: string[];
     let webhookMessageContent;
+    
+    if (message.attachments.size > 0) messageAttachments = message.attachments.map((attachment) => attachment.url);
 
     if (message.reference?.messageId) {
         const referenceMessage = await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(message.reference?.messageId) } });
@@ -25,6 +28,9 @@ const exec = async (message: Message) => {
     } else {
         webhookMessageContent = message.url + ' | ' + message.content;
     }
+    if (message.attachments.size > 0) {
+        webhookMessageContent += '\n' + messageAttachments.join('\n');
+    }
     const webhookMessage = await webhookClient.send({
         content: webhookMessageContent,
         username: message.author.username,
@@ -33,7 +39,7 @@ const exec = async (message: Message) => {
     
     newMessage.timestamp = new Date(message.createdTimestamp);
     newMessage.message = message.content;
-    if (message.attachments.size > 0) newMessage.attachments = message.attachments.map((attachment) => attachment.url);
+    newMessage.attachments = messageAttachments;
     newMessage.message_id = BigInt(message.id);
     newMessage.logged_message_id = BigInt(webhookMessage.id);
     newMessage.from_channel = await CheckAndAddChannel(message, null);

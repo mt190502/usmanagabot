@@ -18,10 +18,14 @@ const exec = async (oldMessage: Message, newMessage: Message) => {
         Logger('warn', `Message ${oldMessage.id} not found in database`);
         return;
     }
+    let newMessageAttachments: string[];
+    
+    if (newMessage.attachments.size > 0) newMessageAttachments = newMessage.attachments.map((attachment) => attachment.url);
+
     const webhookClient = new WebhookClient({ id: guild.message_logger_webhook_id, token: guild.message_logger_webhook_token });
  
     const embed = new EmbedBuilder().setTitle('Updated Message').setColor(Colors.Yellow).setTimestamp()
-        .setDescription(`**New Message:**\n${newMessage.content}`);
+        .setDescription((newMessage.content != '' ? `**Old Message:**\n${oldMessageInDB.message}` : '') + (newMessageAttachments ? `**New Attachments:**\n${newMessageAttachments.join('\n')}` : ''))
     webhookClient.editMessage(oldMessageInDB.logged_message_id.toString(), {
         embeds: [embed],
     });
