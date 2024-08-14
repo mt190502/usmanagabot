@@ -38,6 +38,7 @@ const exec = async (message: Message) => {
         content: webhookMessageContent,
         username: message.author.username,
         avatarURL: message.author.displayAvatarURL(),
+        allowedMentions: { parse: [] },
     });
     
     newMessage.timestamp = new Date(message.createdTimestamp);
