@@ -28,6 +28,9 @@ const exec = async (message: Message) => {
     } else {
         webhookMessageContent = message.url + ' | ' + message.content;
     }
+    if (message.stickers.size > 0) {
+        webhookMessageContent += "Stickers: " + message.stickers.map((sticker) => sticker.name).join(', ');
+    }
     if (message.attachments.size > 0) {
         webhookMessageContent += '\n' + messageAttachments.join('\n');
     }
