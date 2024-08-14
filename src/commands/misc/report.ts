@@ -36,11 +36,11 @@ const settings = async (interaction: any) => {
             status = JSON.parse(guild.disabled_commands).includes('report') ? 'Enable' : 'Disable';
             menu = new StringSelectMenuBuilder().setCustomId('settings:report:0').addOptions(...createMenuOptions());
             row = new ActionRowBuilder().addComponents(menu);
-            await RESTCommandLoader(BigInt(guild.gid))
             await interaction.update({ 
                 content: `Report system ${status}d`,
                 components: [row] 
             });
+            await RESTCommandLoader(BigInt(guild.gid))
             break;
         case '2':
             await interaction.showModal(new ModalBuilder().setCustomId(`settings:report:21`).setTitle('Report Channel ID').addComponents(

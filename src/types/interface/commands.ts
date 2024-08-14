@@ -7,7 +7,7 @@ export interface Command_t {
     type: 'customizable' | 'standard';
     description: string;
 
-    category: 'admin' | 'core' | 'game' | 'misc' | 'tools' | 'utils';
+    category: 'admin' | 'core' | 'game' | 'misc' | 'tools' | 'pseudo' |'utils';
     cooldown: number;
     usage: string;
 

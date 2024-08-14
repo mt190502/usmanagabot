@@ -28,13 +28,13 @@ export const CommandLoader = async () => {
                 if (!restCMDs.has(guild.gid)) restCMDs.set(guild.gid, new Collection());
                 BotCommands.get(BigInt(guild.gid)).set(cmd.name, cmd);
                 if (JSON.parse(guild.disabled_commands).includes(cmd.name)) continue;
-                restCMDs.get(guild.gid).set(cmd.name, (await cmd.data(guild)).toJSON());
+                if (cmd.category != 'pseudo') restCMDs.get(guild.gid).set(cmd.name, (await cmd.data(guild)).toJSON());
             }
         } else {
             if (!BotCommands.has(BigInt(0))) BotCommands.set(BigInt(0), new Collection());
             if (!restCMDs.has('0')) restCMDs.set('0', new Collection());
             BotCommands.get(BigInt(0)).set(cmd.name, cmd);
-            restCMDs.get('0').set(cmd.name, (await cmd.data()).toJSON());
+            if (cmd.category != 'pseudo') restCMDs.get('0').set(cmd.name, (await cmd.data()).toJSON());
         }
     }
 }
