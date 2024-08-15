@@ -1,14 +1,24 @@
-import { ActionRowBuilder, ChannelSelectMenuBuilder, ChannelType, EmbedBuilder, SlashCommandBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
+import { ActionRowBuilder, ChannelSelectMenuBuilder, ChannelType, EmbedBuilder, SlashCommandBuilder, StringSelectMenuBuilder } from "discord.js";
 import { DatabaseConnection } from "../../main";
 import { Guilds } from "../../types/database/guilds";
 import { Messages } from "../../types/database/messages";
+import { Reports } from "../../types/database/reports";
 import { Command_t } from "../../types/interface/commands";
 import { RESTCommandLoader } from "../loader";
+import { Users } from "../../types/database/users";
 
 const settings = async (interaction: any) => {
-    const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } });
+    const report_system = await DatabaseConnection.manager.findOne(Reports, { where: { from_guild: { gid: interaction.guild.id } }});
+    if (!report_system) {
+        const new_report = new Reports();
+        new_report.from_guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } });
+        new_report.latest_action_from_user = await DatabaseConnection.manager.findOne(Users, { where: { uid: interaction.user.id } });
+        await DatabaseConnection.manager.save(new_report);
+        return settings(interaction);
+    }
+    if (!report_system.is_enabled) return await interaction.reply({ content: 'Report system is disabled', ephemeral: true });
     const channel_select_menu = new ChannelSelectMenuBuilder().setCustomId('settings:report:21').setPlaceholder('Select a channel').setChannelTypes(ChannelType.GuildText);
-    let status = JSON.parse(guild.disabled_commands).includes('report') ? 'Enable' : 'Disable';
+    let status = report_system.is_enabled ? 'Disable' : 'Enable';
 
     const menu_path = interaction.values ? (interaction.values[0].includes("settings:") ? interaction.values[0].split(':').at(-1) : interaction.customId.split(':').at(-1)) : interaction.customId.split(':').at(-1);
     
@@ -24,22 +34,22 @@ const settings = async (interaction: any) => {
     switch (menu_path) {
         case '1':
             if (status === 'Enable') {
-                guild.disabled_commands = JSON.stringify(JSON.parse(guild.disabled_commands).filter((command: string) => command !== 'report'));
+                report_system.is_enabled = true;
                 status = 'Disable';
             } else {
-                guild.disabled_commands = JSON.stringify([...JSON.parse(guild.disabled_commands), 'report']);
+                report_system.is_enabled = false;
                 status = 'Enable';
             }
-            await DatabaseConnection.manager.save(guild);
+            await DatabaseConnection.manager.save(report_system);
 
-            status = JSON.parse(guild.disabled_commands).includes('report') ? 'Enable' : 'Disable';
+            status = report_system.is_enabled ? 'Disable' : 'Enable';
             menu = new StringSelectMenuBuilder().setCustomId('settings:report:0').addOptions(...createMenuOptions());
             row = new ActionRowBuilder().addComponents(menu);
             await interaction.update({ 
-                content: `Report system ${status}d`,
+                content: `Report system ${report_system.is_enabled ? 'enabled' : 'disabled'}`,
                 components: [row] 
             });
-            await RESTCommandLoader(BigInt(guild.gid))
+            await RESTCommandLoader(BigInt(report_system.from_guild.gid));
             break;
         case '2':
             await interaction.update({
@@ -48,13 +58,13 @@ const settings = async (interaction: any) => {
             });
             break;
         case '21':
-            guild.report_channel_id = interaction.values[0];
-            await DatabaseConnection.manager.save(guild).then(() => {
-                interaction.update({ content: `Report channel set to <#${guild.report_channel_id}>`, components: [row] });
+            report_system.channel_id = interaction.values[0];
+            await DatabaseConnection.manager.save(report_system).then(() => {
+                interaction.update({ content: `Report channel set to <#${report_system.channel_id}>`, components: [row] });
             }).catch((error) => {
                 interaction.update({ content: 'Error setting report channel', components: [row] });
             });
-            await RESTCommandLoader(BigInt(guild.gid));
+            await RESTCommandLoader(BigInt(report_system.from_guild.gid));
             break;
         default:
             await interaction.update({ 
@@ -66,12 +76,13 @@ const settings = async (interaction: any) => {
 }
 
 const exec = async (interaction: any): Promise<void> => {
+    const report_system = await DatabaseConnection.manager.findOne(Reports, { where: { from_guild: { gid: interaction.guild.id } }});
+    if (!report_system) return
     const user = interaction.options.getUser('user');
     const reporter = interaction.user;
     const reason = interaction.options.getString('reason');
     const pattern = /(https:\/\/discord.com\/channels\/\d+\/\d+\/\d+)/;
-    const report_channel_id = (await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } })).report_channel_id;
-    const message_channel_id = interaction.guild.channels.cache.get(report_channel_id);
+    const message_channel_id = interaction.guild.channels.cache.get(report_system.channel_id);
     const embed = new EmbedBuilder().setColor(0xEE82EE).setAuthor({ name: `${reporter.username} (${reporter.id})`, iconURL: reporter.displayAvatarURL() }).setThumbnail(user.displayAvatarURL());
     let message_url;
     
@@ -100,8 +111,8 @@ const exec = async (interaction: any): Promise<void> => {
         message_url = [url];
     }
 
-    if (!report_channel_id) return await interaction.reply({ content: 'Report channel is not set', ephemeral: true });
-    if (!message_channel_id) return await interaction.reply({ content: `Target channel (${report_channel_id}) not found`, ephemeral: true });
+    if (!report_system.channel_id) return await interaction.reply({ content: 'Report channel is not set', ephemeral: true });
+    if (!message_channel_id) return await interaction.reply({ content: `Target channel (${report_system.channel_id}) not found`, ephemeral: true });
     
     embed.setDescription(`:mag: **Reported**: ${user.username} (ID ${user.id})\n:page_facing_up: **Reason**: ${reason}\n:envelope: **Messages**: ${message_url.join(' ')}\n:triangular_flag_on_post: **Channel**: <#${interaction.channel.id}>`);
     await message_channel_id.send({ embeds: [embed] });

@@ -1,13 +1,22 @@
 import { ActionRowBuilder, ChannelSelectMenuBuilder, ChannelType, Colors, EmbedBuilder, Message, StringSelectMenuBuilder, TextChannel, Webhook, WebhookClient } from "discord.js";
+import { Logger } from "../../utils/logger";
 import { DatabaseConnection } from "../../main";
 import { Guilds } from "../../types/database/guilds";
+import { MessageLogger } from "../../types/database/logger";
 import { Messages } from "../../types/database/messages";
 import { Command_t } from "../../types/interface/commands";
-import { Logger } from "../../utils/logger";
+import { Users } from "../../types/database/users";
 
 const settings = async (interaction: any) => {
-    const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } });
-    let message_logger_status = guild.message_logger ? 'Disable' : 'Enable';
+    const logger = await DatabaseConnection.manager.findOne(MessageLogger, { where: { from_guild: { gid: interaction.guild.id } } });
+    if (!logger) {
+        const new_logger = new MessageLogger();
+        new_logger.from_guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } });
+        new_logger.latest_action_from_user = await DatabaseConnection.manager.findOne(Users, { where: { uid: interaction.user.id } });
+        await DatabaseConnection.manager.save(new_logger);
+        return settings(interaction);
+    }
+    let message_logger_status = logger.is_enabled ? 'Disable' : 'Enable';
     const channel_select_menu = new ChannelSelectMenuBuilder().setCustomId('settings:logger:21').setPlaceholder('Select a channel').setChannelTypes(ChannelType.GuildText);
 
     const createMenuOptions = () => [
@@ -23,18 +32,18 @@ const settings = async (interaction: any) => {
     switch (menu_path) {
         case '1':
             if (message_logger_status === 'Enable') {
-                guild.message_logger = true;
+                logger.is_enabled = true;
                 message_logger_status = 'Disable';
             } else {
-                guild.message_logger = false;
+                logger.is_enabled = false;
                 message_logger_status = 'Enable';
             }
-            await DatabaseConnection.manager.save(guild);
+            await DatabaseConnection.manager.save(logger);
 
             menu = new StringSelectMenuBuilder().setCustomId('settings:logger:0').addOptions(...createMenuOptions());
             row = new ActionRowBuilder().addComponents(menu);
             await interaction.update({
-                content: `Message logger ${guild.message_logger ? 'enabled' : 'disabled'}`,
+                content: `Message logger ${logger.is_enabled ? 'enabled' : 'disabled'}`,
                 components: [row]
             });
             break;
@@ -45,21 +54,21 @@ const settings = async (interaction: any) => {
             });
             break;
         case '21':
-            if (interaction.values[0] != guild.message_logger_channel_id) {
-                guild.message_logger_channel_id = interaction.values[0];
-                if ((guild.message_logger_webhook_id !== null) && (guild.message_logger_webhook_token !== null)) {
-                    const webhook_client = new WebhookClient({ id: guild.message_logger_webhook_id, token: guild.message_logger_webhook_token });
+            if (interaction.values[0] != logger.channel_id) {
+                logger.channel_id = interaction.values[0];
+                if ((logger.webhook_id !== null) && (logger.webhook_token !== null)) {
+                    const webhook_client = new WebhookClient({ id: logger.webhook_id, token: logger.webhook_token });
                     webhook_client.delete().then(() => {
-                        Logger('info', `Deleted webhook ${guild.message_logger_webhook_id}`);
+                        Logger('info', `Deleted webhook ${logger.webhook_id}`);
                     }).catch((error) => {
-                        Logger('warn', `Error deleting webhook ${guild.message_logger_webhook_id}`);
+                        Logger('warn', `Error deleting webhook ${logger.webhook_id}`);
                     });
                 }
 
-                const channel: TextChannel = await interaction.guild.channels.fetch(guild.message_logger_channel_id);
+                const channel: TextChannel = await interaction.guild.channels.fetch(logger.channel_id);
                 await channel.createWebhook({ name: 'Message Logger' }).then((webhook: Webhook) => {
-                    guild.message_logger_webhook_id = webhook.id;
-                    guild.message_logger_webhook_token = webhook.token;
+                    logger.webhook_id = webhook.id;
+                    logger.webhook_token = webhook.token;
 
                     Logger('info', `Created webhook ${webhook.id} with name ${webhook.name}`);
                 });
@@ -68,8 +77,8 @@ const settings = async (interaction: any) => {
                 break;
             }
 
-            await DatabaseConnection.manager.save(guild).then(() => {
-                interaction.update({ content: `Message logger channel set to <#${guild.message_logger_channel_id}>`, components: [row] });
+            await DatabaseConnection.manager.save(logger).then(() => {
+                interaction.update({ content: `Message logger channel set to <#${logger.channel_id}>`, components: [row] });
             }).catch((error) => {
                 interaction.update({ content: 'Error setting message logger channel', components: [row] });
             });
@@ -83,13 +92,16 @@ const settings = async (interaction: any) => {
     }
 }
 const exec = async (event_name: string, message: Message, newMessage?: Message) => {
-    const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: message.guild?.id } });
+    const logger = await DatabaseConnection.manager.findOne(MessageLogger, { where: { from_guild: { gid: message.guild.id } } });
+    if ((!logger) || (logger.is_enabled === false || logger.channel_id === null || logger.webhook_id === null || logger.webhook_token === null)) {
+        return;
+    }
     const messageInDB = await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(message.id) } });
     if (!messageInDB) {
         Logger('warn', 'Message not found in database');
         return;
     }
-    const webhookClient = new WebhookClient({ id: guild.message_logger_webhook_id, token: guild.message_logger_webhook_token });
+    const webhookClient = new WebhookClient({ id: logger.webhook_id, token: logger.webhook_token });
     let embed: EmbedBuilder;
     switch (event_name) {
         case 'messageCreate':
@@ -100,7 +112,7 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
             if (message.reference?.messageId) {
                 const referenceMessage = await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(message.reference?.messageId) } });
                 if (referenceMessage !== null) {
-                    const url = `https://discord.com/channels/${referenceMessage.from_guild.gid}/${guild.message_logger_channel_id}/${referenceMessage.logged_message_id}`;
+                    const url = `https://discord.com/channels/${referenceMessage.from_guild.gid}/${logger.channel_id}/${referenceMessage.logged_message_id}`;
                     webhookMessageContent = message.url + ' | ' + `[Reply](${url})` + ' | ' + message.content;
                 } else {
                     const url = `https://discord.com/channels/${message.guild?.id}/${message.channel.id}/${message.reference?.messageId}`;

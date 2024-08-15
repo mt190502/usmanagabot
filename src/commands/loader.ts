@@ -27,7 +27,6 @@ export const CommandLoader = async () => {
                 if (!BotCommands.has(BigInt(guild.gid))) BotCommands.set(BigInt(guild.gid), new Collection());
                 if (!restCMDs.has(guild.gid)) restCMDs.set(guild.gid, new Collection());
                 BotCommands.get(BigInt(guild.gid)).set(cmd.name, cmd);
-                if (JSON.parse(guild.disabled_commands).includes(cmd.name)) continue;
                 if (cmd.category != 'pseudo') restCMDs.get(guild.gid).set(cmd.name, (await cmd.data(guild)).toJSON());
             }
         } else {
@@ -53,7 +52,7 @@ export const RESTCommandLoader = async (custom_guild?: BigInt) => {
                 await rest.put(Routes.applicationCommands(BotConfiguration.app_id), { body: commands.toJSON() });
                 Logger('info', `Successfully reloaded global commands.`);
             } else {
-                if (BotConfiguration.clear_old_commands || JSON.parse((await DatabaseConnection.manager.findOne(Guilds, { where: { gid: guild } }))?.disabled_commands).length > 0) {
+                if (BotConfiguration.clear_old_commands) {
                     await rest.put(Routes.applicationGuildCommands(BotConfiguration.app_id, guild), { body: [] });
                     Logger('info', `Successfully cleared commands for guild: ${guild}.`);
                 }

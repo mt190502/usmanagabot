@@ -1,13 +1,22 @@
 import { ActionRowBuilder, ChannelSelectMenuBuilder, ChannelType, GuildMember, ModalActionRowComponentBuilder, ModalBuilder, PermissionFlagsBits, RoleSelectMenuBuilder, StringSelectMenuBuilder, TextChannel, TextInputBuilder, TextInputStyle } from "discord.js";
 import { DatabaseConnection } from "../../main";
 import { Guilds } from "../../types/database/guilds";
+import { Verification } from "../../types/database/verification";
 import { Command_t } from "../../types/interface/commands";
+import { Users } from "../../types/database/users";
 
 const settings = async (interaction: any) => {
-    const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } });
+    const verification_system = await DatabaseConnection.manager.findOne(Verification, { where: { from_guild: { gid: interaction.guild.id } } });
+    if (!verification_system) {
+        const new_verification = new Verification();
+        new_verification.from_guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } });
+        new_verification.latest_action_from_user = await DatabaseConnection.manager.findOne(Users, { where: { uid: interaction.user.id } });
+        await DatabaseConnection.manager.save(new_verification);
+        return settings(interaction);
+    }
     const verification_message = new TextInputBuilder().setCustomId('verification_message').setLabel('Verification Message').setStyle(TextInputStyle.Paragraph).setPlaceholder('{{user}} to mention the user\n{{minimumage}} to mention the minimum age').setRequired(true);
     const verification_days = new TextInputBuilder().setCustomId('verification_days').setLabel('Verification System Minimum Days').setStyle(TextInputStyle.Short).setPlaceholder('Minimum days a user must have their account to be verified').setRequired(true);
-    let verification_system_status = guild.verification_system ? 'Disable' : 'Enable';
+    let verification_system_status = verification_system.is_enabled ? 'Disable' : 'Enable';
     const channel_select_menu = new ChannelSelectMenuBuilder().setCustomId('settings:verification:21').setPlaceholder('Select a channel').setChannelTypes(ChannelType.GuildText);
 
     const createMenuOptions = () => [
@@ -27,18 +36,18 @@ const settings = async (interaction: any) => {
     switch (menu_path) {
         case '1':
             if (verification_system_status === 'Enable') {
-                guild.verification_system = true;
+                verification_system.is_enabled = true;
                 verification_system_status = 'Disable';
             } else {
-                guild.verification_system = false;
+                verification_system.is_enabled = false;
                 verification_system_status = 'Enable';
             }
-            await DatabaseConnection.manager.save(guild);
+            await DatabaseConnection.manager.save(verification_system);
 
             menu = new StringSelectMenuBuilder().setCustomId('settings:verification:0').addOptions(...createMenuOptions());
             row = new ActionRowBuilder().addComponents(menu);
             await interaction.update({
-                content: `Verification System ${guild.verification_system ? 'enabled' : 'disabled'}`,
+                content: `Verification System ${verification_system.is_enabled ? 'enabled' : 'disabled'}`,
                 components: [row]
             });
             break;
@@ -49,10 +58,10 @@ const settings = async (interaction: any) => {
             });
             break;
         case '21':
-            guild.verification_system_channel_id = interaction.values[0];
-            await DatabaseConnection.manager.save(guild).then(() => 
+            verification_system.channel_id = interaction.values[0];
+            await DatabaseConnection.manager.save(verification_system).then(() => 
                 interaction.update({
-                    content: `Verification System channel set to <#${guild.verification_system_channel_id}>`,
+                    content: `Verification System channel set to <#${verification_system.channel_id}>`,
                     components: [row]
                 })
             ).catch((err) => {
@@ -70,8 +79,8 @@ const settings = async (interaction: any) => {
             });
             break;
         case '31':
-            guild.verification_system_role_id = interaction.values[0];
-            if (interaction.guild.roles.cache.get(guild.verification_system_role_id).permissions.has(PermissionFlagsBits.Administrator)) {
+            verification_system.role_id = interaction.values[0];
+            if (interaction.guild.roles.cache.get(verification_system.role_id).permissions.has(PermissionFlagsBits.Administrator)) {
                 interaction.update({
                     content: 'Cannot set an administrator role as the verification system role',
                     components: [row]
@@ -79,9 +88,9 @@ const settings = async (interaction: any) => {
                 return;
             }
 
-            await DatabaseConnection.manager.save(guild).then(() => 
+            await DatabaseConnection.manager.save(verification_system).then(() => 
                 interaction.update({
-                    content: `Verification System role set to <@&${guild.verification_system_role_id}>`,
+                    content: `Verification System role set to <@&${verification_system.role_id}>`,
                     components: [row]
                 })
             ).catch((err) => {
@@ -93,12 +102,12 @@ const settings = async (interaction: any) => {
             break;
         case '4':
             await interaction.showModal(new ModalBuilder().setCustomId(`settings:verification:41`).setTitle('Verification System Message').addComponents(
-                new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(verification_message.setValue(guild.verification_system_message ?? ''))
+                new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(verification_message.setValue(verification_system.message ?? ''))
             ));
             break;
         case '41':
-            guild.verification_system_message = interaction.fields.getTextInputValue('verification_message');
-            await DatabaseConnection.manager.save(guild).then(() => 
+            verification_system.message = interaction.fields.getTextInputValue('verification_message');
+            await DatabaseConnection.manager.save(verification_system).then(() => 
                 interaction.update({
                     content: `Verification System message has been updated`,
                     components: [row]
@@ -112,7 +121,7 @@ const settings = async (interaction: any) => {
             break;
         case '5':
             await interaction.showModal(new ModalBuilder().setCustomId(`settings:verification:51`).setTitle('Verification System Minimum Days').addComponents(
-                new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(verification_days.setValue(guild.verification_system_minimum_days.toString()))
+                new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(verification_days.setValue(verification_system.minimum_days.toString()))
             ));
             break;
         case '51':
@@ -124,8 +133,8 @@ const settings = async (interaction: any) => {
                 });
                 return;
             }
-            guild.verification_system_minimum_days = days;
-            await DatabaseConnection.manager.save(guild).then(() => 
+            verification_system.minimum_days = days;
+            await DatabaseConnection.manager.save(verification_system).then(() => 
                 interaction.update({
                     content: `Verification System minimum days set to ${days}`,
                     components: [row]
@@ -147,10 +156,11 @@ const settings = async (interaction: any) => {
 }
 
 const exec = async (event_name: string, member: GuildMember) => {
-    const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: member.guild?.id } });
-    if ((guild.verification_system) && (member.user.createdTimestamp > Date.now() - (guild.verification_system_minimum_days * 86400000))) {
-        member.roles.add(guild.verification_system_role_id);
-        (member.guild.channels.cache.get(guild.verification_system_channel_id) as TextChannel)?.send(guild.verification_system_message.replaceAll('{{user}}', `<@${member.id}>`).replaceAll('{{minimumage}}', guild.verification_system_minimum_days.toString()));
+    const verification_system = await DatabaseConnection.manager.findOne(Verification, { where: { from_guild: { gid: member.guild.id } } });
+    if (!verification_system) return;
+    if ((verification_system.is_enabled) && (member.user.createdTimestamp > Date.now() - (verification_system.minimum_days * 86400000))) {
+        member.roles.add(verification_system.role_id);
+        (member.guild.channels.cache.get(verification_system.channel_id) as TextChannel)?.send(verification_system.message.replaceAll('{{user}}', `<@${member.id}>`).replaceAll('{{minimumage}}', verification_system.minimum_days.toString()));
     }
 }
 export default {
