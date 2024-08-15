@@ -1,10 +1,10 @@
-import { Colors, EmbedBuilder, Events, Message, WebhookClient } from 'discord.js';
-import { DatabaseConnection } from '../../main';
+import { Events, Message } from 'discord.js';
+import { BotCommands, DatabaseConnection } from '../../main';
+import { Guilds } from '../../types/database/guilds';
 import { Messages } from '../../types/database/messages';
 import { Event_t } from '../../types/interface/events';
 import { CheckAndAddChannel, CheckAndAddUser } from '../../utils/common';
 import { Logger } from '../../utils/logger';
-import { Guilds } from '../../types/database/guilds';
 
 const exec = async (message: Message) => {
     if (message.author?.bot || !message.author?.id) return;
@@ -18,15 +18,14 @@ const exec = async (message: Message) => {
         Logger('warn', 'Message not found in database');
         return;
     }
-    const webhookClient = new WebhookClient({ id: guild.message_logger_webhook_id, token: guild.message_logger_webhook_token });
- 
-    const embed = new EmbedBuilder().setTitle('Deleted Message').setColor(Colors.Red).setTimestamp();
-    webhookClient.editMessage(messageInDB.logged_message_id.toString(), {
-        embeds: [embed],
-    });
-
     messageInDB.message_is_deleted = true;
     await DatabaseConnection.manager.save(messageInDB);
+
+    for (const cmd_data of BotCommands.get(BigInt(message.guild?.id)).values()) {
+        if ((cmd_data.category == 'pseudo') && (cmd_data.usewithevent?.includes('messageDelete'))) {
+            cmd_data.pseudo_execute('messageDelete', message);
+        }
+    }
 };
 
 export default {

@@ -1,6 +1,5 @@
-import { Colors, EmbedBuilder, Events, Message, WebhookClient } from "discord.js";
-import { DatabaseConnection } from "../../main";
-import { Guilds } from "../../types/database/guilds";
+import { Events, Message } from "discord.js";
+import { BotCommands, DatabaseConnection } from "../../main";
 import { Messages } from "../../types/database/messages";
 import { Event_t } from "../../types/interface/events";
 import { CheckAndAddChannel, CheckAndAddUser } from "../../utils/common";
@@ -12,38 +11,23 @@ const exec = async (oldMessage: Message, newMessage: Message) => {
     await CheckAndAddUser(oldMessage, null);
     await CheckAndAddChannel(oldMessage, null);
 
-    const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: oldMessage.guild?.id } });
     const oldMessageInDB = await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(oldMessage.id) } });
     if (!oldMessageInDB) {
         Logger('warn', `Message ${oldMessage.id} not found in database`);
         return;
     }
-    let newMessageAttachments: string[];
-    
-    if (newMessage.attachments.size > 0) newMessageAttachments = newMessage.attachments.map((attachment) => attachment.url);
-
-    const webhookClient = new WebhookClient({ id: guild.message_logger_webhook_id, token: guild.message_logger_webhook_token });
- 
-    const embed = new EmbedBuilder().setTitle('Updated Message').setColor(Colors.Yellow).setTimestamp()
-        .setDescription((newMessage.content != '' ? `**Old Message:**\n${oldMessageInDB.message}` : '') + (newMessageAttachments ? `**New Attachments:**\n${newMessageAttachments.join('\n')}` : ''))
-    webhookClient.editMessage(oldMessageInDB.logged_message_id.toString(), {
-        embeds: [embed],
-    });
-    
 
     oldMessageInDB.message_is_edited = true;
     oldMessageInDB.old_message = oldMessageInDB.message;
     oldMessageInDB.message = newMessage.content;
 
-    if (newMessage.attachments.size === 0) {
-        oldMessageInDB.attachments = null;
-        oldMessageInDB.attachments_is_deleted = true;
-    } else {
-        oldMessageInDB.old_attachments = oldMessageInDB.attachments;
-        oldMessageInDB.attachments = newMessage.attachments.map((attachment) => attachment.url);
-        oldMessageInDB.attachments_is_edited = true;
-    }
     await DatabaseConnection.manager.save(oldMessageInDB);
+
+    for (const cmd_data of BotCommands.get(BigInt(oldMessage.guild?.id)).values()) {
+        if ((cmd_data.category == 'pseudo') && (cmd_data.usewithevent?.includes('messageUpdate'))) {
+            cmd_data.pseudo_execute('messageUpdate', oldMessage, newMessage);
+        }
+    }
 };
 
 export default {

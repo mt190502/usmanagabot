@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ChannelSelectMenuBuilder, ChannelType, ModalActionRowComponentBuilder, ModalBuilder, PermissionFlagsBits, RoleSelectMenuBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
+import { ActionRowBuilder, ChannelSelectMenuBuilder, ChannelType, GuildMember, ModalActionRowComponentBuilder, ModalBuilder, PermissionFlagsBits, RoleSelectMenuBuilder, StringSelectMenuBuilder, TextChannel, TextInputBuilder, TextInputStyle } from "discord.js";
 import { DatabaseConnection } from "../../main";
 import { Guilds } from "../../types/database/guilds";
 import { Command_t } from "../../types/interface/commands";
@@ -146,6 +146,13 @@ const settings = async (interaction: any) => {
         }
 }
 
+const exec = async (event_name: string, member: GuildMember) => {
+    const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: member.guild?.id } });
+    if ((guild.verification_system) && (member.user.createdTimestamp > Date.now() - (guild.verification_system_minimum_days * 86400000))) {
+        member.roles.add(guild.verification_system_role_id);
+        (member.guild.channels.cache.get(guild.verification_system_channel_id) as TextChannel)?.send(guild.verification_system_message.replaceAll('{{user}}', `<@${member.id}>`).replaceAll('{{minimumage}}', guild.verification_system_minimum_days.toString()));
+    }
+}
 export default {
     enabled: true,
     name: 'verification',
@@ -155,6 +162,8 @@ export default {
     category: 'pseudo',
     cooldown: 0,
     usage: '/settings',
+    usewithevent: ['guildMemberAdd'],
 
+    pseudo_execute: exec,
     settings: settings,
 } as Command_t;

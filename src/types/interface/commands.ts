@@ -7,11 +7,13 @@ export interface Command_t {
     type: 'customizable' | 'standard';
     description: string;
 
-    category: 'admin' | 'core' | 'game' | 'misc' | 'tools' | 'pseudo' |'utils';
+    category: 'admin' | 'core' | 'game' | 'misc' | 'tools' | 'pseudo' | 'utils';
+    usewithevent: string[];
     cooldown: number;
     usage: string;
 
     data: (guild?: Guilds) => Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'> | Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>>;
     execute: (interaction: CommandInteraction | ChatInputCommandInteraction | Interaction, ...args: any[]) => Promise<void>;
-    settings?: (interaction: any) => Promise<void>;
+    pseudo_execute: (event_name: string, data: any, ...args: any[]) => Promise<void>;
+    settings: (interaction: any) => Promise<void>;
 }
