@@ -20,18 +20,6 @@ export class Messages {
     @Column({ type: 'varchar', nullable: true, default: null, length: 4000 })
     old_message?: string;
 
-    @Column({ type: 'simple-array', nullable: true, default: null })
-    attachments?: string[];
-
-    @Column({ type: 'boolean', nullable: false, default: false })
-    attachments_is_deleted: boolean;
-
-    @Column({ type: 'boolean', nullable: false, default: false })
-    attachments_is_edited: boolean;
-
-    @Column({ type: 'simple-array', nullable: true, default: null })
-    old_attachments?: string[];
-
     @Column({ type: 'bigint', nullable: false })
     message_id: bigint;
 
