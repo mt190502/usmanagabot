@@ -74,6 +74,11 @@ const settings = async (interaction: any) => {
             });
             break;
         case '11':
+            if (engines.find((engine) => engine.engine_name === interaction.fields.getTextInputValue('engine_name'))) {
+                await interaction.update('Engine already exists');
+                break;
+            }
+
             const new_engine = new Search();
             new_engine.engine_name = interaction.fields.getTextInputValue('engine_name');
             new_engine.engine_url = interaction.fields.getTextInputValue('engine_url');

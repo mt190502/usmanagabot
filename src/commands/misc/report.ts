@@ -49,12 +49,12 @@ const settings = async (interaction: any) => {
             break;
         case '21':
             guild.report_channel_id = interaction.fields.getTextInputValue('channel_id');
-            await RESTCommandLoader(BigInt(guild.gid));
             await DatabaseConnection.manager.save(guild).then(() => {
                 interaction.update({ content: `Report channel set to <#${guild.report_channel_id}>`, components: [row] });
             }).catch((error) => {
                 interaction.update({ content: 'Error setting report channel', components: [row] });
             });
+            await RESTCommandLoader(BigInt(guild.gid));
             break;
         default:
             await interaction.update({ 

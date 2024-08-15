@@ -15,7 +15,7 @@ const settings = async (interaction: any) => {
         { label: 'Back', description: 'Go back to the previous menu', value: 'settings' },
     ];
 
-    let menu = new StringSelectMenuBuilder().setCustomId('settings:logger:1').addOptions(...createMenuOptions());
+    let menu = new StringSelectMenuBuilder().setCustomId('settings:logger:0').addOptions(...createMenuOptions());
     let row = new ActionRowBuilder().addComponents(menu);
 
     const menu_path = interaction.values ? interaction.values[0].split(':').at(-1) : interaction.customId.split(':').at(-1);
@@ -63,6 +63,7 @@ const settings = async (interaction: any) => {
                 });
             } else {
                 await interaction.update({ content: 'Old channel ID and New channel ID are the same', components: [row] });
+                break;
             }
 
             await DatabaseConnection.manager.save(guild).then(() => {
