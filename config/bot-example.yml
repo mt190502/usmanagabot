@@ -1,0 +1,14 @@
+#* Application ID
+app_id: ""
+
+#* Console Mode (debug | error | info | log | warn)
+console_mode: "debug"
+
+#* Timezone
+timezone: "Europe/Istanbul"
+
+#* Token
+token: ""
+
+#* Settings
+clear_old_commands: true
