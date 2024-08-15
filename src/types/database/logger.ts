@@ -19,6 +19,9 @@ export class MessageLogger {
     @Column({ type: 'varchar', length: 128, nullable: true, default: null })
     webhook_token: string;
 
+    @Column({ type: 'simple-array', nullable: true, default: null })
+    ignored_channels: BigInt[];
+
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
     latest_action_from_user: Users;

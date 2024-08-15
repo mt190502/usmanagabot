@@ -17,11 +17,12 @@ const settings = async (interaction: any) => {
         return settings(interaction);
     }
     let message_logger_status = logger.is_enabled ? 'Disable' : 'Enable';
-    const channel_select_menu = new ChannelSelectMenuBuilder().setCustomId('settings:logger:21').setPlaceholder('Select a channel').setChannelTypes(ChannelType.GuildText);
+    const channel_select_menu = new ChannelSelectMenuBuilder().setPlaceholder('Select a channel').setChannelTypes(ChannelType.GuildText);
 
     const createMenuOptions = () => [
         { label: `${message_logger_status} Message Logger`, description: `${message_logger_status} the message logger`, value: 'settings:logger:1' },
         { label: 'Change Message Logger Channel', description: 'Change the channel where message logs are sent', value: 'settings:logger:2' },
+        { label: 'Ignored Channels', description: 'Ignore channels from message logging', value: 'settings:logger:3' },
         { label: 'Back', description: 'Go back to the previous menu', value: 'settings' },
     ];
 
@@ -50,7 +51,7 @@ const settings = async (interaction: any) => {
         case '2':
             await interaction.update({
                 content: 'Select a channel',
-                components: [new ActionRowBuilder().addComponents(channel_select_menu)]
+                components: [new ActionRowBuilder().addComponents(channel_select_menu.setCustomId('settings:logger:21'))]
             });
             break;
         case '21':
@@ -83,6 +84,25 @@ const settings = async (interaction: any) => {
                 interaction.update({ content: 'Error setting message logger channel', components: [row] });
             });
             break;
+        case '3':
+            await interaction.update({
+                content: 'Select a channel to ignore',
+                components: [new ActionRowBuilder().addComponents(channel_select_menu.setCustomId('settings:logger:31').setMinValues(1).setMaxValues(interaction.guild.channels.cache.size).setDefaultChannels(logger.ignored_channels.map((channel) => channel.toString())))]
+            });
+            break;
+        case '31':
+            const ignored_channels = interaction.values;
+            if (ignored_channels.length === 0) {
+                await interaction.update({ content: 'No channels selected', components: [row] });
+                break;
+            }
+            logger.ignored_channels = ignored_channels;
+            await DatabaseConnection.manager.save(logger).then(() => {
+                interaction.update({ content: 'Ignored channels updated', components: [row] });
+            }).catch((error) => {
+                interaction.update({ content: 'Error updating ignored channels', components: [row] });
+            });
+            break;
         default:
             await interaction.update({
                 content: 'Select a setting',
@@ -96,6 +116,13 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
     if ((!logger) || (logger.is_enabled === false || logger.channel_id === null || logger.webhook_id === null || logger.webhook_token === null)) {
         return;
     }
+
+    for (const channel of logger.ignored_channels) {
+        if (channel.toString() === message.channel.id) {
+            return;
+        }
+    }
+
     const messageInDB = await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(message.id) } });
     if (!messageInDB) {
         Logger('warn', 'Message not found in database');
@@ -107,7 +134,6 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
         case 'messageCreate':
             let webhookMessageContent;
             let messageAttachments: string[];
-
             if (message.attachments.size > 0) messageAttachments = message.attachments.map((attachment) => attachment.url);
             if (message.reference?.messageId) {
                 const referenceMessage = await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(message.reference?.messageId) } });
