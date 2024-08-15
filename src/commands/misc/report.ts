@@ -16,7 +16,6 @@ const settings = async (interaction: any) => {
         await DatabaseConnection.manager.save(new_report);
         return settings(interaction);
     }
-    if (!report_system.is_enabled) return await interaction.reply({ content: 'Report system is disabled', ephemeral: true });
     const channel_select_menu = new ChannelSelectMenuBuilder().setCustomId('settings:report:21').setPlaceholder('Select a channel').setChannelTypes(ChannelType.GuildText);
     let status = report_system.is_enabled ? 'Disable' : 'Enable';
 
@@ -77,7 +76,9 @@ const settings = async (interaction: any) => {
 
 const exec = async (interaction: any): Promise<void> => {
     const report_system = await DatabaseConnection.manager.findOne(Reports, { where: { from_guild: { gid: interaction.guild.id } }});
-    if (!report_system) return
+    if (!report_system) return await interaction.reply({ content: 'Report system is not set up properly. Please contact the server administrator.', ephemeral: true });
+    if (!report_system.channel_id) return await interaction.reply({ content: 'Report channel is not set', ephemeral: true });
+    if (!report_system.is_enabled) return await interaction.reply({ content: 'Report system is disabled', ephemeral: true });
     const user = interaction.options.getUser('user');
     const reporter = interaction.user;
     const reason = interaction.options.getString('reason');
@@ -111,7 +112,6 @@ const exec = async (interaction: any): Promise<void> => {
         message_url = [url];
     }
 
-    if (!report_system.channel_id) return await interaction.reply({ content: 'Report channel is not set', ephemeral: true });
     if (!message_channel_id) return await interaction.reply({ content: `Target channel (${report_system.channel_id}) not found`, ephemeral: true });
     
     embed.setDescription(`:mag: **Reported**: ${user.username} (ID ${user.id})\n:page_facing_up: **Reason**: ${reason}\n:envelope: **Messages**: ${message_url.join(' ')}\n:triangular_flag_on_post: **Channel**: <#${interaction.channel.id}>`);
