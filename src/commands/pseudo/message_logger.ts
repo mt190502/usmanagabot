@@ -1,4 +1,4 @@
-import { ActionRowBuilder, ModalActionRowComponentBuilder, ModalBuilder, StringSelectMenuBuilder, TextChannel, TextInputBuilder, TextInputStyle, Webhook, WebhookClient } from "discord.js";
+import { ActionRowBuilder, ChannelSelectMenuBuilder, ChannelType, StringSelectMenuBuilder, TextChannel, Webhook, WebhookClient } from "discord.js";
 import { DatabaseConnection } from "../../main";
 import { Guilds } from "../../types/database/guilds";
 import { Command_t } from "../../types/interface/commands";
@@ -7,7 +7,7 @@ import { Logger } from "../../utils/logger";
 const settings = async (interaction: any) => {
     const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } });
     let message_logger_status = guild.message_logger ? 'Disable' : 'Enable';
-    const channel_id = new TextInputBuilder().setCustomId('channel_id').setLabel('Channel ID').setStyle(TextInputStyle.Short);
+    const channel_select_menu = new ChannelSelectMenuBuilder().setCustomId('settings:logger:21').setPlaceholder('Select a channel').setChannelTypes(ChannelType.GuildText);
 
     const createMenuOptions = () => [
         { label: `${message_logger_status} Message Logger`, description: `${message_logger_status} the message logger`, value: 'settings:logger:1' },
@@ -18,7 +18,7 @@ const settings = async (interaction: any) => {
     let menu = new StringSelectMenuBuilder().setCustomId('settings:logger:0').addOptions(...createMenuOptions());
     let row = new ActionRowBuilder().addComponents(menu);
 
-    const menu_path = interaction.values ? interaction.values[0].split(':').at(-1) : interaction.customId.split(':').at(-1);
+    const menu_path = interaction.values ? (interaction.values[0].includes("settings:") ? interaction.values[0].split(':').at(-1) : interaction.customId.split(':').at(-1)) : interaction.customId.split(':').at(-1);
     switch (menu_path) {
         case '1':
             if (message_logger_status === 'Enable') {
@@ -38,13 +38,14 @@ const settings = async (interaction: any) => {
             });
             break;
         case '2':
-            await interaction.showModal(new ModalBuilder().setCustomId(`settings:logger:21`).setTitle('Message Logger Channel ID').addComponents(
-                new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(channel_id.setValue(guild.message_logger_channel_id ?? '')),
-            ));
+            await interaction.update({
+                content: 'Select a channel',
+                components: [new ActionRowBuilder().addComponents(channel_select_menu)]
+            });
             break;
         case '21':
-            if (interaction.fields.getTextInputValue('channel_id') != guild.message_logger_channel_id) {
-                guild.message_logger_channel_id = interaction.fields.getTextInputValue('channel_id');
+            if (interaction.values[0] != guild.message_logger_channel_id) {
+                guild.message_logger_channel_id = interaction.values[0];
                 if ((guild.message_logger_webhook_id !== null) && (guild.message_logger_webhook_token !== null)) {
                     const webhook_client = new WebhookClient({ id: guild.message_logger_webhook_id, token: guild.message_logger_webhook_token });
                     webhook_client.delete().then(() => {

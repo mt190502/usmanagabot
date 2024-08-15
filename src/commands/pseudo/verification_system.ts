@@ -8,7 +8,7 @@ const settings = async (interaction: any) => {
     const verification_message = new TextInputBuilder().setCustomId('verification_message').setLabel('Verification Message').setStyle(TextInputStyle.Paragraph).setPlaceholder('{{user}} to mention the user\n{{minimumage}} to mention the minimum age').setRequired(true);
     const verification_days = new TextInputBuilder().setCustomId('verification_days').setLabel('Verification System Minimum Days').setStyle(TextInputStyle.Short).setPlaceholder('Minimum days a user must have their account to be verified').setRequired(true);
     let verification_system_status = guild.verification_system ? 'Disable' : 'Enable';
-    // const channel_id = new TextInputBuilder().setCustomId('channel_id').setLabel('Channel ID').setStyle(TextInputStyle.Short);
+    const channel_select_menu = new ChannelSelectMenuBuilder().setCustomId('settings:verification:21').setPlaceholder('Select a channel').setChannelTypes(ChannelType.GuildText);
 
     const createMenuOptions = () => [
         { label: `${verification_system_status} Verification system`, description: `${verification_system_status} the verification system`, value: 'settings:verification:1' },
@@ -43,7 +43,6 @@ const settings = async (interaction: any) => {
             });
             break;
         case '2':
-            const channel_select_menu = new ChannelSelectMenuBuilder().setCustomId('settings:verification:21').setPlaceholder('Select a channel').setChannelTypes(ChannelType.GuildText);
             await interaction.update({
                 content: 'Select a channel',
                 components: [new ActionRowBuilder().addComponents(channel_select_menu)]

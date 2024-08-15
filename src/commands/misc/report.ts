@@ -1,4 +1,4 @@
-import { ActionRowBuilder, EmbedBuilder, ModalActionRowComponentBuilder, ModalBuilder, SlashCommandBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
+import { ActionRowBuilder, ChannelSelectMenuBuilder, ChannelType, EmbedBuilder, SlashCommandBuilder, StringSelectMenuBuilder, TextInputBuilder, TextInputStyle } from "discord.js";
 import { DatabaseConnection } from "../../main";
 import { Guilds } from "../../types/database/guilds";
 import { Messages } from "../../types/database/messages";
@@ -7,11 +7,10 @@ import { RESTCommandLoader } from "../loader";
 
 const settings = async (interaction: any) => {
     const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } });
-    const channel_id = new TextInputBuilder().setCustomId('channel_id').setLabel('Channel ID').setStyle(TextInputStyle.Short);
-    
+    const channel_select_menu = new ChannelSelectMenuBuilder().setCustomId('settings:report:21').setPlaceholder('Select a channel').setChannelTypes(ChannelType.GuildText);
     let status = JSON.parse(guild.disabled_commands).includes('report') ? 'Enable' : 'Disable';
 
-    const menu_path = interaction.values ? interaction.values[0].split(':').at(-1) : interaction.customId.split(':').at(-1);
+    const menu_path = interaction.values ? (interaction.values[0].includes("settings:") ? interaction.values[0].split(':').at(-1) : interaction.customId.split(':').at(-1)) : interaction.customId.split(':').at(-1);
     
     const createMenuOptions = () => [
         { label: `${status} Report System`, description: `${status} the report system`, value: 'settings:report:1' },
@@ -43,12 +42,13 @@ const settings = async (interaction: any) => {
             await RESTCommandLoader(BigInt(guild.gid))
             break;
         case '2':
-            await interaction.showModal(new ModalBuilder().setCustomId(`settings:report:21`).setTitle('Report Channel ID').addComponents(
-                new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(channel_id.setValue(guild.report_channel_id ?? '')),
-            ));
+            await interaction.update({
+                content: 'Select a channel',
+                components: [new ActionRowBuilder().addComponents(channel_select_menu)]
+            });
             break;
         case '21':
-            guild.report_channel_id = interaction.fields.getTextInputValue('channel_id');
+            guild.report_channel_id = interaction.values[0];
             await DatabaseConnection.manager.save(guild).then(() => {
                 interaction.update({ content: `Report channel set to <#${guild.report_channel_id}>`, components: [row] });
             }).catch((error) => {
