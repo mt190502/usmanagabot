@@ -14,7 +14,7 @@ const settings = async (interaction: any) => {
         await DatabaseConnection.manager.save(new_verification);
         return settings(interaction);
     }
-    const verification_message = new TextInputBuilder().setCustomId('verification_message').setLabel('Verification Message').setStyle(TextInputStyle.Paragraph).setPlaceholder('{{user}} to mention the user\n{{minimumage}} to mention the minimum age').setRequired(true);
+    const verification_message = new TextInputBuilder().setCustomId('verification_message').setLabel('Verification Message').setStyle(TextInputStyle.Paragraph).setPlaceholder('Usable variables:\n{{user}}, {{user_id}}, {{guild}}, {{minimumage}}').setRequired(true);
     const verification_days = new TextInputBuilder().setCustomId('verification_days').setLabel('Verification System Minimum Days').setStyle(TextInputStyle.Short).setPlaceholder('Minimum days a user must have their account to be verified').setRequired(true);
     let verification_system_status = verification_system.is_enabled ? 'Disable' : 'Enable';
     const channel_select_menu = new ChannelSelectMenuBuilder().setCustomId('settings:verification:21').setPlaceholder('Select a channel').setChannelTypes(ChannelType.GuildText);
@@ -157,10 +157,21 @@ const settings = async (interaction: any) => {
 
 const exec = async (event_name: string, member: GuildMember) => {
     const verification_system = await DatabaseConnection.manager.findOne(Verification, { where: { from_guild: { gid: member.guild.id } } });
+    const replace_table = [
+        { key: '{{user}}', value: `<@${member.id}>` },
+        { key: '{{user_id}}', value: member.id },
+        { key: '{{guild}}', value: member.guild.name },
+        { key: '{{minimumage}}', value: verification_system.minimum_days.toString() },
+    ];
+
+    replace_table.forEach((replace) => {
+        verification_system.message = verification_system.message.replaceAll(replace.key, replace.value);
+    });
+
     if (!verification_system) return;
     if ((verification_system.is_enabled) && (member.user.createdTimestamp > Date.now() - (verification_system.minimum_days * 86400000))) {
         member.roles.add(verification_system.role_id);
-        (member.guild.channels.cache.get(verification_system.channel_id) as TextChannel)?.send(verification_system.message.replaceAll('{{user}}', `<@${member.id}>`).replaceAll('{{minimumage}}', verification_system.minimum_days.toString()));
+        (member.guild.channels.cache.get(verification_system.channel_id) as TextChannel)?.send(verification_system.message);
     }
 }
 export default {
