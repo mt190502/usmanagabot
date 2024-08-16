@@ -21,7 +21,7 @@ const exec = async (message: Message) => {
     messageInDB.message_is_deleted = true;
     await DatabaseConnection.manager.save(messageInDB);
 
-    for (const cmd_data of BotCommands.get(BigInt(message.guild?.id)).values()) {
+    for (const cmd_data of ((BotCommands.get(BigInt(message.guild?.id)).values()), (BotCommands.get(BigInt(0)).values()))) {
         if ((cmd_data.usewithevent?.includes('messageDelete'))) {
             cmd_data.execute_when_event('messageDelete', message);
         }

@@ -1,4 +1,4 @@
-import { Attachment, Events, Message, WebhookClient } from 'discord.js';
+import { Events, Message } from 'discord.js';
 import { BotCommands, DatabaseConnection } from '../../main';
 import { Guilds } from '../../types/database/guilds';
 import { Messages } from '../../types/database/messages';
@@ -20,7 +20,7 @@ const exec = async (message: Message) => {
     newMessage.from_guild = guild;
     await DatabaseConnection.manager.save(newMessage);
 
-    for (const cmd_data of BotCommands.get(BigInt(message.guild?.id)).values()) {
+    for (const cmd_data of ((BotCommands.get(BigInt(message.guild?.id)).values()), (BotCommands.get(BigInt(0)).values()))) {
         if ((cmd_data.usewithevent?.includes('messageCreate'))) {
             cmd_data.execute_when_event('messageCreate', message);
         }
