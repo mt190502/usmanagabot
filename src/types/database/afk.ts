@@ -7,8 +7,14 @@ export class Afk {
     @PrimaryGeneratedColumn({ type: 'smallint' })
     id: number;
  
-    @Column({ type: 'varchar', length: 100, nullable: false })
+    @Column({ type: 'varchar', length: 100, nullable: true })
     message: string;
+
+    // @Column({ type: 'simple-array', nullable: true, default: null })
+    // mentions: string[];
+    @Column({ type: 'text', array: true, default: "{}" })
+    mentions: string[];
+  
 
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
