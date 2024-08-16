@@ -8,6 +8,8 @@ import { Logger } from '../../utils/logger';
 const interactionCooldown: Collection<string, Collection<bigint, number>> = new Collection();
 
 const exec = async (interaction: Interaction): Promise<void | InteractionResponse<boolean>> => {
+    await CheckAndAddUser(null, interaction);
+    await CheckAndAddChannel(null, interaction);
     switch (true) {
         case interaction.isStringSelectMenu():
             if (interaction.values[0]?.includes(':')) {
@@ -105,8 +107,6 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
             console.log('Unknown');
             break;
     }
-    await CheckAndAddUser(null, interaction);
-    await CheckAndAddChannel(null, interaction);
 }
 
 export default {
