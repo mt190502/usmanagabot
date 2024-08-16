@@ -24,7 +24,7 @@ const exec = async (oldMessage: Message, newMessage: Message) => {
     await DatabaseConnection.manager.save(oldMessageInDB);
 
 
-    for (const cmd_data of ((BotCommands.get(BigInt(oldMessage.guild?.id)).values()), (BotCommands.get(BigInt(0)).values()))) {
+    for (const [cmd_name, cmd_data] of (BotCommands.get(BigInt(oldMessage.guild?.id)).concat(BotCommands.get(BigInt(0))))) {
         if ((cmd_data.usewithevent?.includes('messageUpdate'))) {
             cmd_data.execute_when_event('messageUpdate', oldMessage);
         }

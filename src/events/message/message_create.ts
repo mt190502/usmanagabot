@@ -20,7 +20,7 @@ const exec = async (message: Message) => {
     newMessage.from_guild = guild;
     await DatabaseConnection.manager.save(newMessage);
 
-    for (const cmd_data of ((BotCommands.get(BigInt(message.guild?.id)).values()), (BotCommands.get(BigInt(0)).values()))) {
+    for (const [cmd_name, cmd_data] of (BotCommands.get(BigInt(message.guild?.id)).concat(BotCommands.get(BigInt(0))))) {
         if ((cmd_data.usewithevent?.includes('messageCreate'))) {
             cmd_data.execute_when_event('messageCreate', message);
         }
