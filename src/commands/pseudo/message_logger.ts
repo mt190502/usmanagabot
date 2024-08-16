@@ -87,7 +87,7 @@ const settings = async (interaction: any) => {
         case '3':
             await interaction.update({
                 content: 'Select a channel to ignore',
-                components: [new ActionRowBuilder().addComponents(channel_select_menu.setCustomId('settings:logger:31').setMinValues(1).setMaxValues(interaction.guild.channels.cache.size).setDefaultChannels(logger.ignored_channels.map((channel) => channel.toString())))]
+                components: [new ActionRowBuilder().addComponents(channel_select_menu.setCustomId('settings:logger:31').setMinValues(1).setMaxValues(interaction.guild.channels.cache.size).setDefaultChannels(logger.ignored_channels?.length > 0 ? logger.ignored_channels.map((channel) => channel.toString()) : []))]
             });
             break;
         case '31':
