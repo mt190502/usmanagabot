@@ -18,6 +18,10 @@ const exec = async (interaction: any) => {
                 await interaction.reply(`Alias **${alias_name}** already exists`);
                 break;
             }
+            if (alias_name.includes(' ')) {
+                await interaction.reply('Alias name cannot contain spaces');
+                break;
+            }
             const new_alias = new Alias()
             new_alias.name = alias_name;
             new_alias.content = alias_content;
@@ -78,7 +82,7 @@ const scb = async (): Promise<Omit<SlashCommandBuilder, "addSubcommand" | "addSu
     data.addSubcommand(subcommand => subcommand.setName('add').setDescription('Add an alias').addStringOption(
         option => option.setName('alias_name').setDescription('Name').setRequired(true)
     ).addStringOption(
-        option => option.setName('alias_content').setDescription('Content (Variables: {{user}}, {{user_id}}, {{channel}}, {{channel_id}}, {{guild}}, {{replied_user}})').setRequired(true)
+        option => option.setName('alias_content').setDescription('Content (Variables: {{user}},{{user_id}},{{channel}},{{channel_id}},{{guild}},{{mentioned_users}})').setRequired(true)
     ));
     data.addSubcommand(subcommand => subcommand.setName('remove').setDescription('Remove an alias').addStringOption(
         option => option.setName('alias_name').setDescription('Name').setRequired(true)
@@ -86,7 +90,7 @@ const scb = async (): Promise<Omit<SlashCommandBuilder, "addSubcommand" | "addSu
     data.addSubcommand(subcommand => subcommand.setName('modify').setDescription('Modify an alias').addStringOption(
         option => option.setName('alias_name').setDescription('Name').setRequired(true)
     ).addStringOption(
-        option => option.setName('alias_content').setDescription('Content (Variables: {{user}}, {{user_id}}, {{channel}}, {{channel_id}}, {{guild}}, {{replied_user}})').setRequired(true)
+        option => option.setName('alias_content').setDescription('Content (Variables: {{user}},{{user_id}},{{channel}},{{channel_id}},{{guild}},{{mentioned_users}})').setRequired(true)
     ));
     data.addSubcommand(subcommand => subcommand.setName('list').setDescription('List all aliases'));
     return data;
@@ -99,16 +103,16 @@ const exec_when_event = async (event_name: string, message: Message) => {
         { key: '{{channel}}', value: `<#${message.channel.id}>` },
         { key: '{{channel_id}}', value: message.channel.id },
         { key: '{{guild}}', value: message.guild.name },
-        { key: '{{replied_user}}', value: '' }
+        { key: '{{mentioned_users}}', value: '' }
     ]
     switch (event_name) {
         case 'messageCreate':;
-            const alias = await DatabaseConnection.manager.findOne(Alias, { where: { name: message.content, from_guild: { gid: message.guild.id } } });
+            const alias_name = message.content.split(' ')[0];
+            const alias = await DatabaseConnection.manager.findOne(Alias, { where: { name: alias_name, from_guild: { gid: message.guild.id } } });
             if (!alias) return;
-            if (message.reference?.messageId) {
-                const replied_user = (await message.channel.messages.fetch(message.reference.messageId)).author.id;
-                replace_table.find((replace) => replace.key === '{{replied_user}}').value = `<@${replied_user}>,`;
-            }
+            message.mentions.users.forEach((user) => {
+                replace_table.find((replace) => replace.key === '{{mentioned_users}}').value += `<@${user.id}>, `;
+            });
             replace_table.forEach((replace) => {
                 alias.content = alias.content.replaceAll(replace.key, replace.value);
             });
