@@ -1,11 +1,11 @@
 import { ActionRowBuilder, ChannelSelectMenuBuilder, ChannelType, Colors, EmbedBuilder, Message, StringSelectMenuBuilder, TextChannel, Webhook, WebhookClient } from "discord.js";
-import { Logger } from "../../utils/logger";
 import { DatabaseConnection } from "../../main";
 import { Guilds } from "../../types/database/guilds";
 import { MessageLogger } from "../../types/database/logger";
 import { Messages } from "../../types/database/messages";
-import { Command_t } from "../../types/interface/commands";
 import { Users } from "../../types/database/users";
+import { Command_t } from "../../types/interface/commands";
+import { Logger } from "../../utils/logger";
 
 const settings = async (interaction: any) => {
     const logger = await DatabaseConnection.manager.findOne(MessageLogger, { where: { from_guild: { gid: interaction.guild.id } } });
@@ -201,6 +201,6 @@ export default {
     usage: '/settings',
     usewithevent: ['messageCreate', 'messageDelete', 'messageUpdate'],
 
-    pseudo_execute: exec,
+    execute_when_event: exec,
     settings: settings,
 } as Command_t;

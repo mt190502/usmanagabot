@@ -22,8 +22,8 @@ const exec = async (message: Message) => {
     await DatabaseConnection.manager.save(messageInDB);
 
     for (const cmd_data of BotCommands.get(BigInt(message.guild?.id)).values()) {
-        if ((cmd_data.category == 'pseudo') && (cmd_data.usewithevent?.includes('messageDelete'))) {
-            cmd_data.pseudo_execute('messageDelete', message);
+        if ((cmd_data.usewithevent?.includes('messageDelete'))) {
+            cmd_data.execute_when_event('messageDelete', message);
         }
     }
 };

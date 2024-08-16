@@ -1,9 +1,9 @@
 import { ActionRowBuilder, ChannelSelectMenuBuilder, ChannelType, GuildMember, ModalActionRowComponentBuilder, ModalBuilder, PermissionFlagsBits, RoleSelectMenuBuilder, StringSelectMenuBuilder, TextChannel, TextInputBuilder, TextInputStyle } from "discord.js";
 import { DatabaseConnection } from "../../main";
 import { Guilds } from "../../types/database/guilds";
+import { Users } from "../../types/database/users";
 import { Verification } from "../../types/database/verification";
 import { Command_t } from "../../types/interface/commands";
-import { Users } from "../../types/database/users";
 
 const settings = async (interaction: any) => {
     const verification_system = await DatabaseConnection.manager.findOne(Verification, { where: { from_guild: { gid: interaction.guild.id } } });
@@ -174,6 +174,6 @@ export default {
     usage: '/settings',
     usewithevent: ['guildMemberAdd'],
 
-    pseudo_execute: exec,
+    execute_when_event: exec,
     settings: settings,
 } as Command_t;

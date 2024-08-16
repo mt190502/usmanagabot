@@ -6,8 +6,8 @@ import { BotCommands } from '../../main';
 const exec = async (member: GuildMember) => {
     Logger('info', `Member joined: "${member.user.tag} (${member.id})"`);
     for (const cmd_data of BotCommands.get(BigInt(member.guild.id)).values()) {
-        if ((cmd_data.category == 'pseudo') && (cmd_data.usewithevent?.includes('guildMemberAdd'))) {
-            cmd_data.pseudo_execute('guildMemberAdd', member);
+        if ((cmd_data.usewithevent?.includes('guildMemberAdd'))) {
+            cmd_data.execute_when_event('guildMemberAdd', member);
         }
     }
 }

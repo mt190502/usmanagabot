@@ -24,8 +24,8 @@ const exec = async (oldMessage: Message, newMessage: Message) => {
     await DatabaseConnection.manager.save(oldMessageInDB);
 
     for (const cmd_data of BotCommands.get(BigInt(oldMessage.guild?.id)).values()) {
-        if ((cmd_data.category == 'pseudo') && (cmd_data.usewithevent?.includes('messageUpdate'))) {
-            cmd_data.pseudo_execute('messageUpdate', oldMessage, newMessage);
+        if ((cmd_data.usewithevent?.includes('messageUpdate'))) {
+            cmd_data.execute_when_event('messageUpdate', oldMessage, newMessage);
         }
     }
 };

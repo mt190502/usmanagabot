@@ -94,6 +94,6 @@ export default {
     usage: '/settings',
     usewithevent: ['guildMemberAdd'],
 
-    pseudo_execute: exec,
+    execute_when_event: exec,
     settings: settings,
 } as Command_t;

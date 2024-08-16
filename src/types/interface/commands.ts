@@ -14,6 +14,6 @@ export interface Command_t {
 
     data: (guild?: Guilds) => Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'> | Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>>;
     execute: (interaction: CommandInteraction | ChatInputCommandInteraction | Interaction, ...args: any[]) => Promise<void>;
-    pseudo_execute: (event_name: string, data: any, ...args: any[]) => Promise<void>;
+    execute_when_event: (event_name: string, data: any, ...args: any[]) => Promise<void>;
     settings: (interaction: any) => Promise<void>;
 }
