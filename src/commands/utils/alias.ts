@@ -1,47 +1,134 @@
-import { SlashCommandBuilder } from "discord.js";
+import { Message, SlashCommandBuilder } from "discord.js";
+import { DatabaseConnection } from "../../main";
+import { Alias } from "../../types/database/alias";
+import { Channels } from "../../types/database/channels";
+import { Guilds } from "../../types/database/guilds";
+import { Users } from "../../types/database/users";
 import { Command_t } from "../../types/interface/commands";
 
 const exec = async (interaction: any) => {
-    const action = interaction.options.getString('action');
-    const keyword = interaction.options.getString('keyword');
-    const alias = interaction.options.getString('alias');
+    const subcommand = interaction.options.getSubcommand();
+    const alias_content = interaction.options.getString('alias_content');
+    const alias_name = interaction.options.getString('alias_name');
+    const existing_alias = await DatabaseConnection.manager.findOne(Alias, { where: { name: alias_name, from_guild: { gid: interaction.guild.id } } });
 
-    switch (action) {
+    switch (subcommand) {
         case 'add':
-            await interaction.reply(`Added alias ${alias} for keyword ${keyword}`);
+            if (existing_alias) {
+                await interaction.reply(`Alias **${alias_name}** already exists`);
+                break;
+            }
+            const new_alias = new Alias()
+            new_alias.name = alias_name;
+            new_alias.content = alias_content;
+            new_alias.from_guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: interaction.guild.id } });
+            new_alias.from_channel = await DatabaseConnection.manager.findOne(Channels, { where: { cid: interaction.channel.id } });
+            new_alias.from_user = await DatabaseConnection.manager.findOne(Users, { where: { uid: BigInt(interaction.user.id) } });
+            await DatabaseConnection.manager.save(new_alias).then(() => {
+                interaction.reply(`Added alias **${alias_name}** for keyword **${alias_content}**`);
+            }).catch((err) => {
+                interaction.reply(`Failed to add alias **${alias_name}** for keyword **${alias_content}**`);
+            });
             break;
         case 'remove':
-            await interaction.reply(`Removed alias ${alias} for keyword ${keyword}`);
+            if (!existing_alias) {
+                await interaction.reply(`Alias **${alias_name}** does not exist`);
+                break;
+            }
+            await DatabaseConnection.manager.remove(existing_alias).then(() => {
+                interaction.reply(`Removed alias **${alias_name}**`);
+            }).catch((err) => {
+                interaction.reply(`Failed to remove alias **${alias_name}** for keyword **${alias_content}**\n${err}`);
+            });
             break;
         case 'list':
-            await interaction.reply(`List of aliases for keyword ${keyword}`);
+            const aliases = await DatabaseConnection.manager.find(Alias, { where: { from_guild: { gid: interaction.guild.id } } });
+            if (!aliases) {
+                await interaction.reply('No aliases found');
+                break;
+            }
+            let alias_list = '';
+            aliases.forEach((alias) => {
+                alias_list += `**${alias.name}** -> **${alias.content}**\n`;
+            });
+            await interaction.reply(`Aliases for this server:\n${alias_list}`);
+            break;
+        case 'modify':
+            if (!existing_alias) {
+                await interaction.reply(`Alias **${alias_name}** does not exist`);
+                break;
+            }
+            existing_alias.content = alias_content;
+            await DatabaseConnection.manager.save(existing_alias).then(() => {
+                interaction.reply(`Modified alias **${alias_name}** for keyword **${alias_content}**`);
+            }).catch((err) => {
+                interaction.reply(`Failed to modify alias **${alias_name}** for keyword **${alias_content}**\n${err}`);
+            });
+            break;
+        default:
+            await interaction.reply('Invalid action');
             break;
     }
 }
 
 const scb = async (): Promise<Omit<SlashCommandBuilder, "addSubcommand" | "addSubcommandGroup">> => {
     const data = new SlashCommandBuilder().setName('alias').setDescription('Create an alias for keyword');
-    data.addStringOption(option => option.setName('action').setDescription('Action to perform').setRequired(true)
-            .addChoices(
-                { name: 'Add', value: 'add' },
-                { name: 'Remove', value: 'remove' },
-                { name: 'List', value: 'list' }
-            ));
-    data.addStringOption(option => option.setName('keyword').setDescription('Keyword to alias').setRequired(true))
-    data.addStringOption(option => option.setName('alias').setDescription('Alias for keyword').setRequired(true))
+    data.addSubcommand(subcommand => subcommand.setName('add').setDescription('Add an alias').addStringOption(
+        option => option.setName('alias_name').setDescription('Alias Name').setRequired(true)
+    ).addStringOption(
+        option => option.setName('alias_content').setDescription('Alias Keyword').setRequired(true)
+    ));
+    data.addSubcommand(subcommand => subcommand.setName('remove').setDescription('Remove an alias').addStringOption(
+        option => option.setName('alias_name').setDescription('Alias Name').setRequired(true)
+    ));
+    data.addSubcommand(subcommand => subcommand.setName('modify').setDescription('Modify an alias').addStringOption(
+        option => option.setName('alias_name').setDescription('Alias Name').setRequired(true)
+    ).addStringOption(
+        option => option.setName('alias_content').setDescription('Alias Keyword').setRequired(true)
+    ));
+    data.addSubcommand(subcommand => subcommand.setName('list').setDescription('List all aliases'));
     return data;
 }
 
+const exec_when_event = async (event_name: string, message: Message) => {
+    const replace_table = [
+        { key: '{{user}}', value: `<@${message.author.id}>` },
+        { key: '{{user_id}}', value: message.author.id },
+        { key: '{{channel}}', value: `<#${message.channel.id}>` },
+        { key: '{{channel_id}}', value: message.channel.id },
+        { key: '{{guild}}', value: message.guild.name },
+        { key: '{{replied_user}}', value: '' }
+    ]
+    switch (event_name) {
+        case 'messageCreate':;
+            const alias = await DatabaseConnection.manager.findOne(Alias, { where: { name: message.content, from_guild: { gid: message.guild.id } } });
+            if (!alias) return;
+            if (message.reference?.messageId) {
+                const replied_user = (await message.channel.messages.fetch(message.reference.messageId)).author.id;
+                replace_table.find((replace) => replace.key === '{{replied_user}}').value = `<@${replied_user}>,`;
+            }
+            replace_table.forEach((replace) => {
+                alias.content = alias.content.replaceAll(replace.key, replace.value);
+            });
+            message.reply(alias.content);
+            
+            break;
+        default:
+            break;
+    }
+}
 export default {
     enabled: true,
     name: 'alias',
-    type: 'standard',
-    description: 'Create an alias for keyword',
+    type: 'customizable',
+    description: 'Manage aliases',
 
     category: 'utils',
     cooldown: 5,
     usage: '/alias <add|remove|list> <keyword> <alias>',
+    usewithevent: ['messageCreate'],
 
     data: scb,
-    execute: exec
+    execute: exec,
+    execute_when_event: exec_when_event,
 } as Command_t;
