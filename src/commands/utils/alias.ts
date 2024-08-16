@@ -38,7 +38,7 @@ const exec = async (interaction: any) => {
             await DatabaseConnection.manager.remove(existing_alias).then(() => {
                 interaction.reply(`Removed alias **${alias_name}**`);
             }).catch((err) => {
-                interaction.reply(`Failed to remove alias **${alias_name}** for keyword **${alias_content}**\n${err}`);
+                interaction.reply(`Failed to remove alias **${alias_name}** for keyword **${alias_content}**`);
             });
             break;
         case 'list':
@@ -76,17 +76,17 @@ const scb = async (): Promise<Omit<SlashCommandBuilder, "addSubcommand" | "addSu
         PermissionFlagsBits.ManageMessages,
     );
     data.addSubcommand(subcommand => subcommand.setName('add').setDescription('Add an alias').addStringOption(
-        option => option.setName('alias_name').setDescription('Alias Name').setRequired(true)
+        option => option.setName('alias_name').setDescription('Name').setRequired(true)
     ).addStringOption(
-        option => option.setName('alias_content').setDescription('Alias Keyword').setRequired(true)
+        option => option.setName('alias_content').setDescription('Content (Variables: {{user}}, {{user_id}}, {{channel}}, {{channel_id}}, {{guild}}, {{replied_user}})').setRequired(true)
     ));
     data.addSubcommand(subcommand => subcommand.setName('remove').setDescription('Remove an alias').addStringOption(
-        option => option.setName('alias_name').setDescription('Alias Name').setRequired(true)
+        option => option.setName('alias_name').setDescription('Name').setRequired(true)
     ));
     data.addSubcommand(subcommand => subcommand.setName('modify').setDescription('Modify an alias').addStringOption(
-        option => option.setName('alias_name').setDescription('Alias Name').setRequired(true)
+        option => option.setName('alias_name').setDescription('Name').setRequired(true)
     ).addStringOption(
-        option => option.setName('alias_content').setDescription('Alias Keyword').setRequired(true)
+        option => option.setName('alias_content').setDescription('Content (Variables: {{user}}, {{user_id}}, {{channel}}, {{channel_id}}, {{guild}}, {{replied_user}})').setRequired(true)
     ));
     data.addSubcommand(subcommand => subcommand.setName('list').setDescription('List all aliases'));
     return data;
@@ -112,7 +112,7 @@ const exec_when_event = async (event_name: string, message: Message) => {
             replace_table.forEach((replace) => {
                 alias.content = alias.content.replaceAll(replace.key, replace.value);
             });
-            message.reply(alias.content);
+            message.channel.send(alias.content);
             
             break;
         default:
