@@ -117,9 +117,9 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
         return;
     }
 
-    for (const channel of logger.ignored_channels) {
-        if (channel.toString() === message.channel.id) {
-            return;
+    if (logger.ignored_channels) {
+        for (const channel of logger.ignored_channels) {
+            if (channel.toString() === message.channel.id) return;
         }
     }
 
