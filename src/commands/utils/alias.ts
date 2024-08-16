@@ -53,7 +53,7 @@ const exec = async (interaction: any) => {
             }
             let alias_list = '';
             aliases.forEach((alias) => {
-                alias_list += `**${alias.name}** -> **${alias.content}**\n`;
+                alias_list += `**${alias.name}**\n`;
             });
             await interaction.reply(`Aliases for this server:\n${alias_list}`);
             break;
