@@ -1,4 +1,4 @@
-import { Message, SlashCommandBuilder } from "discord.js";
+import { Message, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { DatabaseConnection } from "../../main";
 import { Alias } from "../../types/database/alias";
 import { Channels } from "../../types/database/channels";
@@ -72,7 +72,9 @@ const exec = async (interaction: any) => {
 }
 
 const scb = async (): Promise<Omit<SlashCommandBuilder, "addSubcommand" | "addSubcommandGroup">> => {
-    const data = new SlashCommandBuilder().setName('alias').setDescription('Create an alias for keyword');
+    const data = new SlashCommandBuilder().setName('alias').setDescription('Create an alias for keyword').setDefaultMemberPermissions(
+        PermissionFlagsBits.ManageMessages,
+    );
     data.addSubcommand(subcommand => subcommand.setName('add').setDescription('Add an alias').addStringOption(
         option => option.setName('alias_name').setDescription('Alias Name').setRequired(true)
     ).addStringOption(
