@@ -181,9 +181,7 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
 
             embed = new EmbedBuilder().setTitle('Updated Message').setColor(Colors.Yellow).setTimestamp()
                 .setDescription((newMessage.content != '' ? `**New Message:**\n${messageInDB.message}\n\n` : '') + (newMessageAttachments ? `**New Attachments:**\n${newMessageAttachments.join('\n')}` : ''))
-            webhookClient.editMessage(messageInDB.logged_message_id.toString(), {
-                embeds: [embed],
-            });
+            if (messageInDB.logged_message_id) webhookClient.editMessage(messageInDB.logged_message_id.toString(), { embeds: [embed] });
             break;
         default:
             break;
