@@ -11,6 +11,6 @@ export default {
         oldMembers: Collection<Snowflake, ThreadMember>,
         newMembers: Collection<Snowflake, ThreadMember>
     ) => {
-        Logger('info', `Thread members updated in ${oldMembers.first().id} -> ${newMembers.first().id}`);
+        Logger('info', `Thread members updated in ${oldMembers} -> ${newMembers}`);
     },
 } as Event_t;
