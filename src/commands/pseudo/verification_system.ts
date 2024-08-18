@@ -156,7 +156,7 @@ const settings = async (interaction: any) => {
 }
 
 const exec = async (event_name: string, member: GuildMember) => {
-    const verification_system = await DatabaseConnection.manager.findOne(Verification, { where: { from_guild: { gid: member.guild.id } } });
+    const verification_system = await DatabaseConnection.manager.findOne(Verification, { where: { from_guild: { gid: BigInt(member.guild.id) } } });
     const replace_table = [
         { key: '{{user}}', value: `<@${member.id}>` },
         { key: '{{user_id}}', value: member.id },

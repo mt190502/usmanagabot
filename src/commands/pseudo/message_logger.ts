@@ -112,7 +112,7 @@ const settings = async (interaction: any) => {
     }
 }
 const exec = async (event_name: string, message: Message, newMessage?: Message) => {
-    const logger = await DatabaseConnection.manager.findOne(MessageLogger, { where: { from_guild: { gid: message.guild.id } } });
+    const logger = await DatabaseConnection.manager.findOne(MessageLogger, { where: { from_guild: { gid: BigInt(message.guild.id) } } });
     if ((!logger) || (logger.is_enabled === false || logger.channel_id === null || logger.webhook_id === null || logger.webhook_token === null)) {
         return;
     }

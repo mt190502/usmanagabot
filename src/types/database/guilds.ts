@@ -9,5 +9,5 @@ export class Guilds {
     name: string;
 
     @Column({ type: 'bigint', nullable: false, unique: true })
-    gid: string;
+    gid: BigInt;
 }

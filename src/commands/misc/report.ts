@@ -3,9 +3,9 @@ import { DatabaseConnection } from "../../main";
 import { Guilds } from "../../types/database/guilds";
 import { Messages } from "../../types/database/messages";
 import { Reports } from "../../types/database/reports";
+import { Users } from "../../types/database/users";
 import { Command_t } from "../../types/interface/commands";
 import { RESTCommandLoader } from "../loader";
-import { Users } from "../../types/database/users";
 
 const settings = async (interaction: any) => {
     const report_system = await DatabaseConnection.manager.findOne(Reports, { where: { from_guild: { gid: interaction.guild.id } }});
@@ -48,7 +48,7 @@ const settings = async (interaction: any) => {
                 content: `Report system ${report_system.is_enabled ? 'enabled' : 'disabled'}`,
                 components: [row] 
             });
-            await RESTCommandLoader(BigInt(report_system.from_guild.gid));
+            await RESTCommandLoader(report_system.from_guild.gid);
             break;
         case '2':
             await interaction.update({
@@ -63,7 +63,7 @@ const settings = async (interaction: any) => {
             }).catch((error) => {
                 interaction.update({ content: 'Error setting report channel', components: [row] });
             });
-            await RESTCommandLoader(BigInt(report_system.from_guild.gid));
+            await RESTCommandLoader(report_system.from_guild.gid);
             break;
         default:
             await interaction.update({ 

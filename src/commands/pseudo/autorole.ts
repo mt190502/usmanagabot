@@ -73,7 +73,7 @@ const settings = async (interaction: any) => {
 const exec = async (event_name: string, member: GuildMember) => {
     switch (event_name) {
         case 'guildMemberAdd':
-            const autorole_system = await DatabaseConnection.manager.findOne(Autorole, { where: { from_guild: { gid: member.guild.id } } });
+            const autorole_system = await DatabaseConnection.manager.findOne(Autorole, { where: { from_guild: { gid: BigInt(member.guild.id) } } });
             if (!autorole_system || !autorole_system.is_enabled) return;
             const role = member.guild.roles.cache.get(autorole_system.role_id);
             if (!role) return;

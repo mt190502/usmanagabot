@@ -8,7 +8,7 @@ import { CheckAndAddChannel, CheckAndAddUser } from '../../utils/common';
 const exec = async (message: Message) => {
     if (message.author?.bot || !message.author?.id) return;
     let messageAttachments: string[];
-    const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: message.guild?.id } });
+    const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: BigInt(message.guild?.id) } });
     if (message.attachments.size > 0) messageAttachments = message.attachments.map((attachment) => attachment.url);
 
     const newMessage = new Messages();

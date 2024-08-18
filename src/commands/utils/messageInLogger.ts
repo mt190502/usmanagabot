@@ -5,7 +5,7 @@ import { Messages } from "../../types/database/messages";
 import { Command_t } from "../../types/interface/commands";
 
 const exec = async (interaction: any) => {
-    const logger = await DatabaseConnection.manager.findOne(MessageLogger, { where: { from_guild: { gid: interaction.guild.id } } });
+    const logger = await DatabaseConnection.manager.findOne(MessageLogger, { where: { from_guild: { gid: BigInt(interaction.guild.id) } } });
     if (!logger.is_enabled) return interaction.reply({
         content: 'Logger is not enabled in this server',
         ephemeral: true,

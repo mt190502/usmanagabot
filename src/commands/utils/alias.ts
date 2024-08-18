@@ -108,7 +108,7 @@ const exec_when_event = async (event_name: string, message: Message) => {
     switch (event_name) {
         case 'messageCreate':;
             const alias_name = message.content.split(' ')[0];
-            const alias = await DatabaseConnection.manager.findOne(Alias, { where: { name: alias_name, from_guild: { gid: message.guild.id } } });
+            const alias = await DatabaseConnection.manager.findOne(Alias, { where: { name: alias_name, from_guild: { gid: BigInt(message.guild.id) } } });
             if (!alias) return;
             message.mentions.users.forEach((user) => {
                 replace_table.find((replace) => replace.key === '{{mentioned_users}}').value += `<@${user.id}>, `;

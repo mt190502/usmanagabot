@@ -12,7 +12,7 @@ const exec = async (message: Message) => {
     await CheckAndAddUser(message, null);
     await CheckAndAddChannel(message, null);
 
-    const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: message.guild?.id } });
+    const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: BigInt(message.guild?.id) } });
     const messageInDB = await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(message.id) } })
     if (!messageInDB) {
         Logger('warn', 'Message not found in database');

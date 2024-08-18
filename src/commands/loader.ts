@@ -24,10 +24,10 @@ export const CommandLoader = async () => {
 
         if (cmd.type === 'customizable') {
             for (const guild of guilds) {
-                if (!BotCommands.has(BigInt(guild.gid))) BotCommands.set(BigInt(guild.gid), new Collection());
-                if (!restCMDs.has(guild.gid)) restCMDs.set(guild.gid, new Collection());
-                BotCommands.get(BigInt(guild.gid)).set(cmd.name, cmd);
-                if (cmd.category != 'pseudo') restCMDs.get(guild.gid).set(cmd.name, (await cmd.data(guild)).toJSON());
+                if (!BotCommands.has(BigInt(guild.gid.toString()))) BotCommands.set(BigInt(guild.gid.toString()), new Collection());
+                if (!restCMDs.has(guild.gid.toString())) restCMDs.set(guild.gid.toString(), new Collection());
+                BotCommands.get(BigInt(guild.gid.toString())).set(cmd.name, cmd);
+                if (cmd.category != 'pseudo') restCMDs.get(guild.gid.toString()).set(cmd.name, (await cmd.data(guild)).toJSON());
             }
         } else {
             if (!BotCommands.has(BigInt(0))) BotCommands.set(BigInt(0), new Collection());

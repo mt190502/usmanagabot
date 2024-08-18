@@ -1,4 +1,4 @@
-import { Client, Events, Guild } from "discord.js";
+import { Client, Events } from "discord.js";
 import timers from 'timers/promises';
 import { RESTCommandLoader } from "../commands/loader";
 import { BotClient, BotConfiguration, DatabaseConnection } from "../main";
@@ -18,8 +18,8 @@ export const InitialSetup = async () => {
             try {
                 for (const guild of client.guilds.cache) {
                     const newGuild = new Guilds();
-                    newGuild.name = (guild[1] as Guild).name;
-                    newGuild.gid = guild[0];
+                    newGuild.name = guild[1].name;
+                    newGuild.gid = BigInt(guild[0]);
                     await DatabaseConnection.manager.save(newGuild);
                 }
             } catch (error) {
