@@ -18,10 +18,14 @@ export const DatabaseLoader = async (database: DatabaseConfiguration_t) => {
         migrations: await glob('src/types/database/migrations/*.ts'),
     });
 
-    await dataSource.initialize()
-        .then(() => { Logger('info', 'Database initialized') })
-        .catch((err: Error) => { Logger('error', err.message); });
-    
+    await dataSource
+        .initialize()
+        .then(() => {
+            Logger('info', 'Database initialized');
+        })
+        .catch((err: Error) => {
+            Logger('error', err.message);
+        });
+
     return dataSource;
 };
-

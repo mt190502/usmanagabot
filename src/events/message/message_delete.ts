@@ -1,6 +1,5 @@
 import { Events, Message } from 'discord.js';
 import { BotCommands, DatabaseConnection } from '../../main';
-import { Guilds } from '../../types/database/guilds';
 import { Messages } from '../../types/database/messages';
 import { Event_t } from '../../types/interface/events';
 import { CheckAndAddChannel, CheckAndAddUser } from '../../utils/common';
@@ -12,8 +11,9 @@ const exec = async (message: Message) => {
     await CheckAndAddUser(message, null);
     await CheckAndAddChannel(message, null);
 
-    const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: BigInt(message.guild?.id) } });
-    const messageInDB = await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(message.id) } })
+    const messageInDB = await DatabaseConnection.manager.findOne(Messages, {
+        where: { message_id: BigInt(message.id) },
+    });
     if (!messageInDB) {
         Logger('warn', 'Message not found in database');
         return;
@@ -21,8 +21,8 @@ const exec = async (message: Message) => {
     messageInDB.message_is_deleted = true;
     await DatabaseConnection.manager.save(messageInDB);
 
-    for (const [cmd_name, cmd_data] of (BotCommands.get(BigInt(message.guild?.id)).concat(BotCommands.get(BigInt(0))))) {
-        if ((cmd_data.usewithevent?.includes('messageDelete'))) {
+    for (const [, cmd_data] of BotCommands.get(BigInt(message.guild?.id)).concat(BotCommands.get(BigInt(0)))) {
+        if (cmd_data.usewithevent?.includes('messageDelete')) {
             cmd_data.execute_when_event('messageDelete', message);
         }
     }

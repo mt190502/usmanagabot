@@ -5,12 +5,12 @@ import { Logger } from '../../utils/logger';
 
 const exec = async (member: GuildMember) => {
     Logger('info', `Member joined: "${member.user.tag} (${member.id})"`);
-    for (const [cmd_name, cmd_data] of (BotCommands.get(BigInt(member.guild?.id)).concat(BotCommands.get(BigInt(0))))) {
-        if ((cmd_data.usewithevent?.includes('guildMemberAdd'))) {
+    for (const [, cmd_data] of BotCommands.get(BigInt(member.guild?.id)).concat(BotCommands.get(BigInt(0)))) {
+        if (cmd_data.usewithevent?.includes('guildMemberAdd')) {
             cmd_data.execute_when_event('guildMemberAdd', member);
         }
     }
-}
+};
 export default {
     enabled: true,
     once: false,

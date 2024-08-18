@@ -1,6 +1,6 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Users } from './users';
 import { Guilds } from './guilds';
+import { Users } from './users';
 
 @Entity()
 export class Verification {
@@ -32,5 +32,4 @@ export class Verification {
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     timestamp: Date;
-
 }

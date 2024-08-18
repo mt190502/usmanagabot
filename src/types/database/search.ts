@@ -9,7 +9,7 @@ export class Search {
 
     @Column({ type: 'boolean', nullable: false, default: false })
     is_enabled: boolean;
-    
+
     @Column({ type: 'varchar', length: 32 })
     engine_name: string;
 

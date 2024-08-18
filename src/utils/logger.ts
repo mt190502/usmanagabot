@@ -1,11 +1,11 @@
-import dayjs from "dayjs";
+import dayjs from 'dayjs';
 
 export const Logger = async (type: 'debug' | 'error' | 'info' | 'log' | 'warn', msg: string) => {
     const line = new Error().stack.split('\n')[2].split('/').at(-1);
     const filename = line.split(':')[0];
     const lineNumber = line.split(':')[1];
     const currdate = dayjs().format('YYYY-MM-DD HH:mm:ss');
-    
+
     switch (type) {
         case 'debug':
             console.log(`\x1b[35mDEBU\x1b[0m[${currdate}][${filename}:${lineNumber}] ${msg}`);
@@ -24,4 +24,4 @@ export const Logger = async (type: 'debug' | 'error' | 'info' | 'log' | 'warn', 
             console.warn(`\x1b[33mWARN\x1b[0m[${currdate}][${filename}:${lineNumber}] ${msg}`);
             break;
     }
-}
+};

@@ -7,9 +7,7 @@ import { CheckAndAddChannel, CheckAndAddUser } from '../../utils/common';
 
 const exec = async (message: Message) => {
     if (message.author?.bot || !message.author?.id) return;
-    let messageAttachments: string[];
     const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: BigInt(message.guild?.id) } });
-    if (message.attachments.size > 0) messageAttachments = message.attachments.map((attachment) => attachment.url);
 
     const newMessage = new Messages();
     newMessage.timestamp = new Date(message.createdTimestamp);
@@ -20,8 +18,8 @@ const exec = async (message: Message) => {
     newMessage.from_guild = guild;
     await DatabaseConnection.manager.save(newMessage);
 
-    for (const [cmd_name, cmd_data] of (BotCommands.get(BigInt(message.guild?.id)).concat(BotCommands.get(BigInt(0))))) {
-        if ((cmd_data.usewithevent?.includes('messageCreate'))) {
+    for (const [, cmd_data] of BotCommands.get(BigInt(message.guild?.id)).concat(BotCommands.get(BigInt(0)))) {
+        if (cmd_data.usewithevent?.includes('messageCreate')) {
             cmd_data.execute_when_event('messageCreate', message);
         }
     }

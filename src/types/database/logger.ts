@@ -1,6 +1,6 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Users } from './users';
 import { Guilds } from './guilds';
+import { Users } from './users';
 
 @Entity()
 export class MessageLogger {
@@ -20,7 +20,7 @@ export class MessageLogger {
     webhook_token: string;
 
     @Column({ type: 'simple-array', nullable: true, default: null })
-    ignored_channels: BigInt[];
+    ignored_channels: bigint[];
 
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })

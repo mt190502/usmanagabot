@@ -4,7 +4,7 @@ import { Guilds } from './guilds';
 import { Users } from './users';
 
 @Entity()
-export class Ban  {
+export class Ban {
     @PrimaryGeneratedColumn({ type: 'smallint' })
     id: number;
 

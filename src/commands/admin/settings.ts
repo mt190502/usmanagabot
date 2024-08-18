@@ -1,31 +1,49 @@
-import { ActionRowBuilder, APIActionRowComponent, APIMessageActionRowComponent, Channel, GuildChannel, ModalActionRowComponentBuilder, ModalBuilder, PermissionFlagsBits, SlashCommandBuilder, StringSelectMenuBuilder, TextChannel, TextInputBuilder, TextInputStyle, Webhook } from "discord.js";
-import { BotCommands, DatabaseConnection } from "../../main";
-import { Guilds } from "../../types/database/guilds";
-import { Command_t } from "../../types/interface/commands";
-import { Logger } from "../../utils/logger";
+import {
+    ActionRowBuilder,
+    APIActionRowComponent,
+    APIMessageActionRowComponent,
+    ChatInputCommandInteraction,
+    PermissionFlagsBits,
+    SlashCommandBuilder,
+    StringSelectMenuBuilder,
+    StringSelectMenuInteraction,
+} from 'discord.js';
+import { BotCommands } from '../../main';
+import { Command_t } from '../../types/interface/commands';
 
-const exec = async (interaction: any) => {
+const exec = async (interaction: ChatInputCommandInteraction | StringSelectMenuInteraction): Promise<void> => {
     const guildID = BigInt(interaction.guild.id);
-    
-    await interaction[interaction.isChatInputCommand() ? 'reply' : 'update']({
+
+    await (
+        interaction.type === 2
+            ? (interaction as ChatInputCommandInteraction).reply.bind(interaction)
+            : (interaction as StringSelectMenuInteraction).update.bind(interaction)
+    )({
         ephemeral: true,
         content: 'Select a setting',
-        components: [(new ActionRowBuilder().addComponents(
-            new StringSelectMenuBuilder().setCustomId('settings').addOptions(
-                BotCommands.get(guildID).filter((command) => command.settings).map((command) => ({
-                label: command.name[0].toUpperCase() + command.name.slice(1),
-                description: command.description,
-                value: `settings:${command.name}`,
-            })),
-        ),
-        )).toJSON() as APIActionRowComponent<APIMessageActionRowComponent>],
+        components: [
+            new ActionRowBuilder()
+                .addComponents(
+                    new StringSelectMenuBuilder().setCustomId('settings').addOptions(
+                        BotCommands.get(guildID)
+                            .filter((command) => command.settings)
+                            .map((command) => ({
+                                label: command.name[0].toUpperCase() + command.name.slice(1),
+                                description: command.description,
+                                value: `settings:${command.name}`,
+                            }))
+                    )
+                )
+                .toJSON() as APIActionRowComponent<APIMessageActionRowComponent>,
+        ],
     });
 };
 
 const scb = async (): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>> => {
-    return new SlashCommandBuilder().setName('settings').setDescription('Change bot settings').setDefaultMemberPermissions(
-        PermissionFlagsBits.BanMembers | PermissionFlagsBits.KickMembers,
-    );
+    return new SlashCommandBuilder()
+        .setName('settings')
+        .setDescription('Change bot settings')
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers | PermissionFlagsBits.KickMembers);
 };
 
 export default {

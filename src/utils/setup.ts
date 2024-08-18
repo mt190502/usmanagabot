@@ -1,18 +1,18 @@
-import { Client, Events } from "discord.js";
+import { Client, Events } from 'discord.js';
 import timers from 'timers/promises';
-import { RESTCommandLoader } from "../commands/loader";
-import { BotClient, BotConfiguration, DatabaseConnection } from "../main";
-import { BotData } from "../types/database/bot";
-import { Guilds } from "../types/database/guilds";
-import { Logger } from "./logger";
+import { RESTCommandLoader } from '../commands/loader';
+import { BotClient, BotConfiguration, DatabaseConnection } from '../main';
+import { BotData } from '../types/database/bot';
+import { Guilds } from '../types/database/guilds';
+import { Logger } from './logger';
 
 export const InitialSetup = async () => {
     while (!DatabaseConnection.isInitialized) await timers.setTimeout(1000);
 
-    const guilds = await DatabaseConnection.manager.find(Guilds)
+    const guilds = await DatabaseConnection.manager.find(Guilds);
     if (guilds.length === 0) {
         Logger('info', 'Initial setup is required. Setting up guilds...');
-        
+
         BotClient.once(Events.ClientReady, async (client: Client) => {
             Logger('info', `Logged in as ${client.user.tag}`);
             try {
@@ -30,11 +30,11 @@ export const InitialSetup = async () => {
 
         BotClient.login(BotConfiguration.token);
         while (!BotClient.isReady()) await timers.setTimeout(1000);
-                
+
         const last_command_refresh_date = new BotData();
         last_command_refresh_date.key = 'last_command_refresh_date';
         await DatabaseConnection.manager.save(last_command_refresh_date);
-        
+
         await RESTCommandLoader();
 
         Logger('warn', 'Initial setup completed, please restart the bot to apply changes...');
@@ -43,4 +43,4 @@ export const InitialSetup = async () => {
         Logger('info', 'Founded guilds in database, skipping first run setup...');
         return;
     }
-}
+};

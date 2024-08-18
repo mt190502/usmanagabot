@@ -1,7 +1,6 @@
 import { Events, GuildChannel } from 'discord.js';
-import { Logger } from '../../utils/logger';
 import { Event_t } from '../../types/interface/events';
-
+import { Logger } from '../../utils/logger';
 
 export default {
     enabled: true,

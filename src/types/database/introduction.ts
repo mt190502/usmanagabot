@@ -1,12 +1,12 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { Guilds } from "./guilds";
-import { Users } from "./users";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Guilds } from './guilds';
+import { Users } from './users';
 
 @Entity()
 export class Introduction {
     @PrimaryGeneratedColumn({ type: 'smallint' })
     id: number;
-    
+
     @Column({ type: 'varchar', length: 50 })
     col01: string;
 
