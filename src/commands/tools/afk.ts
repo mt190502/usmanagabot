@@ -30,7 +30,7 @@ const exec_when_event = async (event_name: string, message: Message) => {
     switch (event_name) {
         case 'messageCreate':
             const user_afk = await DatabaseConnection.manager.findOne(Afk, { where: { from_user: { uid: BigInt(message.author.id) } } });
-            if (user_afk?.from_user.uid == BigInt(message.author.id)) {
+            if ((user_afk?.from_user.uid == BigInt(message.author.id)) && (user_afk?.from_guild.gid == BigInt(message.guild?.id))) {
                 message.member?.setNickname(message.member.nickname?.replaceAll('[AFK]', '')).catch(() => {});
                 message.reply({ content: 'You are no longer **AFK**' + (user_afk.mentions.length > 0 ? `\nYou were mentioned **${user_afk.mentions.length}** times while you were **AFK** and I have sent you a DM with the message urls` : '') }).catch(() => {});
                 if (user_afk.mentions.length > 0) {
