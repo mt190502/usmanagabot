@@ -1,10 +1,17 @@
-import { ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+import {
+    ApplicationCommandType,
+    ContextMenuCommandBuilder,
+    MessageContextMenuCommandInteraction,
+    PermissionFlagsBits,
+} from 'discord.js';
 import { DatabaseConnection } from '../../main';
 import { MessageLogger } from '../../types/database/logger';
 import { Messages } from '../../types/database/messages';
 import { Command_t } from '../../types/interface/commands';
 
-const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => {
+const exec = async (interaction: MessageContextMenuCommandInteraction): Promise<void> => {
+    console.info(interaction);
+
     const logger = await DatabaseConnection.manager.findOne(MessageLogger, {
         where: { from_guild: { gid: BigInt(interaction.guild.id) } },
     });
@@ -16,15 +23,7 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
         return null;
     }
 
-    const message_url = interaction.options.getString('message_id');
-    const message_id = message_url.split('/').pop();
-    if (!message_id) {
-        await interaction.reply({
-            content: 'Invalid message URL',
-            ephemeral: true,
-        });
-        return null;
-    }
+    const message_id = interaction.targetId;
 
     const message_in_logger = (
         await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(message_id) } })
@@ -42,20 +41,17 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
     });
 };
 
-const scb = async (): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>> => {
-    const data = new SlashCommandBuilder()
-        .setName('message_in_logger')
-        .setDescription('Get message URL from logger')
+const scb = async (): Promise<ContextMenuCommandBuilder> => {
+    const data = new ContextMenuCommandBuilder()
+        .setName('Find Message in Logger')
+        .setType(ApplicationCommandType.Message)
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
-    data.addStringOption((option) =>
-        option.setName('message_id').setDescription('Message ID or URL').setRequired(true)
-    );
     return data;
 };
 
 export default {
     enabled: true,
-    name: 'message_in_logger',
+    name: 'find_message_in_logger',
     type: 'standard',
     description: 'Fetch message url from logger',
 
