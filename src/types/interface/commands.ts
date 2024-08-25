@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { ContextMenuCommandBuilder, SlashCommandBuilder } from 'discord.js';
 import { Guilds } from '../database/guilds';
 
 export interface Command_t {
@@ -15,6 +15,8 @@ export interface Command_t {
     data: (
         guild?: Guilds
     ) =>
+        | Promise<ContextMenuCommandBuilder>
+        | Promise<SlashCommandBuilder>
         | Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>
         | Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>>;
     execute: (interaction: unknown, ...args: unknown[]) => Promise<void>;

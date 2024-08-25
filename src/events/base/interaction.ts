@@ -26,12 +26,13 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
                 BotCommands.get(BigInt(interaction.guild.id)).get(interaction.values[0]).execute(interaction);
             }
         }
-    } else if (interaction.isChatInputCommand()) {
+    } else if (interaction.isChatInputCommand() || interaction.isContextMenuCommand()) {
         let command: Command_t;
+        const requested_command = interaction.commandName.replaceAll(' ', '_').toLowerCase();
         if (interaction.commandGuildId === null) {
-            command = BotCommands.get(BigInt(0)).get(interaction.commandName);
+            command = BotCommands.get(BigInt(0)).get(requested_command);
         } else {
-            command = BotCommands.get(BigInt(interaction.commandGuildId)).get(interaction.commandName);
+            command = BotCommands.get(BigInt(interaction.commandGuildId)).get(requested_command);
         }
 
         if (!command) return;

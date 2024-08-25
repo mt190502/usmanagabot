@@ -1,7 +1,13 @@
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
-import { Collection, REST, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from 'discord.js';
+import {
+    Collection,
+    REST,
+    RESTPostAPIChatInputApplicationCommandsJSONBody,
+    RESTPostAPIContextMenuApplicationCommandsJSONBody,
+    Routes,
+} from 'discord.js';
 import { globSync } from 'glob';
 import path from 'path';
 import { BotCommands, BotConfiguration, DatabaseConnection } from '../main';
@@ -13,7 +19,10 @@ import { Logger } from '../utils/logger';
 const rest = new REST({ version: '10' });
 const restCMDs: Collection<
     string,
-    Collection<string, RESTPostAPIChatInputApplicationCommandsJSONBody>
+    Collection<
+        string,
+        RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody
+    >
 > = new Collection();
 
 export const CommandLoader = async () => {
