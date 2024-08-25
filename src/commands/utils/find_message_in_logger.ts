@@ -10,8 +10,6 @@ import { Messages } from '../../types/database/messages';
 import { Command_t } from '../../types/interface/commands';
 
 const exec = async (interaction: MessageContextMenuCommandInteraction): Promise<void> => {
-    console.info(interaction);
-
     const logger = await DatabaseConnection.manager.findOne(MessageLogger, {
         where: { from_guild: { gid: BigInt(interaction.guild.id) } },
     });
