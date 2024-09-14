@@ -11,7 +11,6 @@ const exec = async (message: Message) => {
 
     const newMessage = new Messages();
     newMessage.timestamp = new Date(message.createdTimestamp);
-    newMessage.message = message.content;
     newMessage.message_id = BigInt(message.id);
     newMessage.from_channel = await CheckAndAddChannel(message, null);
     newMessage.from_user = await CheckAndAddUser(message, null);

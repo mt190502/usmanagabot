@@ -20,8 +20,6 @@ const exec = async (oldMessage: Message, newMessage: Message) => {
     }
 
     oldMessageInDB.message_is_edited = true;
-    oldMessageInDB.old_message = oldMessageInDB.message;
-    oldMessageInDB.message = newMessage.content;
 
     await DatabaseConnection.manager.save(oldMessageInDB);
 

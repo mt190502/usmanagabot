@@ -285,7 +285,7 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
                 .setColor(Colors.Yellow)
                 .setTimestamp()
                 .setDescription(
-                    (newMessage.content != '' ? `**New Message:**\n${messageInDB.message}\n\n` : '') +
+                    (newMessage.content != '' ? `**New Message:**\n${newMessage.content}\n\n` : '') +
                         (newMessageAttachments ? `**New Attachments:**\n${newMessageAttachments.join('\n')}` : '')
                 );
             if (messageInDB.logged_message_id) {
