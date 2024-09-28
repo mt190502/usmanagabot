@@ -265,7 +265,7 @@ export default {
     cooldown: 5,
     usage: '/search',
 
-    data: scb,
+    data: [scb],
     execute: exec,
     settings: settings,
 } as Command_t;

@@ -45,6 +45,6 @@ export default {
     cooldown: 5,
     usage: '/randomizer',
 
-    data: scb,
+    data: [scb],
     execute: exec,
 } as Command_t;

@@ -225,7 +225,7 @@ export default {
     cooldown: 5,
     usage: '/report <@user> <reason>',
 
-    data: scb,
+    data: [scb],
     execute: exec,
     settings: settings,
 } as Command_t;

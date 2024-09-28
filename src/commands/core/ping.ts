@@ -19,6 +19,6 @@ export default {
     cooldown: 5,
     usage: '/ping',
 
-    data: scb,
+    data: [scb],
     execute: exec,
 } as Command_t;

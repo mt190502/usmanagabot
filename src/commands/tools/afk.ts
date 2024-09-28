@@ -131,7 +131,7 @@ export default {
     usage: '/afk <reason>',
     usewithevent: ['messageCreate'],
 
-    data: scb,
+    data: [scb],
     execute: exec,
     execute_when_event: exec_when_event,
 } as Command_t;

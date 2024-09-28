@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, Message, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, Message, PermissionFlagsBits, SlashCommandBuilder, User } from 'discord.js';
 import { DatabaseConnection } from '../../main';
 import { Alias } from '../../types/database/alias';
 import { Channels } from '../../types/database/channels';
@@ -164,7 +164,7 @@ const exec_when_event = async (event_name: string, message: Message) => {
                 where: { name: alias_name, from_guild: { gid: BigInt(message.guild.id) } },
             });
             if (!alias) return;
-            message.mentions.users.forEach((user) => {
+            message.mentions.users.forEach((user: User) => {
                 replace_table.find((replace) => replace.key === '{{mentioned_users}}').value += `<@${user.id}>, `;
             });
             replace_table.forEach((replace) => {
@@ -188,7 +188,7 @@ export default {
     usage: '/alias <add|remove|list> <keyword> <alias>',
     usewithevent: ['messageCreate'],
 
-    data: scb,
+    data: [scb],
     execute: exec,
     execute_when_event: exec_when_event,
 } as Command_t;

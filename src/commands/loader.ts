@@ -44,14 +44,22 @@ export const CommandLoader = async () => {
                 if (!restCMDs.has(guild.gid.toString())) restCMDs.set(guild.gid.toString(), new Collection());
                 BotCommands.get(BigInt(guild.gid.toString())).set(cmd.name, cmd);
                 if (cmd.category != 'pseudo') {
-                    restCMDs.get(guild.gid.toString()).set(cmd.name, (await cmd.data(guild)).toJSON());
+                    for (const index in cmd.data) {
+                        restCMDs
+                            .get(guild.gid.toString())
+                            .set(`${cmd.name}_${index}`, (await cmd.data[index](guild)).toJSON());
+                    }
                 }
             }
         } else {
             if (!BotCommands.has(BigInt(0))) BotCommands.set(BigInt(0), new Collection());
             if (!restCMDs.has('0')) restCMDs.set('0', new Collection());
             BotCommands.get(BigInt(0)).set(cmd.name, cmd);
-            if (cmd.category != 'pseudo') restCMDs.get('0').set(cmd.name, (await cmd.data()).toJSON());
+            for (const builder in cmd.data) {
+                if (cmd.category != 'pseudo') {
+                    restCMDs.get('0').set(`${cmd.name}_${builder}`, (await cmd.data[builder]()).toJSON());
+                }
+            }
         }
     }
 };

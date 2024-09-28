@@ -56,6 +56,6 @@ export default {
     cooldown: 5,
     usage: '/settings',
 
-    data: scb,
+    data: [scb],
     execute: exec,
 } as Command_t;
