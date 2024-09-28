@@ -1,15 +1,17 @@
 import {
     ApplicationCommandType,
+    ChatInputCommandInteraction,
     ContextMenuCommandBuilder,
     MessageContextMenuCommandInteraction,
     PermissionFlagsBits,
+    SlashCommandBuilder,
 } from 'discord.js';
 import { DatabaseConnection } from '../../main';
 import { MessageLogger } from '../../types/database/logger';
 import { Messages } from '../../types/database/messages';
 import { Command_t } from '../../types/interface/commands';
 
-const exec = async (interaction: MessageContextMenuCommandInteraction): Promise<void> => {
+const exec = async (interaction: MessageContextMenuCommandInteraction | ChatInputCommandInteraction): Promise<void> => {
     const logger = await DatabaseConnection.manager.findOne(MessageLogger, {
         where: { from_guild: { gid: BigInt(interaction.guild.id) } },
     });
@@ -21,7 +23,12 @@ const exec = async (interaction: MessageContextMenuCommandInteraction): Promise<
         return null;
     }
 
-    const message_id = interaction.targetId;
+    let message_id;
+    if (interaction.isMessageContextMenuCommand()) {
+        message_id = interaction.targetId;
+    } else if (interaction.isChatInputCommand()) {
+        message_id = BigInt(interaction.options.getString('message_id').split('/').pop());
+    }
 
     const message_in_logger = (
         await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(message_id) } })
@@ -39,11 +46,21 @@ const exec = async (interaction: MessageContextMenuCommandInteraction): Promise<
     });
 };
 
-const scb = async (): Promise<ContextMenuCommandBuilder> => {
-    const data = new ContextMenuCommandBuilder()
+const cmcb = async (): Promise<ContextMenuCommandBuilder> => {
+    return new ContextMenuCommandBuilder()
         .setName('Find Message in Logger')
         .setType(ApplicationCommandType.Message)
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
+};
+
+const scb = async (): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>> => {
+    const data = new SlashCommandBuilder()
+        .setName('find_message_in_logger')
+        .setDescription('Get message URL from logger')
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
+    data.addStringOption((option) =>
+        option.setName('message_id').setDescription('Message ID or URL').setRequired(true)
+    );
     return data;
 };
 
@@ -57,6 +74,6 @@ export default {
     cooldown: 5,
     usage: '/message_in_logger <message_url>',
 
-    data: scb,
+    data: [cmcb, scb],
     execute: exec,
 } as Command_t;
