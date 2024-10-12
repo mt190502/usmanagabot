@@ -10,40 +10,52 @@ import { DatabaseConnection } from '../../main';
 import { MessageLogger } from '../../types/database/logger';
 import { Messages } from '../../types/database/messages';
 import { Command_t } from '../../types/interface/commands';
+import { Logger } from '../../utils/logger';
 
 const exec = async (interaction: MessageContextMenuCommandInteraction | ChatInputCommandInteraction): Promise<void> => {
-    const logger = await DatabaseConnection.manager.findOne(MessageLogger, {
-        where: { from_guild: { gid: BigInt(interaction.guild.id) } },
-    });
-    if (!logger.is_enabled) {
+    try {
+        const logger = await DatabaseConnection.manager.findOne(MessageLogger, {
+            where: { from_guild: { gid: BigInt(interaction.guild.id) } },
+        });
+
+        if (!logger || !logger.is_enabled) {
+            await interaction.reply({
+                content: 'Logger is not enabled in this server',
+                ephemeral: true,
+            });
+            return;
+        }
+
+        let message_id: string;
+        if (interaction.isMessageContextMenuCommand()) {
+            message_id = interaction.targetId;
+        } else if (interaction.isChatInputCommand()) {
+            message_id = BigInt(interaction.options.getString('message_id').split('/').pop()).toString();
+        }
+
+        const message_in_logger = (
+            await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(message_id) } })
+        )?.logged_message_id;
+
+        if (!message_in_logger) {
+            await interaction.reply({
+                content: 'Message not found in logger',
+                ephemeral: true,
+            });
+            return;
+        }
+
         await interaction.reply({
-            content: 'Logger is not enabled in this server',
+            content: `https://discord.com/channels/${logger.from_guild.gid}/${logger.channel_id}/${message_in_logger}`,
             ephemeral: true,
         });
-        return null;
-    }
-
-    let message_id;
-    if (interaction.isMessageContextMenuCommand()) {
-        message_id = interaction.targetId;
-    } else if (interaction.isChatInputCommand()) {
-        message_id = BigInt(interaction.options.getString('message_id').split('/').pop());
-    }
-
-    const message_in_logger = (
-        await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(message_id) } })
-    )?.logged_message_id;
-    if (!message_in_logger) {
+    } catch (error) {
+        Logger('warn', error.message, interaction);
         await interaction.reply({
-            content: 'Message not found in logger',
+            content: 'An error occurred while processing your request.',
             ephemeral: true,
         });
-        return null;
     }
-    await interaction.reply({
-        content: `https://discord.com/channels/${logger.from_guild.gid}/${logger.channel_id}/${message_in_logger}`,
-        ephemeral: true,
-    });
 };
 
 const cmcb = async (): Promise<ContextMenuCommandBuilder> => {
@@ -68,7 +80,7 @@ export default {
     enabled: true,
     name: 'find_message_in_logger',
     type: 'standard',
-    description: 'Fetch message url from logger',
+    description: 'Fetch message URL from logger',
 
     category: 'utils',
     cooldown: 5,

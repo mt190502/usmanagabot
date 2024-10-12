@@ -59,7 +59,7 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
         try {
             await command.execute(interaction);
         } catch (error) {
-            Logger('error', error);
+            Logger('error', error, interaction);
         }
     } else if (interaction.isModalSubmit() || interaction.isAnySelectMenu()) {
         if (interaction.customId.includes(':')) {

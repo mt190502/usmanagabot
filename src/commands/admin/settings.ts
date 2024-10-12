@@ -35,6 +35,7 @@ const exec = async (interaction: ChatInputCommandInteraction | StringSelectMenuI
                                 description: command.description,
                                 value: `settings:${command.name}`,
                             }))
+                            .sort((a, b) => a.label.localeCompare(b.label))
                     )
                 )
                 .toJSON() as APIActionRowComponent<APIMessageActionRowComponent>,
