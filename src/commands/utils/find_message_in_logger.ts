@@ -49,7 +49,7 @@ const exec = async (interaction: MessageContextMenuCommandInteraction | ChatInpu
 const cmcb = async (): Promise<ContextMenuCommandBuilder> => {
     return new ContextMenuCommandBuilder()
         .setName('Find Message in Logger')
-        .setType(ApplicationCommandType.Message)
+        .setType(ApplicationCommandType.User | ApplicationCommandType.Message)
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
 };
 

@@ -1,4 +1,11 @@
-import { ChatInputCommandInteraction, Message, PermissionFlagsBits, SlashCommandBuilder, User } from 'discord.js';
+import {
+    ChatInputCommandInteraction,
+    Message,
+    PartialDMChannel,
+    PermissionFlagsBits,
+    SlashCommandBuilder,
+    User,
+} from 'discord.js';
 import { DatabaseConnection } from '../../main';
 import { Alias } from '../../types/database/alias';
 import { Channels } from '../../types/database/channels';
@@ -170,7 +177,7 @@ const exec_when_event = async (event_name: string, message: Message) => {
             replace_table.forEach((replace) => {
                 alias.content = alias.content.replaceAll(replace.key, replace.value);
             });
-            message.channel.send(alias.content);
+            (message.channel as PartialDMChannel).send(alias.content);
 
             break;
         }

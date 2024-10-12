@@ -9,7 +9,7 @@ import {
     SlashCommandBuilder,
     StringSelectMenuBuilder,
     StringSelectMenuInteraction,
-    TextBasedChannels,
+    TextChannel,
 } from 'discord.js';
 import { DatabaseConnection } from '../../main';
 import { Guilds } from '../../types/database/guilds';
@@ -201,7 +201,7 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
     embed.setDescription(
         `:mag: **Reported**: ${user.username} (ID ${user.id})\n:page_facing_up: **Reason**: ${reason}\n:envelope: **Messages**: ${message_url.join(' ')}\n:triangular_flag_on_post: **Channel**: <#${interaction.channel.id}>`
     );
-    ((await message_channel_id) as TextBasedChannels).send({ embeds: [embed] });
+    (message_channel_id as TextChannel).send({ embeds: [embed] });
     await interaction.reply({ content: `User ${user} reported\nReason: ${reason}`, ephemeral: true });
 };
 

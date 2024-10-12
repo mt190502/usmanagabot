@@ -20,29 +20,29 @@
     },
     "homepage": "https://github.com/mt190502/usmanagabot#readme",
     "dependencies": {
-        "dayjs": "^1.11.12",
-        "discord.js": "^14.15.3",
+        "dayjs": "^1.11.13",
+        "discord.js": "^14.16.3",
         "glob": "^11.0.0",
-        "pg": "^8.12.0",
+        "pg": "^8.13.0",
         "reflect-metadata": "^0.2.2",
         "typeorm": "^0.3.20",
         "uuid": "^10.0.0",
-        "yaml": "^2.5.0"
+        "yaml": "^2.5.1"
     },
     "devDependencies": {
-        "@eslint/js": "^9.9.0",
-        "@types/node": "^22.4.0",
+        "@eslint/js": "^9.12.0",
+        "@types/node": "^22.7.5",
         "@types/uuid": "^10.0.0",
-        "@typescript-eslint/eslint-plugin": "^8.1.0",
-        "@typescript-eslint/parser": "^8.1.0",
-        "eslint": "^9.9.0",
+        "@typescript-eslint/eslint-plugin": "^8.8.1",
+        "@typescript-eslint/parser": "^8.8.1",
+        "eslint": "^9.12.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-prettier": "^5.2.1",
-        "globals": "^15.9.0",
+        "globals": "^15.11.0",
         "prettier": "^3.3.3",
         "ts-node": "^10.9.2",
-        "typescript": "^5.5.4",
-        "typescript-eslint": "^8.1.0"
+        "typescript": "^5.6.3",
+        "typescript-eslint": "^8.8.1"
     },
     "main": "dist/main.js",
     "scripts": {
