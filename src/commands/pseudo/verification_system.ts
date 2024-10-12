@@ -1,13 +1,19 @@
 import {
     ActionRowBuilder,
+    APIActionRowComponent,
+    APIMessageActionRowComponent,
     ChannelSelectMenuBuilder,
+    ChannelSelectMenuInteraction,
     ChannelType,
     GuildMember,
     ModalActionRowComponentBuilder,
     ModalBuilder,
+    ModalSubmitInteraction,
     PermissionFlagsBits,
     RoleSelectMenuBuilder,
+    RoleSelectMenuInteraction,
     StringSelectMenuBuilder,
+    StringSelectMenuInteraction,
     TextChannel,
     TextInputBuilder,
     TextInputStyle,
@@ -18,19 +24,23 @@ import { Users } from '../../types/database/users';
 import { Verification } from '../../types/database/verification';
 import { Command_t } from '../../types/interface/commands';
 
-// TODO: check this type
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const settings = async (interaction: any) => {
+const settings = async (
+    interaction:
+        | StringSelectMenuInteraction
+        | ModalSubmitInteraction
+        | ChannelSelectMenuInteraction
+        | RoleSelectMenuInteraction
+) => {
     const verification_system = await DatabaseConnection.manager.findOne(Verification, {
-        where: { from_guild: { gid: interaction.guild.id } },
+        where: { from_guild: { gid: BigInt(interaction.guild.id) } },
     });
     if (!verification_system) {
         const new_verification = new Verification();
         new_verification.from_guild = await DatabaseConnection.manager.findOne(Guilds, {
-            where: { gid: interaction.guild.id },
+            where: { gid: BigInt(interaction.guild.id) },
         });
         new_verification.latest_action_from_user = await DatabaseConnection.manager.findOne(Users, {
-            where: { uid: interaction.user.id },
+            where: { uid: BigInt(interaction.user.id) },
         });
         await DatabaseConnection.manager.save(new_verification);
         return settings(interaction);
@@ -85,13 +95,19 @@ const settings = async (interaction: any) => {
     let menu = new StringSelectMenuBuilder().setCustomId('settings:verification:0').addOptions(...createMenuOptions());
     let row = new ActionRowBuilder().addComponents(menu);
 
-    const menu_path = interaction.values
-        ? interaction.values[0].includes('settings:')
-            ? interaction.values[0].split(':').at(-1)
-            : interaction.customId.split(':').at(-1)
-        : interaction.customId.split(':').at(-1);
+    let menu_path;
+    if (interaction.isStringSelectMenu()) {
+        menu_path = (interaction as StringSelectMenuInteraction).values[0].split(':').at(-1).split('/');
+    } else if (interaction.isModalSubmit() || interaction.isChannelSelectMenu() || interaction.isRoleSelectMenu()) {
+        menu_path = (
+            interaction as ModalSubmitInteraction | ChannelSelectMenuInteraction | RoleSelectMenuInteraction
+        ).customId
+            .split(':')
+            .at(-1)
+            .split('/');
+    }
 
-    switch (menu_path) {
+    switch (menu_path[0]) {
         case '1':
             if (verification_system_status === 'Enable') {
                 verification_system.is_enabled = true;
@@ -106,31 +122,35 @@ const settings = async (interaction: any) => {
                 .setCustomId('settings:verification:0')
                 .addOptions(...createMenuOptions());
             row = new ActionRowBuilder().addComponents(menu);
-            await interaction.update({
+            await (interaction as StringSelectMenuInteraction).update({
                 content: `Verification System ${verification_system.is_enabled ? 'enabled' : 'disabled'}`,
-                components: [row],
+                components: [row.toJSON() as APIActionRowComponent<APIMessageActionRowComponent>],
             });
             break;
         case '2':
-            await interaction.update({
+            await (interaction as StringSelectMenuInteraction).update({
                 content: 'Select a channel',
-                components: [new ActionRowBuilder().addComponents(channel_select_menu)],
+                components: [
+                    new ActionRowBuilder()
+                        .addComponents(channel_select_menu)
+                        .toJSON() as APIActionRowComponent<APIMessageActionRowComponent>,
+                ],
             });
             break;
         case '21':
-            verification_system.channel_id = interaction.values[0];
+            verification_system.channel_id = (interaction as StringSelectMenuInteraction).values[0];
             await DatabaseConnection.manager
                 .save(verification_system)
                 .then(() =>
-                    interaction.update({
+                    (interaction as StringSelectMenuInteraction).update({
                         content: `Verification System channel set to <#${verification_system.channel_id}>`,
-                        components: [row],
+                        components: [row.toJSON() as APIActionRowComponent<APIMessageActionRowComponent>],
                     })
                 )
                 .catch((err) => {
-                    interaction.update({
+                    (interaction as StringSelectMenuInteraction).update({
                         content: `Error: ${err}`,
-                        components: [row],
+                        components: [row.toJSON() as APIActionRowComponent<APIMessageActionRowComponent>],
                     });
                 });
             break;
@@ -138,22 +158,26 @@ const settings = async (interaction: any) => {
             const role_select_menu = new RoleSelectMenuBuilder()
                 .setCustomId('settings:verification:31')
                 .setPlaceholder('Select a role');
-            await interaction.update({
+            await (interaction as StringSelectMenuInteraction).update({
                 content: 'Select a role',
-                components: [new ActionRowBuilder().addComponents(role_select_menu)],
+                components: [
+                    new ActionRowBuilder()
+                        .addComponents(role_select_menu)
+                        .toJSON() as APIActionRowComponent<APIMessageActionRowComponent>,
+                ],
             });
             break;
         }
         case '31':
-            verification_system.role_id = interaction.values[0];
+            verification_system.role_id = (interaction as StringSelectMenuInteraction).values[0];
             if (
                 interaction.guild.roles.cache
                     .get(verification_system.role_id)
                     .permissions.has(PermissionFlagsBits.Administrator)
             ) {
-                interaction.update({
+                (interaction as StringSelectMenuInteraction).update({
                     content: 'Cannot set an administrator role as the verification system role',
-                    components: [row],
+                    components: [row.toJSON() as APIActionRowComponent<APIMessageActionRowComponent>],
                 });
                 return;
             }
@@ -161,20 +185,20 @@ const settings = async (interaction: any) => {
             await DatabaseConnection.manager
                 .save(verification_system)
                 .then(() =>
-                    interaction.update({
+                    (interaction as StringSelectMenuInteraction).update({
                         content: `Verification System role set to <@&${verification_system.role_id}>`,
-                        components: [row],
+                        components: [row.toJSON() as APIActionRowComponent<APIMessageActionRowComponent>],
                     })
                 )
                 .catch((err) => {
-                    interaction.update({
+                    (interaction as StringSelectMenuInteraction).update({
                         content: `Error: ${err}`,
-                        components: [row],
+                        components: [row.toJSON() as APIActionRowComponent<APIMessageActionRowComponent>],
                     });
                 });
             break;
         case '4':
-            await interaction.showModal(
+            await (interaction as StringSelectMenuInteraction).showModal(
                 new ModalBuilder()
                     .setCustomId('settings:verification:41')
                     .setTitle('Verification System Message')
@@ -186,24 +210,26 @@ const settings = async (interaction: any) => {
             );
             break;
         case '41':
-            verification_system.message = interaction.fields.getTextInputValue('verification_message');
+            verification_system.message = (interaction as ModalSubmitInteraction).fields.getTextInputValue(
+                'verification_message'
+            );
             await DatabaseConnection.manager
                 .save(verification_system)
                 .then(() =>
-                    interaction.update({
+                    (interaction as StringSelectMenuInteraction).update({
                         content: 'Verification System message has been updated',
-                        components: [row],
+                        components: [row.toJSON() as APIActionRowComponent<APIMessageActionRowComponent>],
                     })
                 )
                 .catch((err) => {
-                    interaction.update({
+                    (interaction as StringSelectMenuInteraction).update({
                         content: `Error: ${err}`,
-                        components: [row],
+                        components: [row.toJSON() as APIActionRowComponent<APIMessageActionRowComponent>],
                     });
                 });
             break;
         case '5':
-            await interaction.showModal(
+            await (interaction as StringSelectMenuInteraction).showModal(
                 new ModalBuilder()
                     .setCustomId('settings:verification:51')
                     .setTitle('Verification System Minimum Days')
@@ -215,11 +241,13 @@ const settings = async (interaction: any) => {
             );
             break;
         case '51': {
-            const days = parseInt(interaction.fields.getTextInputValue('verification_days'));
+            const days = parseInt(
+                (interaction as ModalSubmitInteraction).fields.getTextInputValue('verification_days')
+            );
             if (isNaN(days)) {
-                interaction.update({
+                (interaction as StringSelectMenuInteraction).update({
                     content: 'Invalid number',
-                    components: [row],
+                    components: [row.toJSON() as APIActionRowComponent<APIMessageActionRowComponent>],
                 });
                 return;
             }
@@ -227,23 +255,23 @@ const settings = async (interaction: any) => {
             await DatabaseConnection.manager
                 .save(verification_system)
                 .then(() =>
-                    interaction.update({
+                    (interaction as StringSelectMenuInteraction).update({
                         content: `Verification System minimum days set to ${days}`,
-                        components: [row],
+                        components: [row.toJSON() as APIActionRowComponent<APIMessageActionRowComponent>],
                     })
                 )
                 .catch((err) => {
-                    interaction.update({
+                    (interaction as StringSelectMenuInteraction).update({
                         content: `Error: ${err}`,
-                        components: [row],
+                        components: [row.toJSON() as APIActionRowComponent<APIMessageActionRowComponent>],
                     });
                 });
             break;
         }
         default:
-            await interaction.update({
+            await (interaction as StringSelectMenuInteraction).update({
                 content: 'Select a setting',
-                components: [row],
+                components: [row.toJSON() as APIActionRowComponent<APIMessageActionRowComponent>],
             });
             break;
     }

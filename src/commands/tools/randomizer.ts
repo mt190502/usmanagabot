@@ -1,9 +1,7 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Command_t } from '../../types/interface/commands';
 
-// TODO: check this type
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const exec = async (interaction: any) => {
+const exec = async (interaction: ChatInputCommandInteraction) => {
     const item_1 = interaction.options.getString('item_1');
     const item_2 = interaction.options.getString('item_2');
     const extra_items = interaction.options.getString('extra_items');
@@ -13,7 +11,7 @@ const exec = async (interaction: any) => {
     if (extra_items) choices.push(...extra_items.split(/,| /));
 
     const random = choices[Math.floor(Math.random() * choices.length)];
-    return interaction.reply({ content: `I choose: **${random}**`, allowedMentions: { parse: [] } });
+    await interaction.reply({ content: `I choose: **${random}**`, allowedMentions: { parse: [] } });
 };
 
 const scb = async (): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>> => {
