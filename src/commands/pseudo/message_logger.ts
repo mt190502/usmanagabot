@@ -194,7 +194,7 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
 
         switch (event_name) {
             case 'messageCreate': {
-                let content = message.url + ' | ' + message.content;
+                let content = message.url;
                 if (message.reference?.messageId) {
                     const referenceMessage = await DatabaseConnection.manager.findOne(Messages, {
                         where: { message_id: BigInt(message.reference.messageId) },
@@ -204,6 +204,7 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
                         : `https://discord.com/channels/${message.guild.id}/${message.channel.id}/${message.reference.messageId}`;
                     content += ` | [Reply](${url})`;
                 }
+                content += ' | ' + message.content;
                 if (message.stickers.size > 0) {
                     content += 'Stickers: ' + message.stickers.map((sticker) => sticker.name).join(', ');
                 }
