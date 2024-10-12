@@ -28,7 +28,10 @@ const exec = async (interaction: ChatInputCommandInteraction | StringSelectMenuI
                         BotCommands.get(guildID)
                             .filter((command) => command.settings)
                             .map((command) => ({
-                                label: command.name[0].toUpperCase() + command.name.slice(1),
+                                label: command.name
+                                    .split('_')
+                                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                                    .join(' '),
                                 description: command.description,
                                 value: `settings:${command.name}`,
                             }))
