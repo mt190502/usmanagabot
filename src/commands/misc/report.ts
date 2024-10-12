@@ -150,7 +150,8 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
     const embed = new EmbedBuilder()
         .setColor(0xee82ee)
         .setAuthor({ name: `${reporter.username} (${reporter.id})`, iconURL: reporter.displayAvatarURL() })
-        .setThumbnail(user.displayAvatarURL());
+        .setThumbnail(user.displayAvatarURL())
+        .setTimestamp();
     let message_url;
 
     if (interaction.options.getString('message_url')) {
