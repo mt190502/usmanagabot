@@ -7,29 +7,44 @@ export class Introduction {
     @PrimaryGeneratedColumn({ type: 'smallint' })
     id: number;
 
-    @Column({ type: 'varchar', length: 50 })
-    col01: string;
+    @Column({ type: 'boolean', nullable: false, default: false })
+    is_enabled: boolean;
+
+    @Column({ type: 'varchar', length: 25 })
+    cmd_name: string;
 
     @Column({ type: 'varchar', length: 50 })
-    col02: string;
+    cmd_desc: string;
 
-    @Column({ type: 'varchar', length: 50 })
-    col03: string;
+    @Column({ type: 'bigint', nullable: true, default: null })
+    channel_id: string;
 
-    @Column({ type: 'varchar', length: 50 })
-    col04: string;
+    @Column({ type: 'text', array: true, nullable: true, default: '{}' })
+    col1: string[];
 
-    @Column({ type: 'varchar', length: 50 })
-    col05: string;
+    @Column({ type: 'text', array: true, nullable: true, default: '{}' })
+    col2: string[];
 
-    @Column({ type: 'varchar', length: 50 })
-    col06: string;
+    @Column({ type: 'text', array: true, nullable: true, default: '{}' })
+    col3: string[];
 
-    @Column({ type: 'varchar', length: 50 })
-    col07: string;
+    @Column({ type: 'text', array: true, nullable: true, default: '{}' })
+    col4: string[];
 
-    @Column({ type: 'varchar', length: 50 })
-    col08: string;
+    @Column({ type: 'text', array: true, nullable: true, default: '{}' })
+    col5: string[];
+
+    @Column({ type: 'text', array: true, nullable: true, default: '{}' })
+    col6: string[];
+
+    @Column({ type: 'text', array: true, nullable: true, default: '{}' })
+    col7: string[];
+
+    @Column({ type: 'text', array: true, nullable: true, default: '{}' })
+    col8: string[];
+
+    @Column({ type: 'text', nullable: true })
+    yaml_data: string;
 
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
