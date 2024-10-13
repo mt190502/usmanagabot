@@ -226,7 +226,10 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
             where: { from_guild: { gid: BigInt(interaction.guild.id) } },
         });
         const introduction_submit = await DatabaseConnection.manager.findOne(IntroductionSubmit, {
-            where: { from_user: { uid: BigInt(interaction.user.id) } },
+            where: {
+                from_user: { uid: BigInt(interaction.user.id) },
+                from_guild: { gid: BigInt(interaction.guild.id) },
+            },
         });
 
         if (introduction_submit && new Date().getTime() - introduction_submit.timestamp.getTime() < 86400000) {
