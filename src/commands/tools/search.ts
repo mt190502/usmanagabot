@@ -142,7 +142,9 @@ const settings = async (interaction: StringSelectMenuInteraction | ModalSubmitIn
                 }
 
                 const new_engine = new Search();
-                new_engine.engine_name = (interaction as ModalSubmitInteraction).fields.getTextInputValue('engine_name');
+                new_engine.engine_name = (interaction as ModalSubmitInteraction).fields.getTextInputValue(
+                    'engine_name'
+                );
                 new_engine.engine_url = (interaction as ModalSubmitInteraction).fields.getTextInputValue('engine_url');
                 new_engine.from_guild = guild;
                 new_engine.from_user = user;
@@ -181,7 +183,9 @@ const settings = async (interaction: StringSelectMenuInteraction | ModalSubmitIn
                 const edit_engine = await DatabaseConnection.manager.findOne(Search, {
                     where: { engine_name: menu_path[1] },
                 });
-                edit_engine.engine_name = (interaction as ModalSubmitInteraction).fields.getTextInputValue('engine_name');
+                edit_engine.engine_name = (interaction as ModalSubmitInteraction).fields.getTextInputValue(
+                    'engine_name'
+                );
                 edit_engine.engine_url = (interaction as ModalSubmitInteraction).fields.getTextInputValue('engine_url');
                 await DatabaseConnection.manager
                     .save(edit_engine)
