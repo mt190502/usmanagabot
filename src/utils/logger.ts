@@ -35,8 +35,10 @@ export const Logger = async (type: 'debug' | 'error' | 'info' | 'log' | 'warn', 
             where: { from_guild: { gid: BigInt(interaction.guild.id) } },
         });
 
-        if (log_notifier.is_enabled) {
-            await interaction.guild.channels.cache.get(log_notifier.channel_id).send({ embeds: [notify] });
+        if (log_notifier) {
+            if (log_notifier.is_enabled) {
+                await interaction.guild.channels.cache.get(log_notifier.channel_id).send({ embeds: [notify] });
+            }
         }
     }
 };
