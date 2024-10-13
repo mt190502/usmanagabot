@@ -234,6 +234,7 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
                 content: 'You have already submitted an introduction today. Please try again tomorrow.',
                 ephemeral: true,
             });
+            return;
         }
 
         if (!introduction || !introduction.is_enabled || !introduction.channel_id) {
@@ -242,6 +243,7 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
                     'Introduction system is not set up properly or is disabled. Please contact the server administrator.',
                 ephemeral: true,
             });
+            return;
         }
 
         const user_roles = interaction.guild.members.cache.get(interaction.user.id).roles.cache;
@@ -250,7 +252,8 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
         for (let i = 1; i <= 8; i++) {
             const key = introduction[`col${i}` as keyof Introduction];
             if (Array.isArray(key)) {
-                data.push(`**${key[1]}**: ${interaction.options.getString(key[0])}\n`);
+                const value = interaction.options.getString(key[0]);
+                if (value) data.push(`**${key[1]}**: ${value}\n`);
             }
         }
 
@@ -261,15 +264,19 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
             `**ID**: ${interaction.user.id}\n`,
             `**Created At**: <t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>\n`,
             `**Joined At**: <t:${Math.floor(interaction.guild.members.cache.get(interaction.user.id).joinedTimestamp / 1000)}:R>\n`,
-            `**Roles**: ${user_roles
-                .filter((r) => r.name !== '@everyone')
-                .map((r) => `<@&${r.id}>`)
-                .join(', ')}\n`
+            `**Roles**: ${
+                user_roles
+                    .filter((r) => r.name !== '@everyone')
+                    .map((r) => `<@&${r.id}>`)
+                    .join(', ') || 'None'
+            }\n`
         );
+
+        const color = user_roles.map((r) => r.hexColor).find((c) => c !== '#000000') as ColorResolvable;
 
         const embed = new EmbedBuilder()
             .setDescription(data.join(''))
-            .setColor(user_roles.map((r) => r.hexColor).find((c) => c !== '#000000') as ColorResolvable)
+            .setColor(color || 'Random')
             .setThumbnail(interaction.user.displayAvatarURL())
             .setTimestamp();
 
