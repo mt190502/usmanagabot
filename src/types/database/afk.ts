@@ -10,8 +10,6 @@ export class Afk {
     @Column({ type: 'varchar', length: 100, nullable: true })
     message: string;
 
-    // @Column({ type: 'simple-array', nullable: true, default: null })
-    // mentions: string[];
     @Column({ type: 'text', array: true, default: '{}' })
     mentions: string[];
 
