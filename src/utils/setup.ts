@@ -20,6 +20,7 @@ export const InitialSetup = async () => {
                     const newGuild = new Guilds();
                     newGuild.name = guild[1].name;
                     newGuild.gid = BigInt(guild[0]);
+                    newGuild.country = client.guilds.cache.get(guild[0]).preferredLocale;
                     await DatabaseConnection.manager.save(newGuild);
                 }
             } catch (error) {

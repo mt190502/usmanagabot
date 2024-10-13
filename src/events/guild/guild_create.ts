@@ -17,6 +17,7 @@ export default {
             const newGuild = new Guilds();
             newGuild.name = guild.name;
             newGuild.gid = BigInt(guild.id);
+            newGuild.country = guild.preferredLocale;
             await DatabaseConnection.manager.save(newGuild);
             success = true;
         } catch (error) {

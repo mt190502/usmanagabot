@@ -1,3 +1,4 @@
+import { Locale } from 'discord.js';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
@@ -10,4 +11,7 @@ export class Guilds {
 
     @Column({ type: 'bigint', nullable: false, unique: true })
     gid: bigint;
+
+    @Column({ type: 'varchar', length: 8, nullable: false })
+    country: Locale;
 }
