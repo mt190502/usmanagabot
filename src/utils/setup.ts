@@ -31,6 +31,14 @@ export const InitialSetup = async () => {
         BotClient.login(BotConfiguration.token);
         while (!BotClient.isReady()) await timers.setTimeout(1000);
 
+        if (!BotClient.guilds.cache.size) {
+            Logger(
+                'error',
+                'Failed to get guilds from client, please add the bot to a server first or check the token. Exiting...'
+            );
+            process.exit(1);
+        }
+
         const last_command_refresh_date = new BotData();
         last_command_refresh_date.key = 'last_command_refresh_date';
         await DatabaseConnection.manager.save(last_command_refresh_date);
