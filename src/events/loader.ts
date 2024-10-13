@@ -8,11 +8,11 @@ export const EventLoader = async () => {
     for (const file of globSync(path.join(__dirname, './**/*.ts'), { ignore: '**/loader.ts' })) {
         const fileNameWithPath = file.match(/([^/]+\/[^/]+)$/)[0];
         const { enabled, name, once, data, execute }: Event_t = (await import(file)).default;
-        if (!name) {
-            Logger('warn', `Event "${fileNameWithPath}" does not have a name!`);
-            continue;
-        } else if (!enabled) {
+        if (!enabled) {
             Logger('warn', `Event "${fileNameWithPath}" is disabled!`);
+            continue;
+        } else if (!name) {
+            Logger('warn', `Event "${fileNameWithPath}" does not have a name!`);
             continue;
         }
         const eventType = once ? 'once' : 'on';
