@@ -249,15 +249,29 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
             return;
         }
 
-        const user_roles = interaction.guild.members.cache.get(interaction.user.id).roles.cache;
+        const user_roles = interaction.guild.members.cache
+            .get(interaction.user.id)
+            .roles.cache.sort((a, b) => b.position - a.position);
         const data = [`**__About ${interaction.user.username}__**\n`];
 
+        let values = 0;
         for (let i = 1; i <= 8; i++) {
             const key = introduction[`col${i}` as keyof Introduction];
             if (Array.isArray(key)) {
                 const value = interaction.options.getString(key[0]);
-                if (value) data.push(`**${key[1]}**: ${value}\n`);
+                if (value && value.length > 0) {
+                    data.push(`**${key[1]}**: ${value}\n`);
+                    values++;
+                }
             }
+        }
+
+        if (values === 0) {
+            await interaction.reply({
+                content: 'Please provide at least one information to submit an introduction.',
+                ephemeral: true,
+            });
+            return;
         }
 
         data.push(
