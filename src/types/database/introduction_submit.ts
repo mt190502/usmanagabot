@@ -7,7 +7,34 @@ export class IntroductionSubmit {
     @PrimaryGeneratedColumn({ type: 'smallint' })
     id: number;
 
-    @Column({ type: 'varchar', length: 256 })
+    @Column({ type: 'text', nullable: true })
+    col1: string;
+
+    @Column({ type: 'text', nullable: true })
+    col2: string;
+
+    @Column({ type: 'text', nullable: true })
+    col3: string;
+
+    @Column({ type: 'text', nullable: true })
+    col4: string;
+
+    @Column({ type: 'text', nullable: true })
+    col5: string;
+
+    @Column({ type: 'text', nullable: true })
+    col6: string;
+
+    @Column({ type: 'text', nullable: true })
+    col7: string;
+
+    @Column({ type: 'text', nullable: true })
+    col8: string;
+
+    @Column({ type: 'smallint', nullable: false, default: 1 })
+    hourly_submit_count: number;
+
+    @Column({ type: 'text', nullable: true })
     last_submit_url: string;
 
     @ManyToOne(() => Users, { nullable: false, eager: true })

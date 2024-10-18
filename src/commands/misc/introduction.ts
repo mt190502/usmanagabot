@@ -225,25 +225,35 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
         const introduction = await DatabaseConnection.manager.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guild.id) } },
         });
-        const introduction_submit = await DatabaseConnection.manager.findOne(IntroductionSubmit, {
-            where: {
-                from_user: { uid: BigInt(interaction.user.id) },
-                from_guild: { gid: BigInt(interaction.guild.id) },
-            },
-        });
+        const last_introduction_submit =
+            (await DatabaseConnection.manager.findOne(IntroductionSubmit, {
+                where: {
+                    from_guild: { gid: BigInt(interaction.guild.id) },
+                    from_user: { uid: BigInt(interaction.user.id) },
+                },
+            })) || new IntroductionSubmit();
 
-        if (introduction_submit && new Date().getTime() - introduction_submit.timestamp.getTime() < 86400000) {
+        const now_timestamp = new Date().getTime();
+        const last_submit_timestamp = last_introduction_submit.timestamp
+            ? last_introduction_submit.timestamp.getTime()
+            : 0;
+        const diff_timestamp = now_timestamp - last_submit_timestamp;
+        const end_timestamp = (now_timestamp + 86400000 - diff_timestamp) / 1000;
+
+        if (diff_timestamp < 86400000 && diff_timestamp >= 3600 && last_introduction_submit.hourly_submit_count === 3) {
             await interaction.reply({
-                content: 'You have already submitted an introduction today. Please try again tomorrow.',
+                content: `You have reached the maximum number of submissions for today.\nPlease try again on date: <t:${Math.floor(end_timestamp)}:F>`,
                 ephemeral: true,
             });
             return;
         }
 
-        if (!introduction || !introduction.is_enabled || !introduction.channel_id) {
+        last_introduction_submit.hourly_submit_count =
+            now_timestamp - last_submit_timestamp > 86400000 ? 1 : last_introduction_submit.hourly_submit_count + 1;
+
+        if (!introduction.is_enabled || !introduction.channel_id) {
             await interaction.reply({
-                content:
-                    'Introduction system is not set up properly or is disabled. Please contact the server administrator.',
+                content: 'Introduction system is not set up properly. Please contact the server administrator.',
                 ephemeral: true,
             });
             return;
@@ -252,25 +262,26 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
         const user_roles = interaction.guild.members.cache
             .get(interaction.user.id)
             .roles.cache.sort((a, b) => b.position - a.position);
-        const data = [`**__About ${interaction.user.username}__**\n`];
+        const data: string[] = [`**__About ${interaction.user.username}__**\n`];
 
         let values = 0;
         for (let i = 1; i <= 8; i++) {
             const key = introduction[`col${i}` as keyof Introduction];
             if (Array.isArray(key)) {
-                const value = interaction.options.getString(key[0]);
+                const value =
+                    interaction.options.getString(key[0]) ||
+                    (last_introduction_submit[`col${i}` as keyof IntroductionSubmit] as string) ||
+                    null;
                 if (value && value.length > 0) {
                     data.push(`**${key[1]}**: ${value}\n`);
+                    (last_introduction_submit[`col${i}` as keyof IntroductionSubmit] as string) = value;
                     values++;
                 }
             }
         }
 
         if (values === 0) {
-            await interaction.reply({
-                content: 'Please provide at least one information to submit an introduction.',
-                ephemeral: true,
-            });
+            await interaction.reply({ content: 'Please provide at least one value', ephemeral: true });
             return;
         }
 
@@ -280,7 +291,7 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
             `**Nickname**: <@!${interaction.user.id}>\n`,
             `**ID**: ${interaction.user.id}\n`,
             `**Created At**: <t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>\n`,
-            `**Joined At**: <t:${Math.floor(interaction.guild.members.cache.get(interaction.user.id).joinedTimestamp / 1000)}:R>\n`,
+            `**Joined At**: <t:${Math.floor(interaction.guild.members.cache.get(interaction.user.id)?.joinedTimestamp / 1000)}:R>\n`,
             `**Roles**: ${
                 user_roles
                     .filter((r) => r.name !== '@everyone')
@@ -290,44 +301,35 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
         );
 
         const color = user_roles.map((r) => r.hexColor).find((c) => c !== '#000000') as ColorResolvable;
-
         const embed = new EmbedBuilder()
             .setDescription(data.join(''))
             .setColor(color || 'Random')
             .setThumbnail(interaction.user.displayAvatarURL())
             .setTimestamp();
-
-        if (introduction_submit) embed.setFooter({ text: 'Introduction Updated' });
+        if (last_submit_timestamp) embed.setFooter({ text: 'Introduction Updated' });
 
         const target_channel = interaction.guild.channels.cache.get(introduction.channel_id) as TextChannel;
-        const publish = await target_channel.send({
-            content: `<@${interaction.user.id}>`,
-            embeds: [embed],
-        });
+        const publish = await target_channel.send({ content: `<@${interaction.user.id}>`, embeds: [embed] });
 
-        if (introduction_submit) {
+        if (last_introduction_submit.last_submit_url) {
             const old_message = await target_channel.messages.fetch(
-                introduction_submit.last_submit_url.split('/').at(-1)
+                last_introduction_submit.last_submit_url.split('/').at(-1)
             );
-            await old_message.delete();
-            introduction_submit.last_submit_url = publish.url;
-            introduction_submit.timestamp = new Date();
-            await DatabaseConnection.manager.save(introduction_submit);
-        } else {
-            const new_introduction_submit = new IntroductionSubmit();
-            new_introduction_submit.from_guild = await DatabaseConnection.manager.findOne(Guilds, {
-                where: { gid: BigInt(interaction.guild.id) },
-            });
-            new_introduction_submit.from_user = await DatabaseConnection.manager.findOne(Users, {
-                where: { uid: BigInt(interaction.user.id) },
-            });
-            new_introduction_submit.last_submit_url = publish.url;
-            new_introduction_submit.timestamp = new Date();
-            await DatabaseConnection.manager.save(new_introduction_submit);
+            if (old_message) await old_message.delete();
         }
 
+        last_introduction_submit.last_submit_url = publish.url;
+        last_introduction_submit.timestamp = new Date();
+        last_introduction_submit.from_user = await DatabaseConnection.manager.findOne(Users, {
+            where: { uid: BigInt(interaction.user.id) },
+        });
+        last_introduction_submit.from_guild = await DatabaseConnection.manager.findOne(Guilds, {
+            where: { gid: BigInt(interaction.guild.id) },
+        });
+        await DatabaseConnection.manager.save(last_introduction_submit);
+
         await interaction.reply({
-            content: `Introduction sent successfully!\n[View Message](${publish.url})`,
+            content: `Introduction submitted successfully.\nYou have ${3 - last_introduction_submit.hourly_submit_count} submissions left for today.\nIntroduction URL: ${publish.url}`,
             ephemeral: true,
         });
     } catch (error) {
