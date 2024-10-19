@@ -34,8 +34,8 @@ export class IntroductionSubmit {
     @Column({ type: 'smallint', nullable: false, default: 1 })
     hourly_submit_count: number;
 
-    @Column({ type: 'text', nullable: true })
-    last_submit_url: string;
+    @Column({ type: 'bigint', nullable: false, default: 0 })
+    last_submit_id: bigint;
 
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })

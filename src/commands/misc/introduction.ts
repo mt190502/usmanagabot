@@ -311,14 +311,12 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
         const target_channel = interaction.guild.channels.cache.get(introduction.channel_id) as TextChannel;
         const publish = await target_channel.send({ content: `<@${interaction.user.id}>`, embeds: [embed] });
 
-        if (last_introduction_submit.last_submit_url) {
-            const old_message = await target_channel.messages.fetch(
-                last_introduction_submit.last_submit_url.split('/').at(-1)
-            );
+        if (last_introduction_submit.last_submit_id) {
+            const old_message = await target_channel.messages.fetch(last_introduction_submit.last_submit_id.toString());
             if (old_message) await old_message.delete();
         }
 
-        last_introduction_submit.last_submit_url = publish.url;
+        last_introduction_submit.last_submit_id = BigInt(publish.id);
         last_introduction_submit.timestamp = new Date();
         last_introduction_submit.from_user = await DatabaseConnection.manager.findOne(Users, {
             where: { uid: BigInt(interaction.user.id) },
