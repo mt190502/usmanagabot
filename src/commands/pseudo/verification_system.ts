@@ -5,6 +5,8 @@ import {
     ChannelSelectMenuBuilder,
     ChannelSelectMenuInteraction,
     ChannelType,
+    Colors,
+    EmbedBuilder,
     GuildMember,
     ModalActionRowComponentBuilder,
     ModalBuilder,
@@ -18,7 +20,7 @@ import {
     TextInputBuilder,
     TextInputStyle,
 } from 'discord.js';
-import { DatabaseConnection } from '../../main';
+import { BotClient, DatabaseConnection } from '../../main';
 import { Guilds } from '../../types/database/guilds';
 import { Users } from '../../types/database/users';
 import { Verification } from '../../types/database/verification';
@@ -69,6 +71,44 @@ const settings = async (
             .setCustomId('settings:verification:21')
             .setPlaceholder('Select a channel')
             .setChannelTypes(ChannelType.GuildText);
+
+        const genPostEmbed = (warn?: string): EmbedBuilder => {
+            const post = new EmbedBuilder().setTitle(':gear: Verification Settings');
+            const fields: { name: string; value: string }[] = [];
+
+            if (warn) {
+                post.setColor(Colors.Yellow);
+                fields.push({ name: ':warning: Warning', value: warn });
+            } else {
+                post.setColor(Colors.Blurple);
+            }
+
+            fields.push(
+                {
+                    name: 'Enabled',
+                    value: verification_system.is_enabled ? ':green_circle: True' : ':red_circle: False',
+                },
+                {
+                    name: 'Verification Channel',
+                    value: (verification_system.channel_id && `<#${verification_system.channel_id}>`) || 'Not set',
+                },
+                {
+                    name: 'Verification Role',
+                    value: (verification_system.role_id && `<@&${verification_system.role_id}>`) || 'Not set',
+                },
+                {
+                    name: 'Verification Message',
+                    value: verification_system.message ? `\`\`\`\n${verification_system.message}\n\`\`\`` : 'Not set',
+                },
+                {
+                    name: 'Minimum Days',
+                    value: verification_system.minimum_days.toString() || 'Not set',
+                }
+            );
+
+            post.addFields(fields);
+            return post;
+        };
 
         const genMenuOptions = (): APIActionRowComponent<APIMessageActionRowComponent> => {
             const menu = new StringSelectMenuBuilder().setCustomId('settings:verification:0').addOptions([
@@ -123,13 +163,13 @@ const settings = async (
                 verification_system_status = verification_system.is_enabled ? 'Disable' : 'Enable';
                 await DatabaseConnection.manager.save(verification_system);
                 await (interaction as StringSelectMenuInteraction).update({
-                    content: `Verification System ${verification_system.is_enabled ? 'enabled' : 'disabled'}`,
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;
             case '2':
                 await (interaction as StringSelectMenuInteraction).update({
-                    content: 'Select a channel',
+                    embeds: [genPostEmbed()],
                     components: [
                         new ActionRowBuilder()
                             .addComponents(channel_select_menu)
@@ -137,20 +177,12 @@ const settings = async (
                     ],
                 });
                 break;
-            case '21':
-                verification_system.channel_id = (interaction as StringSelectMenuInteraction).values[0];
-                await DatabaseConnection.manager.save(verification_system);
-                await (interaction as StringSelectMenuInteraction).update({
-                    content: `Verification System channel set to <#${verification_system.channel_id}>`,
-                    components: [genMenuOptions()],
-                });
-                break;
             case '3': {
                 const role_select_menu = new RoleSelectMenuBuilder()
                     .setCustomId('settings:verification:31')
                     .setPlaceholder('Select a role');
                 await (interaction as StringSelectMenuInteraction).update({
-                    content: 'Select a role',
+                    embeds: [genPostEmbed()],
                     components: [
                         new ActionRowBuilder()
                             .addComponents(role_select_menu)
@@ -159,25 +191,6 @@ const settings = async (
                 });
                 break;
             }
-            case '31':
-                verification_system.role_id = (interaction as StringSelectMenuInteraction).values[0];
-                if (
-                    interaction.guild.roles.cache
-                        .get(verification_system.role_id)
-                        .permissions.has(PermissionFlagsBits.Administrator)
-                ) {
-                    await (interaction as StringSelectMenuInteraction).update({
-                        content: 'Cannot set an administrator role as the verification system role',
-                        components: [genMenuOptions()],
-                    });
-                    return;
-                }
-                await DatabaseConnection.manager.save(verification_system);
-                await (interaction as StringSelectMenuInteraction).update({
-                    content: `Verification System role set to <@&${verification_system.role_id}>`,
-                    components: [genMenuOptions()],
-                });
-                break;
             case '4':
                 await (interaction as StringSelectMenuInteraction).showModal(
                     new ModalBuilder()
@@ -189,16 +202,6 @@ const settings = async (
                             )
                         )
                 );
-                break;
-            case '41':
-                verification_system.message = (interaction as ModalSubmitInteraction).fields.getTextInputValue(
-                    'verification_message'
-                );
-                await DatabaseConnection.manager.save(verification_system);
-                await (interaction as StringSelectMenuInteraction).update({
-                    content: 'Verification System message has been updated',
-                    components: [genMenuOptions()],
-                });
                 break;
             case '5':
                 await (interaction as StringSelectMenuInteraction).showModal(
@@ -212,13 +215,74 @@ const settings = async (
                         )
                 );
                 break;
+            case '21':
+                verification_system.channel_id = (interaction as StringSelectMenuInteraction).values[0];
+                await DatabaseConnection.manager.save(verification_system);
+                await (interaction as StringSelectMenuInteraction).update({
+                    embeds: [genPostEmbed()],
+                    components: [genMenuOptions()],
+                });
+                break;
+            case '31': {
+                const server_roles = interaction.guild.roles.cache.sort((a, b) => b.position - a.position);
+                const bot_role = server_roles.find((role) => role.name === BotClient.user.username);
+                const requested_role = server_roles.get((interaction as StringSelectMenuInteraction).values[0]);
+
+                if (requested_role.position >= bot_role.position) {
+                    await (interaction as StringSelectMenuInteraction).update({
+                        embeds: [genPostEmbed('The role is behind the bot role. Please select another role.')],
+                        components: [genMenuOptions()],
+                    });
+                    return;
+                }
+                verification_system.role_id = requested_role.id;
+                if (
+                    interaction.guild.roles.cache
+                        .get(verification_system.role_id)
+                        .permissions.has(PermissionFlagsBits.Administrator)
+                ) {
+                    await (interaction as StringSelectMenuInteraction).update({
+                        embeds: [genPostEmbed('The role has administrator permissions. Please select another role.')],
+                        components: [genMenuOptions()],
+                    });
+                    return;
+                }
+                await DatabaseConnection.manager.save(verification_system);
+                await (interaction as StringSelectMenuInteraction).update({
+                    embeds: [genPostEmbed()],
+                    components: [genMenuOptions()],
+                });
+                break;
+            }
+            case '41': {
+                const requested_message = (interaction as ModalSubmitInteraction).fields.getTextInputValue(
+                    'verification_message'
+                );
+
+                if (!requested_message || requested_message.length === 0) {
+                    await (interaction as StringSelectMenuInteraction).update({
+                        embeds: [genPostEmbed('The message cannot be empty.')],
+                        components: [genMenuOptions()],
+                    });
+                    return;
+                }
+
+                verification_system.message = requested_message;
+
+                await DatabaseConnection.manager.save(verification_system);
+                await (interaction as StringSelectMenuInteraction).update({
+                    embeds: [genPostEmbed()],
+                    components: [genMenuOptions()],
+                });
+                break;
+            }
             case '51': {
                 const days = parseInt(
                     (interaction as ModalSubmitInteraction).fields.getTextInputValue('verification_days')
                 );
                 if (isNaN(days)) {
                     await (interaction as StringSelectMenuInteraction).update({
-                        content: 'Invalid number',
+                        embeds: [genPostEmbed('The minimum days must be a number.')],
                         components: [genMenuOptions()],
                     });
                     return;
@@ -226,14 +290,14 @@ const settings = async (
                 verification_system.minimum_days = days;
                 await DatabaseConnection.manager.save(verification_system);
                 await (interaction as StringSelectMenuInteraction).update({
-                    content: `Verification System minimum days set to ${days}`,
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;
             }
             default:
                 await (interaction as StringSelectMenuInteraction).update({
-                    content: 'Select a setting',
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;

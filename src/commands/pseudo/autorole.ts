@@ -2,12 +2,14 @@ import {
     ActionRowBuilder,
     APIActionRowComponent,
     APIMessageActionRowComponent,
+    Colors,
+    EmbedBuilder,
     GuildMember,
     RoleSelectMenuBuilder,
     StringSelectMenuBuilder,
     StringSelectMenuInteraction,
 } from 'discord.js';
-import { DatabaseConnection } from '../../main';
+import { BotClient, DatabaseConnection } from '../../main';
 import { Autorole } from '../../types/database/autorole';
 import { Guilds } from '../../types/database/guilds';
 import { Users } from '../../types/database/users';
@@ -36,6 +38,32 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
         const role_select_menu = new RoleSelectMenuBuilder()
             .setCustomId('settings:autorole:21')
             .setPlaceholder('Select a role');
+
+        const genPostEmbed = (warn?: string): EmbedBuilder => {
+            const post = new EmbedBuilder().setTitle(':gear: Autorole Settings');
+            const fields: { name: string; value: string }[] = [];
+
+            if (warn) {
+                post.setColor(Colors.Yellow);
+                fields.push({ name: ':warning: Warning', value: warn });
+            } else {
+                post.setColor(Colors.Blurple);
+            }
+
+            fields.push(
+                {
+                    name: 'Enabled',
+                    value: autorole_system.is_enabled ? ':green_circle: True' : ':red_circle: False',
+                },
+                {
+                    name: 'Role',
+                    value: autorole_system.role_id ? `<@&${autorole_system.role_id}>` : 'Not set',
+                }
+            );
+
+            post.addFields(fields);
+            return post;
+        };
 
         const genMenuOptions = (): APIActionRowComponent<APIMessageActionRowComponent> => {
             const menu = new StringSelectMenuBuilder().setCustomId('settings:autorole:0').addOptions([
@@ -70,14 +98,14 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
                 await DatabaseConnection.manager.save(autorole_system);
 
                 await interaction.update({
-                    content: `Autorole system ${autorole_system.is_enabled ? 'enabled' : 'disabled'}`,
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;
 
             case '2':
                 await interaction.update({
-                    content: 'Select a role',
+                    embeds: [genPostEmbed()],
                     components: [
                         new ActionRowBuilder()
                             .addComponents(role_select_menu)
@@ -86,18 +114,30 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
                 });
                 break;
 
-            case '21':
+            case '21': {
+                const server_roles = interaction.guild.roles.cache.sort((a, b) => b.position - a.position);
+                const bot_role = server_roles.find((role) => role.name === BotClient.user.username);
+                const requested_role = server_roles.get(interaction.values[0]);
+
+                if (requested_role.position >= bot_role.position) {
+                    await interaction.update({
+                        embeds: [genPostEmbed('The role is behind the bot role. Please select another role.')],
+                        components: [genMenuOptions()],
+                    });
+                    return;
+                }
+
                 autorole_system.role_id = interaction.values[0];
                 await DatabaseConnection.manager.save(autorole_system);
                 await interaction.update({
-                    content: `Autorole role set to <@&${interaction.values[0]}>`,
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;
-
+            }
             default:
                 await interaction.update({
-                    content: 'Select a setting',
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;

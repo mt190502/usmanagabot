@@ -4,6 +4,8 @@ import {
     APIMessageActionRowComponent,
     ChannelSelectMenuBuilder,
     ChannelType,
+    Colors,
+    EmbedBuilder,
     StringSelectMenuBuilder,
     StringSelectMenuInteraction,
 } from 'discord.js';
@@ -38,6 +40,32 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
             .setPlaceholder('Select a channel')
             .setChannelTypes(ChannelType.GuildText);
 
+        const genPostEmbed = (warn?: string): EmbedBuilder => {
+            const post = new EmbedBuilder().setTitle(':gear: Log Notifier Settings');
+            const fields: { name: string; value: string }[] = [];
+
+            if (warn) {
+                post.setColor(Colors.Yellow);
+                fields.push({ name: ':warning: Warning', value: warn });
+            } else {
+                post.setColor(Colors.Blurple);
+            }
+
+            fields.push(
+                {
+                    name: 'Enabled',
+                    value: log_notifier.is_enabled ? ':green_circle: True' : ':red_circle: False',
+                },
+                {
+                    name: 'Channel',
+                    value: log_notifier.channel_id ? `<#${log_notifier.channel_id}>` : 'Not set',
+                }
+            );
+
+            post.addFields(fields);
+            return post;
+        };
+
         const genMenuOptions = (): APIActionRowComponent<APIMessageActionRowComponent> => {
             const menu = new StringSelectMenuBuilder().setCustomId('settings:log_notifier:0').addOptions([
                 {
@@ -71,14 +99,14 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
                 await DatabaseConnection.manager.save(log_notifier);
 
                 await interaction.update({
-                    content: `Log notifier system ${log_notifier.is_enabled ? 'enabled' : 'disabled'}`,
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;
 
             case '2':
                 await interaction.update({
-                    content: 'Select a channel',
+                    embeds: [genPostEmbed()],
                     components: [
                         new ActionRowBuilder()
                             .addComponents(channel_select_menu)
@@ -86,29 +114,14 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
                     ],
                 });
                 break;
-
             case '21':
                 log_notifier.channel_id = interaction.values[0];
-                await DatabaseConnection.manager
-                    .save(log_notifier)
-                    .then(() => {
-                        interaction.update({
-                            content: `Log notifier channel set to <#${log_notifier.channel_id}>`,
-                            components: [genMenuOptions()],
-                        });
-                    })
-                    .catch((error: Error) => {
-                        interaction.update({
-                            content: 'Error setting notifier channel',
-                            components: [genMenuOptions()],
-                        });
-                        Logger('warn', error.message);
-                    });
+                await DatabaseConnection.manager.save(log_notifier);
                 break;
 
             default:
                 await interaction.update({
-                    content: 'Log Notifier Settings',
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;

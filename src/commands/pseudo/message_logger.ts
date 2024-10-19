@@ -43,6 +43,47 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
             .setPlaceholder('Select a channel')
             .setChannelTypes(ChannelType.GuildText);
 
+        const genPostEmbed = (warn?: string): EmbedBuilder => {
+            const post = new EmbedBuilder().setTitle(':gear: Message Logger Settings');
+            const fields: { name: string; value: string }[] = [];
+
+            if (warn) {
+                post.setColor(Colors.Yellow);
+                fields.push({ name: ':warning: Warning', value: warn });
+            } else {
+                post.setColor(Colors.Blue);
+            }
+
+            fields.push(
+                {
+                    name: 'Enabled',
+                    value: logger.is_enabled ? ':green_circle: True' : ':red_circle: False',
+                },
+                {
+                    name: 'Channel',
+                    value: logger.channel_id ? `<#${logger.channel_id}>` : 'Not set',
+                },
+                {
+                    name: 'Ignored Channels',
+                    value:
+                        logger.ignored_channels?.length > 0
+                            ? logger.ignored_channels.map((channel) => `<#${channel}>`).join(', ')
+                            : 'None',
+                },
+                {
+                    name: 'Webhook',
+                    value: logger.webhook_id ? ':green_circle: Active' : ':red_circle: Inactive',
+                },
+                {
+                    name: 'Webhook ID',
+                    value: logger.webhook_id || 'Not set',
+                }
+            );
+
+            post.addFields(fields);
+            return post;
+        };
+
         const genMenuOptions = (): APIActionRowComponent<APIMessageActionRowComponent> => {
             const menu = new StringSelectMenuBuilder().setCustomId('settings:logger:0').addOptions([
                 {
@@ -80,16 +121,36 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
                 message_logger_status = logger.is_enabled ? 'Disable' : 'Enable';
                 await DatabaseConnection.manager.save(logger);
                 await interaction.update({
-                    content: `Message logger ${logger.is_enabled ? 'enabled' : 'disabled'}`,
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;
             case '2':
                 await interaction.update({
-                    content: 'Select a channel',
+                    embeds: [genPostEmbed()],
                     components: [
                         new ActionRowBuilder()
                             .addComponents(channel_select_menu.setCustomId('settings:logger:21'))
+                            .toJSON() as APIActionRowComponent<APIMessageActionRowComponent>,
+                    ],
+                });
+                break;
+            case '3':
+                await interaction.update({
+                    embeds: [genPostEmbed()],
+                    components: [
+                        new ActionRowBuilder()
+                            .addComponents(
+                                channel_select_menu
+                                    .setCustomId('settings:logger:31')
+                                    .setMinValues(1)
+                                    .setMaxValues(10)
+                                    .setDefaultChannels(
+                                        logger.ignored_channels?.length > 0
+                                            ? logger.ignored_channels.map((channel) => channel.toString())
+                                            : []
+                                    )
+                            )
                             .toJSON() as APIActionRowComponent<APIMessageActionRowComponent>,
                     ],
                 });
@@ -114,7 +175,7 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
                     Logger('info', `Created webhook ${webhook.id}`);
                 } else {
                     await interaction.update({
-                        content: 'Old channel ID and New channel ID are the same',
+                        embeds: [genPostEmbed('Channel is already set')],
                         components: [genMenuOptions()],
                     });
                     break;
@@ -122,35 +183,15 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
 
                 await DatabaseConnection.manager.save(logger);
                 await interaction.update({
-                    content: `Message logger channel set to <#${logger.channel_id}>`,
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
-                });
-                break;
-            case '3':
-                await interaction.update({
-                    content: 'Select a channel to ignore',
-                    components: [
-                        new ActionRowBuilder()
-                            .addComponents(
-                                channel_select_menu
-                                    .setCustomId('settings:logger:31')
-                                    .setMinValues(1)
-                                    .setMaxValues(10)
-                                    .setDefaultChannels(
-                                        logger.ignored_channels?.length > 0
-                                            ? logger.ignored_channels.map((channel) => channel.toString())
-                                            : []
-                                    )
-                            )
-                            .toJSON() as APIActionRowComponent<APIMessageActionRowComponent>,
-                    ],
                 });
                 break;
             case '31': {
                 const ignored_channels = interaction.values;
                 if (ignored_channels.length === 0) {
                     await interaction.update({
-                        content: 'No channels selected',
+                        embeds: [genPostEmbed('Please select at least one channel')],
                         components: [genMenuOptions()],
                     });
                     break;
@@ -158,14 +199,14 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
                 logger.ignored_channels = ignored_channels.map((channel) => BigInt(channel.toString()));
                 await DatabaseConnection.manager.save(logger);
                 await interaction.update({
-                    content: 'Ignored channels updated',
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;
             }
             default:
                 await interaction.update({
-                    content: 'Select a setting',
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;

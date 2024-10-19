@@ -1,4 +1,11 @@
-import { ChatInputCommandInteraction, GuildMember, Message, SlashCommandBuilder } from 'discord.js';
+import {
+    ChatInputCommandInteraction,
+    Colors,
+    EmbedBuilder,
+    GuildMember,
+    Message,
+    SlashCommandBuilder,
+} from 'discord.js';
 import { DatabaseConnection } from '../../main';
 import { Afk } from '../../types/database/afk';
 import { Guilds } from '../../types/database/guilds';
@@ -12,9 +19,12 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
             where: { from_user: { uid: BigInt(interaction.user.id) } },
         });
 
+        const post = new EmbedBuilder();
+
         if (user_afk) {
+            post.setTitle(':warning: You are already AFK').setColor(Colors.Yellow);
             await interaction.reply({
-                content: 'You are already **AFK**\n' + (user_afk.message ? `**Reason:** ${user_afk.message}` : ''),
+                embeds: [post],
                 ephemeral: true,
             });
             return;
@@ -37,13 +47,12 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
             .setNickname(member.nickname ? '[AFK] ' + member.nickname : '[AFK] ' + interaction.user.displayName)
             .catch((error: Error) => Logger('warn', error.message, interaction));
 
+        post.setTitle(':white_check_mark: You are now AFK').setColor(Colors.Green);
+        if (!member.manageable) {
+            post.setDescription('**Warning:** I am unable to change your nickname (Probably due to role hierarchy)');
+        }
         await interaction.reply({
-            content:
-                'You are now **AFK**\n' +
-                (reason ? `**Reason:** ${reason}\n` : '') +
-                (member.manageable
-                    ? ''
-                    : '**Warning:** I am unable to change your nickname (Probably due to role hierarchy)'),
+            embeds: [post],
             ephemeral: true,
         });
     } catch (error) {
@@ -60,6 +69,7 @@ const scb = async (): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSu
 
 const exec_when_event = async (event_name: string, message: Message) => {
     try {
+        const post = new EmbedBuilder();
         switch (event_name) {
             case 'messageCreate': {
                 const user_afk = await DatabaseConnection.manager.findOne(Afk, {
@@ -74,12 +84,14 @@ const exec_when_event = async (event_name: string, message: Message) => {
                         ?.setNickname(message.member.nickname?.replaceAll('[AFK]', ''))
                         .catch((error: Error) => Logger('warn', error.message, message));
 
+                    post.setTitle(':white_check_mark: You are no longer AFK').setColor(Colors.Green);
+                    if (user_afk.mentions.length > 0) {
+                        post.setDescription(
+                            `You were mentioned **${user_afk.mentions.length}** times while you were **AFK** and I have sent you a DM with the message urls`
+                        );
+                    }
                     await message.reply({
-                        content:
-                            'You are no longer **AFK**' +
-                            (user_afk.mentions.length > 0
-                                ? `\nYou were mentioned **${user_afk.mentions.length}** times while you were **AFK** and I have sent you a DM with the message urls`
-                                : ''),
+                        embeds: [post],
                     });
 
                     if (user_afk.mentions.length > 0) {
@@ -98,10 +110,12 @@ const exec_when_event = async (event_name: string, message: Message) => {
                     });
 
                     if (mentioned_user_afk) {
+                        post.setTitle(':warning: User is AFK').setColor(Colors.Yellow);
+                        if (mentioned_user_afk.message) {
+                            post.setDescription(`**Reason:** ${mentioned_user_afk.message}`);
+                        }
                         await message.reply({
-                            content:
-                                `**${mention[1].username}** is **AFK**\n` +
-                                (mentioned_user_afk.message ? `**Reason:** ${mentioned_user_afk.message}` : ''),
+                            embeds: [post],
                             allowedMentions: { parse: [] },
                         });
 

@@ -5,6 +5,7 @@ import {
     ChannelSelectMenuBuilder,
     ChannelType,
     ChatInputCommandInteraction,
+    Colors,
     EmbedBuilder,
     SlashCommandBuilder,
     StringSelectMenuBuilder,
@@ -50,6 +51,32 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
                 : interaction.customId.split(':').at(-1)
             : interaction.customId.split(':').at(-1);
 
+        const genPostEmbed = (warn?: string): EmbedBuilder => {
+            const post = new EmbedBuilder().setTitle(':gear: Report Settings');
+            const fields: { name: string; value: string }[] = [];
+
+            if (warn) {
+                fields.push({ name: ':warning: Warning', value: warn });
+                post.setColor(Colors.Yellow);
+            } else {
+                post.setColor(Colors.Blurple);
+            }
+
+            fields.push(
+                {
+                    name: 'Enabled',
+                    value: report_system.is_enabled ? ':green_circle: True' : ':red_circle: False',
+                },
+                {
+                    name: 'Report Channel',
+                    value: (report_system.channel_id && `<#${report_system.channel_id}>`) || 'Not set',
+                }
+            );
+
+            post.addFields(fields);
+            return post;
+        };
+
         const genMenuOptions = (): APIActionRowComponent<APIMessageActionRowComponent> => {
             const menu = new StringSelectMenuBuilder().setCustomId('settings:report:0').addOptions([
                 {
@@ -76,14 +103,14 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
                 await DatabaseConnection.manager.save(report_system);
 
                 await interaction.update({
-                    content: `Report system ${report_system.is_enabled ? 'enabled' : 'disabled'}`,
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 await RESTCommandLoader(report_system.from_guild.gid);
                 break;
             case '2':
                 await interaction.update({
-                    content: 'Select a channel',
+                    embeds: [genPostEmbed()],
                     components: [
                         new ActionRowBuilder()
                             .addComponents(channel_select_menu)
@@ -95,13 +122,13 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
                 report_system.channel_id = interaction.values[0];
                 await DatabaseConnection.manager.save(report_system);
                 await interaction.update({
-                    content: `Report channel set to <#${report_system.channel_id}>`,
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;
             default:
                 await interaction.update({
-                    content: 'Report Settings',
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;
@@ -117,10 +144,16 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
             where: { from_guild: { gid: BigInt(interaction.guild.id) } },
         });
 
+        const post = new EmbedBuilder();
+
         if (!report_system || !report_system.channel_id || !report_system.is_enabled) {
+            post.setTitle(':warning: Warning')
+                .setDescription(
+                    'Report system is not set up properly or is disabled. Please contact the server administrator.'
+                )
+                .setColor(Colors.Red);
             await interaction.reply({
-                content:
-                    'Report system is not set up properly or is disabled. Please contact the server administrator.',
+                embeds: [post],
                 ephemeral: true,
             });
             return;
@@ -143,6 +176,9 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
             message_url = interaction.options.getString('message_url').split(' ');
             for (const url of message_url) {
                 if (!pattern.test(url)) {
+                    post.setTitle(':warning: Warning')
+                        .setDescription(`Invalid message URL: ${url}`)
+                        .setColor(Colors.Red);
                     await interaction.reply({ content: `Invalid message URL: ${url}`, ephemeral: true });
                     return;
                 }
@@ -157,8 +193,11 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
             });
 
             if (!message) {
+                post.setTitle(':warning: Warning')
+                    .setDescription('Message not found in database. Please provide a message URL.')
+                    .setColor(Colors.Red);
                 await interaction.reply({
-                    content: 'Message not found in database. Please provide a message URL.',
+                    embeds: [post],
                     ephemeral: true,
                 });
                 return;
@@ -170,8 +209,11 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
         }
 
         if (!message_channel_id) {
+            post.setTitle(':warning: Warning')
+                .setDescription('Target channel not found. Please contact the server administrator.')
+                .setColor(Colors.Red);
             await interaction.reply({
-                content: `Target channel (${report_system.channel_id}) not found`,
+                embeds: [post],
                 ephemeral: true,
             });
             return;
@@ -182,7 +224,10 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
         );
         (message_channel_id as TextChannel).send({ embeds: [embed] });
 
-        await interaction.reply({ content: `User ${user} reported\nReason: ${reason}`, ephemeral: true });
+        post.setTitle(':white_check_mark: Success').setDescription(
+            `**User**: ${user} reported successfully.\n**Reason**: ${reason}`
+        );
+        await interaction.reply({ embeds: [post], ephemeral: true });
     } catch (error) {
         Logger('warn', error.message, interaction);
     }
