@@ -7,6 +7,7 @@ import {
     ChannelType,
     ChatInputCommandInteraction,
     ColorResolvable,
+    Colors,
     EmbedBuilder,
     ModalActionRowComponentBuilder,
     ModalBuilder,
@@ -78,6 +79,28 @@ const settings = async (
 
         let introduction_status = introduction.is_enabled ? 'Disable' : 'Enable';
 
+        const genPostEmbed = (warn?: string): EmbedBuilder => {
+            const post = new EmbedBuilder().setTitle(':gear: Introduction Settings');
+            const fields: { name: string; value: string }[] = [];
+            if (warn) {
+                post.setColor(Colors.Yellow);
+                fields.push({ name: ':warning: Warning', value: warn });
+            } else {
+                post.setColor(Colors.Blurple);
+            }
+            fields.push(
+                {
+                    name: 'Enabled',
+                    value: introduction.is_enabled ? ':green_circle: True' : ':red_circle: False',
+                },
+                { name: 'Introduction Channel', value: `<#${introduction.channel_id}>` },
+                { name: 'Command Name', value: introduction.cmd_name || 'not defined' },
+                { name: 'Command Description', value: introduction.cmd_desc || 'not defined' }
+            );
+            post.addFields(fields);
+            return post;
+        };
+
         const genMenuOptions = (): APIActionRowComponent<APIMessageActionRowComponent> => {
             const menu = new StringSelectMenuBuilder().setCustomId('settings:introduction:0').addOptions([
                 {
@@ -120,7 +143,7 @@ const settings = async (
                 introduction_status = introduction.is_enabled ? 'Disable' : 'Enable';
                 await DatabaseConnection.manager.save(introduction);
                 await (interaction as StringSelectMenuInteraction).update({
-                    content: `Introduction system ${introduction.is_enabled ? 'enabled' : 'disabled'}`,
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;
@@ -147,7 +170,7 @@ const settings = async (
                 break;
             case '4':
                 await (interaction as StringSelectMenuInteraction).update({
-                    content: 'Select a channel',
+                    embeds: [genPostEmbed()],
                     components: [
                         new ActionRowBuilder()
                             .addComponents(channel_select_menu)
@@ -155,20 +178,36 @@ const settings = async (
                     ],
                 });
                 break;
-            case '21':
-                introduction.cmd_name = (interaction as ModalSubmitInteraction).fields
+            case '21': {
+                const requested_cmd_name = (interaction as ModalSubmitInteraction).fields
                     .getTextInputValue('cmd_name')
                     .replaceAll(/\s/g, '_')
                     .replaceAll(/\W/g, '')
                     .toLowerCase();
-                introduction.cmd_desc = (interaction as ModalSubmitInteraction).fields.getTextInputValue('cmd_desc');
+                const requested_cmd_desc = (interaction as ModalSubmitInteraction).fields
+                    .getTextInputValue('cmd_desc')
+                    .replaceAll(/\W/g, ' ');
+
+                if (requested_cmd_name.length === 0 || requested_cmd_desc.length === 0) {
+                    await (interaction as ModalSubmitInteraction).reply({
+                        embeds: [genPostEmbed('Command name and description cannot be empty')],
+                        components: [genMenuOptions()],
+                        ephemeral: true,
+                    });
+                    return;
+                }
+
+                introduction.cmd_name = requested_cmd_name;
+                introduction.cmd_desc = requested_cmd_desc;
+
                 await DatabaseConnection.manager.save(introduction);
                 await (interaction as StringSelectMenuInteraction).update({
-                    content: `Command name set to ${introduction.cmd_name} and description set to ${introduction.cmd_desc}`,
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 await RESTCommandLoader(introduction.from_guild.gid);
                 break;
+            }
             case '31': {
                 const columns = (interaction as ModalSubmitInteraction).fields.getTextInputValue('column_names');
                 let parsed = yaml.parse(columns) as IntroductionColumn[];
@@ -180,7 +219,7 @@ const settings = async (
                 for (const column of parsed) {
                     if (namesSet.has(column.name)) {
                         await (interaction as ModalSubmitInteraction).reply({
-                            content: `Duplicate column name detected: ${column.name}`,
+                            embeds: [genPostEmbed(`Column name \`${column.name}\` is duplicated`)],
                             ephemeral: true,
                         });
                         return;
@@ -195,7 +234,7 @@ const settings = async (
                 introduction.yaml_data = columns;
                 await DatabaseConnection.manager.save(introduction);
                 await (interaction as StringSelectMenuInteraction).update({
-                    content: 'Column names updated successfully',
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 await RESTCommandLoader(introduction.from_guild.gid);
@@ -205,13 +244,13 @@ const settings = async (
                 introduction.channel_id = (interaction as StringSelectMenuInteraction).values[0];
                 await DatabaseConnection.manager.save(introduction);
                 await (interaction as StringSelectMenuInteraction).update({
-                    content: `Introduction channel set to <#${introduction.channel_id}>`,
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
                 break;
             default:
                 await (interaction as StringSelectMenuInteraction).update({
-                    content: 'Introduction Settings',
+                    embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
         }
@@ -233,6 +272,8 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
                 },
             })) || new IntroductionSubmit();
 
+        const post = new EmbedBuilder();
+
         const now_timestamp = new Date().getTime();
         const last_submit_timestamp = last_introduction_submit.timestamp
             ? last_introduction_submit.timestamp.getTime()
@@ -241,8 +282,10 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
         const end_timestamp = (now_timestamp + 86400000 - diff_timestamp) / 1000;
 
         if (diff_timestamp < 86400000 && diff_timestamp >= 3600 && last_introduction_submit.hourly_submit_count === 3) {
+            const msg = `You have reached the maximum number of submissions for today.\nPlease try again on date: <t:${Math.floor(end_timestamp)}:F>`;
+            post.setTitle(':warning: Warning').setDescription(msg).setColor(Colors.Red);
             await interaction.reply({
-                content: `You have reached the maximum number of submissions for today.\nPlease try again on date: <t:${Math.floor(end_timestamp)}:F>`,
+                embeds: [post],
                 ephemeral: true,
             });
             return;
@@ -252,8 +295,11 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
             now_timestamp - last_submit_timestamp > 86400000 ? 1 : last_introduction_submit.hourly_submit_count + 1;
 
         if (!introduction.is_enabled || !introduction.channel_id) {
+            post.setTitle(':warning: Warning')
+                .setDescription('Introduction system is not set up properly.\nPlease contact the server administrator.')
+                .setColor(Colors.Red);
             await interaction.reply({
-                content: 'Introduction system is not set up properly. Please contact the server administrator.',
+                embeds: [post],
                 ephemeral: true,
             });
             return;
@@ -281,7 +327,8 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
         }
 
         if (values === 0) {
-            await interaction.reply({ content: 'Please provide at least one value', ephemeral: true });
+            post.setTitle(':warning: Warning').setDescription('Please provide at least one value').setColor(Colors.Red);
+            await interaction.reply({ embeds: [post], ephemeral: true });
             return;
         }
 
@@ -326,8 +373,13 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
         });
         await DatabaseConnection.manager.save(last_introduction_submit);
 
+        post.setTitle(':white_check_mark: Success')
+            .setColor(Colors.Green)
+            .setDescription(
+                `Introduction submitted successfully.\nYou have **${3 - last_introduction_submit.hourly_submit_count}** submissions left for today.\nIntroduction URL: ${publish.url}`
+            );
         await interaction.reply({
-            content: `Introduction submitted successfully.\nYou have ${3 - last_introduction_submit.hourly_submit_count} submissions left for today.\nIntroduction URL: ${publish.url}`,
+            embeds: [post],
             ephemeral: true,
         });
     } catch (error) {
