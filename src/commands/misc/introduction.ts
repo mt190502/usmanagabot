@@ -205,7 +205,7 @@ const settings = async (
                     embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
-                await RESTCommandLoader(introduction.from_guild.gid);
+                await RESTCommandLoader(introduction.from_guild.gid, __filename);
                 break;
             }
             case '31': {
@@ -237,7 +237,7 @@ const settings = async (
                     embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
-                await RESTCommandLoader(introduction.from_guild.gid);
+                await RESTCommandLoader(introduction.from_guild.gid, __filename);
                 break;
             }
             case '41':

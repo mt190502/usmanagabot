@@ -127,7 +127,7 @@ const settings = async (interaction: StringSelectMenuInteraction | ModalSubmitIn
                 embeds: [genPostEmbed()],
                 components: [genMenuOptions()],
             });
-            await RESTCommandLoader(guild.gid);
+            await RESTCommandLoader(guild.gid, __filename);
             break;
         case '2':
             await (interaction as StringSelectMenuInteraction).showModal(
@@ -219,7 +219,7 @@ const settings = async (interaction: StringSelectMenuInteraction | ModalSubmitIn
                 embeds: [genPostEmbed()],
                 components: [genMenuOptions()],
             });
-            await RESTCommandLoader(guild.gid);
+            await RESTCommandLoader(guild.gid, __filename);
             break;
         }
         case '31': {
@@ -253,7 +253,7 @@ const settings = async (interaction: StringSelectMenuInteraction | ModalSubmitIn
                 embeds: [genPostEmbed()],
                 components: [genMenuOptions()],
             });
-            await RESTCommandLoader(guild.gid);
+            await RESTCommandLoader(guild.gid, __filename);
             break;
         }
         case '41': {
@@ -270,7 +270,7 @@ const settings = async (interaction: StringSelectMenuInteraction | ModalSubmitIn
                 embeds: [genPostEmbed()],
                 components: [genMenuOptions()],
             });
-            await RESTCommandLoader(guild.gid);
+            await RESTCommandLoader(guild.gid, __filename);
             break;
         }
         default:

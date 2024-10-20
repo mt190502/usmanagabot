@@ -106,7 +106,7 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
                     embeds: [genPostEmbed()],
                     components: [genMenuOptions()],
                 });
-                await RESTCommandLoader(report_system.from_guild.gid);
+                await RESTCommandLoader(report_system.from_guild.gid, __filename);
                 break;
             case '2':
                 await interaction.update({

@@ -25,9 +25,14 @@ const restCMDs: Collection<
     >
 > = new Collection();
 
-export const CommandLoader = async () => {
+export const CommandLoader = async (custom_command_file?: string) => {
     const guilds = await DatabaseConnection.manager.find(Guilds);
-    for (const file of globSync(path.join(__dirname, './**/*.ts'), { ignore: '**/loader.ts' })) {
+
+    const command_file_list = custom_command_file
+        ? [custom_command_file]
+        : globSync(path.join(__dirname, './**/*.ts'), { ignore: '**/loader.ts' });
+
+    for (const file of command_file_list) {
         const cmd: Command_t = (await import(file)).default;
         const filename = file.match(/([^/]+\/[^/]+)$/)[1];
 
@@ -64,8 +69,8 @@ export const CommandLoader = async () => {
     }
 };
 
-export const RESTCommandLoader = async (custom_guild?: bigint) => {
-    await CommandLoader();
+export const RESTCommandLoader = async (custom_guild?: bigint, custom_command_file?: string) => {
+    await CommandLoader(custom_command_file);
     rest.setToken(BotConfiguration.token);
     for (const [guild, commands] of restCMDs) {
         if (custom_guild && custom_guild != BigInt(guild)) continue;
