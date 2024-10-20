@@ -5,7 +5,6 @@ import {
     ButtonInteraction,
     ButtonStyle,
     ChatInputCommandInteraction,
-    Collection,
     Colors,
     ContextMenuCommandBuilder,
     EmbedBuilder,
@@ -15,11 +14,10 @@ import {
     PermissionFlagsBits,
     SlashCommandBuilder,
 } from 'discord.js';
-import timers from 'node:timers/promises';
 import { Command_t } from '../../types/interface/commands';
 import { Logger } from '../../utils/logger';
 
-let all_messages: Promise<Collection<string, Message<true>>>;
+const selected_messages: Message<boolean>[] = [];
 let target_message: Message;
 let question_message: InteractionResponse;
 
@@ -37,40 +35,55 @@ const exec = async (
         .setEmoji('❌')
         .setLabel('Cancel')
         .setStyle(ButtonStyle.Danger);
-    all_messages = interaction.channel.messages.fetch({ limit: 100 });
 
     if (interaction.isButton()) {
         switch (interaction.customId) {
-            case 'execute:purge:ok': {
-                post.setTitle(':hourglass_flowing_sand: Processing')
-                    .setDescription('Your request is submitted. Please wait...')
-                    .setColor(Colors.Blue);
-                question_message.edit({ embeds: [post], components: [] });
-                let deleted = 0;
-                let target_is_found = false;
-                while (!target_is_found) {
-                    for (const [, msg] of await all_messages) {
-                        if (msg.id === target_message.id) {
-                            target_is_found = true;
-                            break;
-                        }
-                        await msg.delete();
-                        await timers.setTimeout(200);
-                        deleted++;
+            case 'execute:purge:ok':
+                {
+                    post.setTitle(':hourglass_flowing_sand: Processing')
+                        .setDescription('Please wait...')
+                        .setColor(Colors.Blue);
+                    question_message.edit({ embeds: [post], components: [] });
 
-                        if (deleted % 100 === 0) {
-                            all_messages = interaction.channel.messages.fetch({ limit: 100, before: msg.id });
+                    let target_is_found = false;
+                    let selected_count = 0;
+                    let messages = await interaction.channel.messages.fetch({ limit: 100 });
+
+                    while (!target_is_found) {
+                        for (const [, message] of messages) {
+                            if (message.id === target_message.id) {
+                                target_is_found = true;
+                                break;
+                            }
+                            selected_count++;
+                            selected_messages.push(message);
+                        }
+                        if (!target_is_found) {
+                            messages = await interaction.channel.messages.fetch({
+                                limit: 100,
+                                before: selected_messages.at(-1).id,
+                            });
                         }
                     }
+
+                    if (selected_count >= 100) {
+                        while (selected_messages.length > 0) {
+                            const chunk = selected_messages.splice(0, 100);
+                            await interaction.channel.bulkDelete(chunk);
+                        }
+                    } else {
+                        await interaction.channel.bulkDelete(selected_messages);
+                    }
+
+                    target_message.delete();
+                    selected_count++;
+
+                    post.setTitle(':white_check_mark: Success')
+                        .setDescription(`Deleted **${selected_count}** messages`)
+                        .setColor(Colors.Green);
+                    question_message.edit({ embeds: [post], components: [] });
                 }
-                target_message.delete();
-                deleted++;
-                post.setTitle(':white_check_mark: Success')
-                    .setDescription(`Deleted **${deleted}** messages`)
-                    .setColor(Colors.Green);
-                question_message.edit({ embeds: [post], components: [] });
                 break;
-            }
             case 'execute:purge:cancel':
                 post.setTitle(':x: Cancelled').setDescription('Process cancelled').setColor(Colors.Red);
                 question_message.edit({ embeds: [post], components: [] });
