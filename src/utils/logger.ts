@@ -22,9 +22,9 @@ export const Logger = async (type: 'debug' | 'error' | 'info' | 'log' | 'warn', 
 
     if (interaction && ['error', 'info', 'warn'].includes(type)) {
         const notify = new EmbedBuilder()
-            .setAuthor({
-                name: `${type === 'warn' ? ':warning: Warning' : type === 'error' ? ':octagonal_sign: Error' : ':information_source: Information'} Notification`,
-            })
+            .setTitle(
+                `${type === 'warn' ? ':warning: Warning' : type === 'error' ? ':octagonal_sign: Error' : ':information_source: Information'} Notification`
+            )
             .setColor(type === 'error' ? 'Red' : type === 'warn' ? 'Yellow' : 'Blue')
             .setDescription(
                 `${type === 'warn' ? ':warning:' : type === 'error' ? ':octagonal_sign:' : ':information_source:'} **${type.charAt(0).toUpperCase() + type.slice(1)}**: ${msg}\n:page_facing_up: **File**: ${filename}\n:1234: **Line**: ${lineNumber}`
