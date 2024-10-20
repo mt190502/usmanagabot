@@ -1,11 +1,27 @@
-import { ChatInputCommandInteraction, ColorResolvable, Colors, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+import {
+    ApplicationCommandType,
+    ChatInputCommandInteraction,
+    ColorResolvable,
+    Colors,
+    ContextMenuCommandBuilder,
+    EmbedBuilder,
+    MessageContextMenuCommandInteraction,
+    PermissionFlagsBits,
+    SlashCommandBuilder,
+    User,
+} from 'discord.js';
 import { DatabaseConnection } from '../../main';
 import { Introduction } from '../../types/database/introduction';
 import { IntroductionSubmit } from '../../types/database/introduction_submit';
 import { Command_t } from '../../types/interface/commands';
 
-const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => {
-    const user = interaction.options.getUser('user') || interaction.user;
+const exec = async (interaction: ChatInputCommandInteraction | MessageContextMenuCommandInteraction): Promise<void> => {
+    let user: User;
+    if (interaction.isMessageContextMenuCommand()) {
+        user = interaction.targetMessage.author;
+    } else if (interaction.isChatInputCommand()) {
+        user = interaction.user || interaction.options.getUser('user');
+    }
 
     if (!interaction.guild.members.cache.get(user.id)) {
         const post = new EmbedBuilder()
@@ -33,11 +49,8 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
             for (let i = 1; i <= 8; i++) {
                 const key = introduction[`col${i}` as keyof Introduction];
                 if (Array.isArray(key)) {
-                    const value =
-                        interaction.options.getString(key[0]) ||
-                        (last_introduction_submit[`col${i}` as keyof IntroductionSubmit] as string) ||
-                        null;
-                    if (value && value.length > 0) {
+                    const value = (last_introduction_submit[`col${i}` as keyof IntroductionSubmit] as string) || null;
+                    if (value && value.length > 0 && key[1]) {
                         data.push(`**${key[1]}**: ${value}\n`);
                         (last_introduction_submit[`col${i}` as keyof IntroductionSubmit] as string) = value;
                     }
@@ -71,15 +84,22 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
     await interaction.reply({ embeds: [embed] });
 };
 
+const cmcb = (): ContextMenuCommandBuilder => {
+    return new ContextMenuCommandBuilder()
+        .setName('User Information')
+        .setType(ApplicationCommandType.User | ApplicationCommandType.Message)
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
+};
+
 const scb = (): Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'> => {
-    const data = new SlashCommandBuilder().setName('userinfo').setDescription('View user(s) profile.');
+    const data = new SlashCommandBuilder().setName('user_information').setDescription('View user(s) profile.');
     data.addUserOption((option) => option.setName('user').setDescription('User to view profile').setRequired(false));
     return data;
 };
 
 export default {
     enabled: true,
-    name: 'userinfo',
+    name: 'user_information',
     type: 'standard',
 
     description: 'View user(s) profile.',
@@ -87,6 +107,6 @@ export default {
     cooldown: 5,
     usage: '/userinfo <@user?>',
 
-    data: [scb],
+    data: [cmcb, scb],
     execute: exec,
 } as Command_t;
