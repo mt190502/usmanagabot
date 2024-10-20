@@ -12,19 +12,18 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
     await CheckAndAddChannel(null, interaction);
 
     if (interaction.isStringSelectMenu()) {
-        if (interaction.values[0]?.includes(':')) {
-            const [type, name] = interaction.values[0]?.split(':') ?? [];
-            if (type == 'settings' && name == 'settings') {
-                BotCommands.get(BigInt(0)).get('settings').settings(interaction);
-            } else if (type == 'settings' && name !== 'settings') {
-                BotCommands.get(BigInt(interaction.guild.id)).get(name).settings(interaction);
-            }
-        } else {
-            if (interaction.values[0] == 'settings') {
-                BotCommands.get(BigInt(0)).get(interaction.values[0]).execute(interaction);
-            } else {
-                BotCommands.get(BigInt(interaction.guild.id)).get(interaction.values[0]).execute(interaction);
-            }
+        const [type, name] = interaction.values[0].split(':');
+        let command;
+
+        if (type == 'settings') {
+            command = BotCommands.get(BigInt(interaction.guild.id)).get(name) ?? BotCommands.get(BigInt(0)).get(name);
+            if (command) command.settings(interaction);
+            else if (name == undefined) BotCommands.get(BigInt(0)).get('settings').execute(interaction);
+            else Logger('error', `Command **${name}** not found`, interaction);
+        } else if (type == 'execute') {
+            command = BotCommands.get(BigInt(interaction.guild.id)).get(name) ?? BotCommands.get(BigInt(0)).get(name);
+            if (command) command.execute(interaction);
+            else Logger('error', `Command **${name}** not found`, interaction);
         }
     } else if (interaction.isChatInputCommand() || interaction.isContextMenuCommand()) {
         let command: Command_t;
@@ -61,20 +60,19 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
         } catch (error) {
             Logger('error', error, interaction);
         }
-    } else if (interaction.isModalSubmit() || interaction.isAnySelectMenu()) {
-        if (interaction.customId.includes(':')) {
-            const [type, name] = interaction.customId.split(':');
-            if (type == 'settings' && name == 'settings') {
-                BotCommands.get(BigInt(0)).get('settings').settings(interaction);
-            } else if (type == 'settings' && name !== 'settings') {
-                BotCommands.get(BigInt(interaction.guild.id)).get(name).settings(interaction);
-            }
-        } else {
-            if (interaction.customId == 'settings') {
-                BotCommands.get(BigInt(0)).get(interaction.customId).execute(interaction);
-            } else {
-                BotCommands.get(BigInt(interaction.guild.id)).get(interaction.customId).execute(interaction);
-            }
+    } else if (interaction.isModalSubmit() || interaction.isAnySelectMenu() || interaction.isButton()) {
+        const [type, name] = interaction.customId.split(':');
+        let command;
+
+        if (type == 'settings') {
+            command = BotCommands.get(BigInt(interaction.guild.id)).get(name) ?? BotCommands.get(BigInt(0)).get(name);
+            if (command) command.settings(interaction);
+            else if (name == undefined) BotCommands.get(BigInt(0)).get('settings').settings(interaction);
+            else Logger('error', `Command **${name}** not found`, interaction);
+        } else if (type == 'execute') {
+            command = BotCommands.get(BigInt(interaction.guild.id)).get(name) ?? BotCommands.get(BigInt(0)).get(name);
+            if (command) command.execute(interaction);
+            else Logger('error', `Command **${name}** not found`, interaction);
         }
     } else {
         console.log('Unknown');
