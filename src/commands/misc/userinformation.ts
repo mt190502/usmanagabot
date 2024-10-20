@@ -20,7 +20,7 @@ const exec = async (interaction: ChatInputCommandInteraction | MessageContextMen
     if (interaction.isMessageContextMenuCommand()) {
         user = interaction.targetMessage.author;
     } else if (interaction.isChatInputCommand()) {
-        user = interaction.user || interaction.options.getUser('user');
+        user = interaction.options.getUser('user') || interaction.user;
     }
 
     if (!interaction.guild.members.cache.get(user.id)) {
