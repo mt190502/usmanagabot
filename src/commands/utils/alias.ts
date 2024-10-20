@@ -15,78 +15,104 @@ import { Command_t } from '../../types/interface/commands';
 import { Logger } from '../../utils/logger';
 
 const exec = async (interaction: ChatInputCommandInteraction) => {
-    try {
-        const subcommand = interaction.options.getSubcommand();
-        const alias_content = interaction.options.getString('alias_content');
-        const alias_name = interaction.options.getString('alias_name');
-        const existing_alias = await DatabaseConnection.manager.findOne(Alias, {
+    const subcommand = interaction.options.getSubcommand();
+    const alias_content = interaction.options.getString('alias_content');
+    const alias_name = interaction.options.getString('alias_name');
+    const existing_alias = await DatabaseConnection.manager
+        .findOne(Alias, {
             where: { name: alias_name, from_guild: { gid: BigInt(interaction.guild.id) } },
+        })
+        .catch((err) => {
+            Logger('error', err, interaction);
+            throw err;
         });
 
-        switch (subcommand) {
-            case 'add': {
-                if (existing_alias) {
-                    await interaction.reply(`Alias **${alias_name}** already exists`);
-                    break;
-                }
-                if (alias_name.includes(' ')) {
-                    await interaction.reply('Alias name cannot contain spaces');
-                    break;
-                }
-                const new_alias = new Alias();
-                new_alias.name = alias_name;
-                new_alias.content = alias_content;
-                new_alias.from_guild = await DatabaseConnection.manager.findOne(Guilds, {
+    switch (subcommand) {
+        case 'add': {
+            if (existing_alias) {
+                await interaction.reply(`Alias **${alias_name}** already exists`);
+                break;
+            }
+            if (alias_name.includes(' ')) {
+                await interaction.reply('Alias name cannot contain spaces');
+                break;
+            }
+            const new_alias = new Alias();
+            new_alias.name = alias_name;
+            new_alias.content = alias_content;
+            new_alias.from_guild = await DatabaseConnection.manager
+                .findOne(Guilds, {
                     where: { gid: BigInt(interaction.guild.id) },
+                })
+                .catch((err) => {
+                    Logger('error', err, interaction);
+                    throw err;
                 });
-                new_alias.from_channel = await DatabaseConnection.manager.findOne(Channels, {
+            new_alias.from_channel = await DatabaseConnection.manager
+                .findOne(Channels, {
                     where: { cid: BigInt(interaction.channel.id) },
+                })
+                .catch((err) => {
+                    Logger('error', err, interaction);
+                    throw err;
                 });
-                new_alias.from_user = await DatabaseConnection.manager.findOne(Users, {
+            new_alias.from_user = await DatabaseConnection.manager
+                .findOne(Users, {
                     where: { uid: BigInt(interaction.user.id) },
+                })
+                .catch((err) => {
+                    Logger('error', err, interaction);
+                    throw err;
                 });
-                await DatabaseConnection.manager.save(new_alias);
-                await interaction.reply(`Added alias **${alias_name}** for keyword **${alias_content}**`);
-                break;
-            }
-            case 'remove': {
-                if (!existing_alias) {
-                    await interaction.reply(`Alias **${alias_name}** does not exist`);
-                    break;
-                }
-                await DatabaseConnection.manager.remove(existing_alias);
-                await interaction.reply(`Removed alias **${alias_name}**`);
-                break;
-            }
-            case 'list': {
-                const aliases = await DatabaseConnection.manager.find(Alias, {
-                    where: { from_guild: { gid: BigInt(interaction.guild.id) } },
-                });
-                if (!aliases.length) {
-                    await interaction.reply('No aliases found');
-                    break;
-                }
-                const alias_list = aliases.map((alias) => `**${alias.name}**`).join('\n');
-                await interaction.reply(`Aliases for this server:\n${alias_list}`);
-                break;
-            }
-            case 'modify': {
-                if (!existing_alias) {
-                    await interaction.reply(`Alias **${alias_name}** does not exist`);
-                    break;
-                }
-                existing_alias.content = alias_content;
-                await DatabaseConnection.manager.save(existing_alias);
-                await interaction.reply(`Modified alias **${alias_name}** for keyword **${alias_content}**`);
-                break;
-            }
-            default:
-                await interaction.reply('Invalid action');
-                break;
+            await DatabaseConnection.manager.save(new_alias).catch((err) => {
+                Logger('error', err, interaction);
+            });
+            await interaction.reply(`Added alias **${alias_name}** for keyword **${alias_content}**`);
+            break;
         }
-    } catch (error) {
-        Logger('warn', error.message, interaction);
-        await interaction.reply('An error occurred while processing your request.');
+        case 'remove': {
+            if (!existing_alias) {
+                await interaction.reply(`Alias **${alias_name}** does not exist`);
+                break;
+            }
+            await DatabaseConnection.manager.remove(existing_alias).catch((err) => {
+                Logger('error', err, interaction);
+            });
+            await interaction.reply(`Removed alias **${alias_name}**`);
+            break;
+        }
+        case 'list': {
+            const aliases = await DatabaseConnection.manager
+                .find(Alias, {
+                    where: { from_guild: { gid: BigInt(interaction.guild.id) } },
+                })
+                .catch((err) => {
+                    Logger('error', err, interaction);
+                    throw err;
+                });
+            if (!aliases.length) {
+                await interaction.reply('No aliases found');
+                break;
+            }
+            const alias_list = aliases.map((alias) => `**${alias.name}**`).join('\n');
+            await interaction.reply(`Aliases for this server:\n${alias_list}`);
+            break;
+        }
+        case 'modify': {
+            if (!existing_alias) {
+                await interaction.reply(`Alias **${alias_name}** does not exist`);
+                break;
+            }
+            existing_alias.content = alias_content;
+            await DatabaseConnection.manager.save(existing_alias).catch((err) => {
+                Logger('error', err, interaction);
+            });
+            await interaction.reply(`Modified alias **${alias_name}** for keyword **${alias_content}**`);
+            break;
+        }
+        default:
+            await interaction.reply('Invalid action');
+            break;
     }
 };
 
@@ -138,35 +164,35 @@ const scb = async (): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSu
 };
 
 const exec_when_event = async (event_name: string, message: Message) => {
-    try {
-        const replace_table = [
-            { key: '{{user}}', value: `<@${message.author.id}>` },
-            { key: '{{user_id}}', value: message.author.id },
-            { key: '{{channel}}', value: `<#${message.channel.id}>` },
-            { key: '{{channel_id}}', value: message.channel.id },
-            { key: '{{guild}}', value: message.guild.name },
-            { key: '{{mentioned_users}}', value: '' },
-        ];
-        switch (event_name) {
-            case 'messageCreate': {
-                const alias_name = message.content.split(' ')[0];
-                const alias = await DatabaseConnection.manager.findOne(Alias, {
+    const replace_table = [
+        { key: '{{user}}', value: `<@${message.author.id}>` },
+        { key: '{{user_id}}', value: message.author.id },
+        { key: '{{channel}}', value: `<#${message.channel.id}>` },
+        { key: '{{channel_id}}', value: message.channel.id },
+        { key: '{{guild}}', value: message.guild.name },
+        { key: '{{mentioned_users}}', value: '' },
+    ];
+    switch (event_name) {
+        case 'messageCreate': {
+            const alias_name = message.content.split(' ')[0];
+            const alias = await DatabaseConnection.manager
+                .findOne(Alias, {
                     where: { name: alias_name, from_guild: { gid: BigInt(message.guild.id) } },
+                })
+                .catch((err) => {
+                    Logger('error', err, message);
                 });
-                if (!alias) return;
+            if (!alias) return;
 
-                message.mentions.users.forEach((user: User) => {
-                    replace_table.find((replace) => replace.key === '{{mentioned_users}}').value += `<@${user.id}>, `;
-                });
-                replace_table.forEach((replace) => {
-                    alias.content = alias.content.replaceAll(replace.key, replace.value);
-                });
-                (message.channel as PartialDMChannel).send(alias.content);
-                break;
-            }
+            message.mentions.users.forEach((user: User) => {
+                replace_table.find((replace) => replace.key === '{{mentioned_users}}').value += `<@${user.id}>, `;
+            });
+            replace_table.forEach((replace) => {
+                alias.content = alias.content.replaceAll(replace.key, replace.value);
+            });
+            (message.channel as PartialDMChannel).send(alias.content);
+            break;
         }
-    } catch (error) {
-        Logger('warn', error.message, message);
     }
 };
 

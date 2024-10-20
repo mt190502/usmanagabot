@@ -14,6 +14,7 @@ import { DatabaseConnection } from '../../main';
 import { Introduction } from '../../types/database/introduction';
 import { IntroductionSubmit } from '../../types/database/introduction_submit';
 import { Command_t } from '../../types/interface/commands';
+import { Logger } from '../../utils/logger';
 
 const exec = async (interaction: ChatInputCommandInteraction | MessageContextMenuCommandInteraction): Promise<void> => {
     let user: User;
@@ -35,15 +36,25 @@ const exec = async (interaction: ChatInputCommandInteraction | MessageContextMen
     const user_roles = interaction.guild.members.cache
         .get(user.id)
         ?.roles.cache.sort((a, b) => b.position - a.position);
-    const introduction = await DatabaseConnection.manager.findOne(Introduction, {
-        where: { from_guild: { gid: BigInt(interaction.guild.id) } },
-    });
+    const introduction = await DatabaseConnection.manager
+        .findOne(Introduction, {
+            where: { from_guild: { gid: BigInt(interaction.guild.id) } },
+        })
+        .catch((err) => {
+            Logger('error', err, interaction);
+            throw err;
+        });
     const data: string[] = [];
 
     if (introduction) {
-        const last_introduction_submit = await DatabaseConnection.manager.findOne(IntroductionSubmit, {
-            where: { from_user: { uid: BigInt(user.id) }, from_guild: { gid: BigInt(interaction.guild.id) } },
-        });
+        const last_introduction_submit = await DatabaseConnection.manager
+            .findOne(IntroductionSubmit, {
+                where: { from_user: { uid: BigInt(user.id) }, from_guild: { gid: BigInt(interaction.guild.id) } },
+            })
+            .catch((err) => {
+                Logger('error', err, interaction);
+                throw err;
+            });
         if (last_introduction_submit) {
             data.push(`**__About ${user.username}__**\n`);
             for (let i = 1; i <= 8; i++) {
@@ -105,7 +116,7 @@ export default {
     description: 'View user(s) profile.',
     category: 'misc',
     cooldown: 5,
-    usage: '/userinfo <@user?>',
+    usage: '/user_information <@user?>',
 
     data: [cmcb, scb],
     execute: exec,

@@ -1,23 +1,17 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Command_t } from '../../types/interface/commands';
-import { Logger } from '../../utils/logger';
 
 const exec = async (interaction: ChatInputCommandInteraction) => {
-    try {
-        const item_1 = interaction.options.getString('item_1');
-        const item_2 = interaction.options.getString('item_2');
-        const extra_items = interaction.options.getString('extra_items');
+    const item_1 = interaction.options.getString('item_1');
+    const item_2 = interaction.options.getString('item_2');
+    const extra_items = interaction.options.getString('extra_items');
 
-        const choices: string[] = [item_1, item_2];
+    const choices: string[] = [item_1, item_2];
 
-        if (extra_items) choices.push(...extra_items.split(/,| /));
+    if (extra_items) choices.push(...extra_items.split(/,| /));
 
-        const random = choices[Math.floor(Math.random() * choices.length)];
-        await interaction.reply({ content: `I choose: **${random}**`, allowedMentions: { parse: [] } });
-    } catch (error) {
-        Logger('warn', 'Error in randomizer command: ' + error.message, interaction);
-        await interaction.reply({ content: 'An error occurred while processing your request.', ephemeral: true });
-    }
+    const random = choices[Math.floor(Math.random() * choices.length)];
+    await interaction.reply({ content: `I choose: **${random}**`, allowedMentions: { parse: [] } });
 };
 
 const scb = async (): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>> => {

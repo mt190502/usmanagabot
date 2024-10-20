@@ -26,7 +26,10 @@ const restCMDs: Collection<
 > = new Collection();
 
 export const CommandLoader = async (custom_command_file?: string) => {
-    const guilds = await DatabaseConnection.manager.find(Guilds);
+    const guilds = await DatabaseConnection.manager.find(Guilds).catch((err) => {
+        Logger('error', err);
+        throw err;
+    });
 
     const command_file_list = custom_command_file
         ? [custom_command_file]
@@ -100,9 +103,16 @@ export const RESTCommandLoader = async (custom_guild?: bigint, custom_command_fi
     dayjs.extend(utc);
     dayjs.extend(timezone);
     dayjs.tz.setDefault(BotConfiguration.timezone);
-    const last_command_refresh_date = await DatabaseConnection.manager.findOne(BotData, {
-        where: { key: 'last_command_refresh_date' },
-    });
+    const last_command_refresh_date = await DatabaseConnection.manager
+        .findOne(BotData, {
+            where: { key: 'last_command_refresh_date' },
+        })
+        .catch((err) => {
+            Logger('error', err);
+            throw err;
+        });
     last_command_refresh_date.value = dayjs().format('YYYY-MM-DDTHH:mm:ssZ');
-    await DatabaseConnection.manager.save(last_command_refresh_date);
+    await DatabaseConnection.manager.save(last_command_refresh_date).catch((err) => {
+        Logger('error', err);
+    });
 };

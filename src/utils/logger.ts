@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import { EmbedBuilder } from 'discord.js';
-import { BotClient, DatabaseConnection } from '../main';
+import { DatabaseConnection } from '../main';
 import { LogNotifier } from '../types/database/lognotifier';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -23,8 +23,7 @@ export const Logger = async (type: 'debug' | 'error' | 'info' | 'log' | 'warn', 
     if (interaction && ['error', 'info', 'warn'].includes(type)) {
         const notify = new EmbedBuilder()
             .setAuthor({
-                name: `${type.charAt(0).toUpperCase() + type.slice(1)} Notification`,
-                iconURL: BotClient.user.displayAvatarURL(),
+                name: `${type === 'warn' ? ':warning: Warning' : type === 'error' ? ':octagonal_sign: Error' : ':information_source: Information'} Notification`,
             })
             .setColor(type === 'error' ? 'Red' : type === 'warn' ? 'Yellow' : 'Blue')
             .setDescription(

@@ -25,25 +25,46 @@ import { Logger } from '../../utils/logger';
 import { RESTCommandLoader } from '../loader';
 
 const settings = async (interaction: StringSelectMenuInteraction | ModalSubmitInteraction) => {
-    const guild = await DatabaseConnection.manager.findOne(Guilds, {
-        where: { gid: BigInt(interaction.guild.id) },
-    });
-    const user = await DatabaseConnection.manager.findOne(Users, {
-        where: { uid: BigInt(interaction.user.id) },
-    });
-
-    const search_system = await DatabaseConnection.manager.findOne(Search, {
-        where: { from_guild: { id: guild.id } },
-    });
-    const search_engines = await DatabaseConnection.manager.find(SearchEngines, {
-        where: { from_guild: { id: guild.id } },
-    });
+    const guild = await DatabaseConnection.manager
+        .findOne(Guilds, {
+            where: { gid: BigInt(interaction.guild.id) },
+        })
+        .catch((err) => {
+            Logger('error', err, interaction);
+            throw err;
+        });
+    const user = await DatabaseConnection.manager
+        .findOne(Users, {
+            where: { uid: BigInt(interaction.user.id) },
+        })
+        .catch((err) => {
+            Logger('error', err, interaction);
+            throw err;
+        });
+    const search_system = await DatabaseConnection.manager
+        .findOne(Search, {
+            where: { from_guild: { id: guild.id } },
+        })
+        .catch((err) => {
+            Logger('error', err, interaction);
+            throw err;
+        });
+    const search_engines = await DatabaseConnection.manager
+        .find(SearchEngines, {
+            where: { from_guild: { id: guild.id } },
+        })
+        .catch((err) => {
+            Logger('error', err, interaction);
+            throw err;
+        });
 
     if (!search_system) {
         const new_search = new Search();
         new_search.from_guild = guild;
         new_search.from_user = user;
-        await DatabaseConnection.manager.save(new_search);
+        await DatabaseConnection.manager.save(new_search).catch((err) => {
+            Logger('error', err, interaction);
+        });
 
         const default_engines = [
             { key: 'Google', value: 'https://google.com/search?q=' },
@@ -56,7 +77,9 @@ const settings = async (interaction: StringSelectMenuInteraction | ModalSubmitIn
             new_engine.from_guild = guild;
             new_engine.engine_name = engine.key;
             new_engine.engine_url = engine.value;
-            await DatabaseConnection.manager.save(new_engine);
+            await DatabaseConnection.manager.save(new_engine).catch((err) => {
+                Logger('error', err, interaction);
+            });
         }
         return settings(interaction);
     }
@@ -122,12 +145,16 @@ const settings = async (interaction: StringSelectMenuInteraction | ModalSubmitIn
         case '1':
             search_system.is_enabled = !search_system.is_enabled;
             status = search_system.is_enabled ? 'Disable' : 'Enable';
-            await DatabaseConnection.manager.save(search_system);
+            await DatabaseConnection.manager.save(search_system).catch((err) => {
+                Logger('error', err, interaction);
+            });
             await (interaction as StringSelectMenuInteraction).update({
                 embeds: [genPostEmbed()],
                 components: [genMenuOptions()],
             });
-            await RESTCommandLoader(guild.gid, __filename);
+            await RESTCommandLoader(guild.gid, __filename).catch((err) => {
+                Logger('error', err, interaction);
+            });
             break;
         case '2':
             await (interaction as StringSelectMenuInteraction).showModal(
@@ -214,12 +241,16 @@ const settings = async (interaction: StringSelectMenuInteraction | ModalSubmitIn
                 })()
             );
 
-            await DatabaseConnection.manager.save(search_engines);
+            await DatabaseConnection.manager.save(search_engines).catch((err) => {
+                Logger('error', err, interaction);
+            });
             await (interaction as StringSelectMenuInteraction).update({
                 embeds: [genPostEmbed()],
                 components: [genMenuOptions()],
             });
-            await RESTCommandLoader(guild.gid, __filename);
+            await RESTCommandLoader(guild.gid, __filename).catch((err) => {
+                Logger('error', err, interaction);
+            });
             break;
         }
         case '31': {
@@ -248,12 +279,16 @@ const settings = async (interaction: StringSelectMenuInteraction | ModalSubmitIn
             search_engines.find((engine) => engine.engine_name === menu_path[1]).engine_url = (
                 interaction as ModalSubmitInteraction
             ).fields.getTextInputValue('engine_url');
-            await DatabaseConnection.manager.save(search_engines);
+            await DatabaseConnection.manager.save(search_engines).catch((err) => {
+                Logger('error', err, interaction);
+            });
             await (interaction as StringSelectMenuInteraction).update({
                 embeds: [genPostEmbed()],
                 components: [genMenuOptions()],
             });
-            await RESTCommandLoader(guild.gid, __filename);
+            await RESTCommandLoader(guild.gid, __filename).catch((err) => {
+                Logger('error', err, interaction);
+            });
             break;
         }
         case '41': {
@@ -264,13 +299,17 @@ const settings = async (interaction: StringSelectMenuInteraction | ModalSubmitIn
                 search_engines.findIndex((engine) => engine.engine_name === menu_path[1]),
                 1
             );
-            await DatabaseConnection.manager.remove(selected_engine);
+            await DatabaseConnection.manager.remove(selected_engine).catch((err) => {
+                Logger('error', err, interaction);
+            });
 
             await (interaction as StringSelectMenuInteraction).update({
                 embeds: [genPostEmbed()],
                 components: [genMenuOptions()],
             });
-            await RESTCommandLoader(guild.gid, __filename);
+            await RESTCommandLoader(guild.gid, __filename).catch((err) => {
+                Logger('error', err, interaction);
+            });
             break;
         }
         default:
@@ -283,69 +322,70 @@ const settings = async (interaction: StringSelectMenuInteraction | ModalSubmitIn
 };
 
 const scb = async (guild: Guilds): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>> => {
-    try {
-        const data = new SlashCommandBuilder().setName('search').setDescription('Search for something');
-        const search_system = await DatabaseConnection.manager.findOne(Search, {
+    const data = new SlashCommandBuilder().setName('search').setDescription('Search for something');
+    const search_system = await DatabaseConnection.manager
+        .findOne(Search, {
             where: { from_guild: { id: guild.id } },
+        })
+        .catch((err) => {
+            Logger('error', err, guild);
+            throw err;
         });
-        const search_engines = await DatabaseConnection.manager.find(SearchEngines, {
+    const search_engines = await DatabaseConnection.manager
+        .find(SearchEngines, {
             where: { from_guild: { id: guild.id } },
+        })
+        .catch((err) => {
+            Logger('error', err, guild);
+            throw err;
         });
 
-        if (search_system) {
-            if (!search_system.is_enabled) {
-                return new SlashCommandBuilder().setName('search').setDescription('Search for something');
-            }
+    if (search_system) {
+        if (!search_system.is_enabled) {
+            return new SlashCommandBuilder().setName('search').setDescription('Search for something');
         }
+    }
 
-        if (search_engines.length === 0) {
-            data.addStringOption((option: SlashCommandStringOption) =>
-                option
-                    .setName('engine')
-                    .setDescription('Search engine')
-                    .setRequired(true)
-                    .addChoices({ name: 'Google', value: 'https://google.com/search?q=' })
-                    .addChoices({ name: 'DuckDuckGo', value: 'https://duckduckgo.com/?q=' })
-            );
-            data.addStringOption((option) => option.setName('query').setDescription('Search query').setRequired(true));
-            return data;
-        }
+    if (search_engines.length === 0) {
         data.addStringOption((option: SlashCommandStringOption) =>
             option
                 .setName('engine')
                 .setDescription('Search engine')
                 .setRequired(true)
-                .addChoices(...search_engines.map((engine) => ({ name: engine.engine_name, value: engine.engine_url })))
+                .addChoices({ name: 'Google', value: 'https://google.com/search?q=' })
+                .addChoices({ name: 'DuckDuckGo', value: 'https://duckduckgo.com/?q=' })
         );
         data.addStringOption((option) => option.setName('query').setDescription('Search query').setRequired(true));
         return data;
-    } catch (error) {
-        Logger('error', error, guild);
-        return new SlashCommandBuilder().setName('search').setDescription('Search for something');
     }
+    data.addStringOption((option: SlashCommandStringOption) =>
+        option
+            .setName('engine')
+            .setDescription('Search engine')
+            .setRequired(true)
+            .addChoices(...search_engines.map((engine) => ({ name: engine.engine_name, value: engine.engine_url })))
+    );
+    data.addStringOption((option) => option.setName('query').setDescription('Search query').setRequired(true));
+    return data;
 };
 
 const exec = async (interaction: CommandInteraction) => {
-    try {
-        const engine = interaction.options.data.find((option) => option.name === 'engine')?.value || null;
-        const query = interaction.options.data.find((option) => option.name === 'query')?.value || null;
+    const engine = interaction.options.data.find((option) => option.name === 'engine')?.value || null;
+    const query = interaction.options.data.find((option) => option.name === 'query')?.value || null;
 
-        if (!engine || !query) {
-            const post = new EmbedBuilder()
-                .setTitle(':warning: Warning')
-                .setDescription('Search is disabled. Please contact the server administrator.')
-                .setColor(Colors.Yellow);
-            await interaction.reply({
-                embeds: [post],
-                ephemeral: true,
-            });
-            return;
-        }
-
-        await interaction.reply(`${engine}${query.toString().replace(/\s+/g, '+')}`);
-    } catch (error) {
-        Logger('error', error, interaction);
+    if (!engine || !query) {
+        const post = new EmbedBuilder()
+            .setTitle(':warning: Warning')
+            .setDescription('Search is disabled. Please contact the server administrator.')
+            .setColor(Colors.Yellow);
+        await interaction.reply({
+            embeds: [post],
+            ephemeral: true,
+        });
+        return;
     }
+
+    await interaction.reply(`${engine}${query.toString().replace(/\s+/g, '+')}`);
 };
 
 export default {
