@@ -227,7 +227,8 @@ const settings = async (
                     namesSet.add(column.name);
                 }
 
-                for (let i = 0; i < parsed.length; i++) {
+                for (let i = 0; i < 8; i++) {
+                    if (!parsed[i]) parsed[i] = { name: null, value: null };
                     (introduction[`col${i + 1}` as keyof Introduction] as string[]) = [parsed[i].name, parsed[i].value];
                 }
 
@@ -318,7 +319,7 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
                     interaction.options.getString(key[0]) ||
                     (last_introduction_submit[`col${i}` as keyof IntroductionSubmit] as string) ||
                     null;
-                if (value && value.length > 0) {
+                if (value && value.length > 0 && key[1]) {
                     data.push(`**${key[1]}**: ${value}\n`);
                     (last_introduction_submit[`col${i}` as keyof IntroductionSubmit] as string) = value;
                     values++;
@@ -402,6 +403,9 @@ const scb = async (guild: Guilds): Promise<Omit<SlashCommandBuilder, 'addSubcomm
             .setNameLocalization(guild.country, introduction.cmd_name);
         for (let i = 1; i <= 8; i++) {
             const colName = `col${i}` as keyof Introduction;
+            if ((introduction[colName] as string[])[0] === null && (introduction[colName] as string[])[1] === null) {
+                continue;
+            }
             data.addStringOption((option) =>
                 option
                     .setName((introduction[colName] as string[])[0])
@@ -423,7 +427,7 @@ export default {
     description: 'User introduction database',
     category: 'misc',
     cooldown: 5,
-    usage: '/<cmd_name> <col1> <col2> <col3> <col4> <col5> <col6> <col7> <col8>',
+    usage: '/<cmd_name> <col1> <col2>...',
 
     data: [scb],
     execute: exec,
