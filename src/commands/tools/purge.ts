@@ -17,7 +17,6 @@ import {
 import { Command_t } from '../../types/interface/commands';
 import { Logger } from '../../utils/logger';
 
-const selected_messages: Message<boolean>[] = [];
 let target_message: Message;
 let question_message: InteractionResponse;
 
@@ -40,6 +39,7 @@ const exec = async (
         switch (interaction.customId) {
             case 'execute:purge:ok':
                 {
+                    const selected_messages: Message<boolean>[] = [];
                     post.setTitle(':hourglass_flowing_sand: Processing')
                         .setDescription('Please wait...')
                         .setColor(Colors.Blue);
@@ -66,13 +66,22 @@ const exec = async (
                         }
                     }
 
-                    if (selected_count >= 100) {
-                        while (selected_messages.length > 0) {
-                            const chunk = selected_messages.splice(0, 100);
-                            await interaction.channel.bulkDelete(chunk);
+                    try {
+                        if (selected_count >= 100) {
+                            while (selected_messages.length > 0) {
+                                const chunk = selected_messages.splice(0, 100);
+                                await interaction.channel.bulkDelete(chunk);
+                            }
+                        } else {
+                            await interaction.channel.bulkDelete(selected_messages);
                         }
-                    } else {
-                        await interaction.channel.bulkDelete(selected_messages);
+                    } catch (err) {
+                        post.setTitle(':octagonal_sign: Error')
+                            .setDescription(`Failed to delete some messages\n${err.message}`)
+                            .setColor(Colors.Red);
+                        question_message.edit({ embeds: [post], components: [] });
+                        Logger('error', err, interaction);
+                        return;
                     }
 
                     target_message.delete();
