@@ -55,11 +55,7 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
         timestamps.set(BigInt(interaction.user.id), now);
         setTimeout(() => timestamps.delete(BigInt(interaction.user.id)), cooldownAmount);
 
-        try {
-            await command.execute(interaction);
-        } catch (error) {
-            Logger('error', error, interaction);
-        }
+        await command.execute(interaction);
     } else if (interaction.isModalSubmit() || interaction.isAnySelectMenu() || interaction.isButton()) {
         const [type, name] = interaction.customId.split(':');
         let command;
