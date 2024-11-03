@@ -10,6 +10,9 @@ export class ChannelRestrictSystem {
     @Column({ type: 'boolean', nullable: false, default: false })
     is_enabled: boolean;
 
+    @Column({ type: 'bigint', nullable: true, default: null })
+    mod_notifier_channel_id: string;
+
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
     from_user: Users;
