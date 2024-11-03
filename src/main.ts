@@ -20,8 +20,8 @@ export const BotEvents: Collection<string, Event_t> = new Collection();
 export const BotClient = new Client({
     intents: [
         GatewayIntentBits.DirectMessages,
-        GatewayIntentBits.DirectMessageReactions,
         GatewayIntentBits.DirectMessageTyping,
+        GatewayIntentBits.DirectMessageReactions,
         GatewayIntentBits.GuildEmojisAndStickers,
         GatewayIntentBits.GuildMessageReactions,
         GatewayIntentBits.GuildMessages,
