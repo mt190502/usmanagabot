@@ -11,7 +11,7 @@ import {
 } from 'discord.js';
 import { DatabaseConnection } from '../../main';
 import { Guilds } from '../../types/database/guilds';
-import { LogNotifier } from '../../types/database/lognotifier';
+import { LogNotifier } from '../../types/database/syslog_notifier';
 import { Users } from '../../types/database/users';
 import { Command_t } from '../../types/interface/commands';
 import { Logger } from '../../utils/logger';
@@ -134,6 +134,10 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
             log_notifier.channel_id = interaction.values[0];
             await DatabaseConnection.manager.save(log_notifier).catch((err) => {
                 Logger('error', err, interaction);
+            });
+            await interaction.update({
+                embeds: [genPostEmbed()],
+                components: [genMenuOptions()],
             });
             break;
         default:

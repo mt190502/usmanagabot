@@ -11,8 +11,7 @@ import {
     User,
 } from 'discord.js';
 import { DatabaseConnection } from '../../main';
-import { Introduction } from '../../types/database/introduction';
-import { IntroductionSubmit } from '../../types/database/introduction_submit';
+import { Introduction, IntroductionSubmit } from '../../types/database/introduction';
 import { Command_t } from '../../types/interface/commands';
 import { Logger } from '../../utils/logger';
 

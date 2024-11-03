@@ -17,8 +17,7 @@ import {
 } from 'discord.js';
 import { DatabaseConnection } from '../../main';
 import { Guilds } from '../../types/database/guilds';
-import { Search } from '../../types/database/search';
-import { SearchEngines } from '../../types/database/search_engines';
+import { Search, SearchEngines } from '../../types/database/search';
 import { Users } from '../../types/database/users';
 import { Command_t } from '../../types/interface/commands';
 import { Logger } from '../../utils/logger';

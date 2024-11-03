@@ -7,7 +7,7 @@ import {
     SlashCommandBuilder,
 } from 'discord.js';
 import { DatabaseConnection } from '../../main';
-import { MessageLogger } from '../../types/database/logger';
+import { MessageLogger } from '../../types/database/message_logger';
 import { Messages } from '../../types/database/messages';
 import { Command_t } from '../../types/interface/commands';
 import { Logger } from '../../utils/logger';

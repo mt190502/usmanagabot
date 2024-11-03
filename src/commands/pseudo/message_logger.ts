@@ -14,7 +14,7 @@ import {
 } from 'discord.js';
 import { DatabaseConnection } from '../../main';
 import { Guilds } from '../../types/database/guilds';
-import { MessageLogger } from '../../types/database/logger';
+import { MessageLogger } from '../../types/database/message_logger';
 import { Messages } from '../../types/database/messages';
 import { Users } from '../../types/database/users';
 import { Command_t } from '../../types/interface/commands';

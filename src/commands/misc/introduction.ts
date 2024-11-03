@@ -22,8 +22,7 @@ import {
 import yaml from 'yaml';
 import { DatabaseConnection } from '../../main';
 import { Guilds } from '../../types/database/guilds';
-import { Introduction } from '../../types/database/introduction';
-import { IntroductionSubmit } from '../../types/database/introduction_submit';
+import { Introduction, IntroductionSubmit } from '../../types/database/introduction';
 import { Users } from '../../types/database/users';
 import { Command_t } from '../../types/interface/commands';
 import { Logger } from '../../utils/logger';

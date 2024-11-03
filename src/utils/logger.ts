@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import { EmbedBuilder } from 'discord.js';
 import { DatabaseConnection } from '../main';
-import { LogNotifier } from '../types/database/lognotifier';
+import { LogNotifier } from '../types/database/syslog_notifier';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const Logger = async (type: 'debug' | 'error' | 'info' | 'log' | 'warn', msg: string, interaction?: any) => {
