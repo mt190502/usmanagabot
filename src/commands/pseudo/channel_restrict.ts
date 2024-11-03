@@ -80,10 +80,7 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
             },
             {
                 name: 'Restricted Channels',
-                value:
-                    restrict_system.is_enabled && restricts.length
-                        ? restricts.map((channel) => `<#${channel.channel_id}>`).join(', ')
-                        : 'None',
+                value: restricts.length ? restricts.map((channel) => `<#${channel.channel_id}>`).join(', ') : 'None',
             },
             {
                 name: 'Mod Notifier Channel',
