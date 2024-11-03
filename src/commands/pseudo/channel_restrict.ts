@@ -231,18 +231,7 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
         case '32': {
             const channel_id = interaction.values[0].split('/')[1];
             const channel = restricts.find((c) => BigInt(c.channel_id) === BigInt(channel_id));
-
-            for (const restrict of interaction.values) {
-                const requested_restrict = restrict.split('/')[2];
-                channel.restricts = [];
-
-                if (channel.restricts.includes(requested_restrict)) {
-                    continue;
-                } else {
-                    channel.restricts.push(requested_restrict);
-                }
-            }
-
+            channel.restricts = interaction.values.map((restrict) => restrict.split('/')[2]);
             await DatabaseConnection.manager.save(channel).catch((err) => {
                 Logger('error', err, interaction);
             });
