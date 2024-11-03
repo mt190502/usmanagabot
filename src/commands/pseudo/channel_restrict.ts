@@ -378,9 +378,6 @@ const exec = async (event_name: string, data: Message | ThreadChannel) => {
         }
     }
     if (restrict_list.length === 0) return;
-    console.log(
-        `====================\nImage: ${message_is_image}\nText: ${message_is_text}\nLink: ${message_is_link}\nThread: ${message_is_thread}`
-    );
 
     const allowed_content_types = restrict_list
         .map((type) => {
