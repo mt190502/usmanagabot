@@ -330,7 +330,7 @@ const exec = async (event_name: string, data: Message | ThreadChannel) => {
         is_message && ((data as Message).content.match(/https?:\/\/\S+/) ?? false),
     ];
 
-    if ((data as Message).reference) is_thread = true;
+    if ((data as Message).type === 18) is_thread = true;
 
     const is_restricted = !(
         (is_image && restrict_list.includes(ChannelRestrictList.IMAGE_ONLY)) ||
