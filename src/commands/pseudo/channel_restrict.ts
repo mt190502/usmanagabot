@@ -23,10 +23,12 @@ import { Command_t } from '../../types/interface/commands';
 import { Logger } from '../../utils/logger';
 
 enum ChannelRestrictList {
-    IMAGE_ONLY = 1,
-    TEXT_ONLY,
-    LINK_ONLY,
-    THREAD_ONLY,
+    IMAGE = 1,
+    LINK,
+    STICKER,
+    TEXT,
+    THREAD,
+    VIDEO,
 }
 
 const settings = async (interaction: StringSelectMenuInteraction) => {
@@ -321,8 +323,12 @@ const exec = async (event_name: string, data: Message | ThreadChannel) => {
     const restrict_list = restrict_list_db.restricts.map((r) => parseInt(r) as ChannelRestrictList);
 
     let is_thread = event_name === 'threadCreate';
-    const [is_image, is_text, is_link] = [
+    const [is_image, is_video, is_sticker, is_text, is_link] = [
         is_message && (data as Message).attachments.some((att) => att.contentType?.startsWith('image')),
+        is_message && (data as Message).attachments.some((att) => att.contentType?.startsWith('video')),
+        is_message &&
+            ((data as Message).content.match(/https?:\/\/\w+\.discordapp\.net\/stickers\/\w+/) ||
+                (data as Message).stickers.size > 0),
         is_message &&
             (data as Message).content.length > 0 &&
             !(data as Message).content.match(/https?:\/\/\S+/) &&
@@ -333,15 +339,17 @@ const exec = async (event_name: string, data: Message | ThreadChannel) => {
     if ((data as Message).type === 18) is_thread = true;
 
     const is_restricted = !(
-        (is_image && restrict_list.includes(ChannelRestrictList.IMAGE_ONLY)) ||
-        (is_text && restrict_list.includes(ChannelRestrictList.TEXT_ONLY)) ||
-        (is_link && restrict_list.includes(ChannelRestrictList.LINK_ONLY)) ||
-        (is_thread && restrict_list.includes(ChannelRestrictList.THREAD_ONLY))
+        (is_image && restrict_list.includes(ChannelRestrictList.IMAGE)) ||
+        (is_link && restrict_list.includes(ChannelRestrictList.LINK) && !is_sticker) ||
+        (is_sticker && restrict_list.includes(ChannelRestrictList.STICKER)) ||
+        (is_text && restrict_list.includes(ChannelRestrictList.TEXT)) ||
+        (is_thread && restrict_list.includes(ChannelRestrictList.THREAD)) ||
+        (is_video && restrict_list.includes(ChannelRestrictList.VIDEO))
     );
 
     if (is_restricted) {
         post.setDescription(
-            `Your message in <#${channel_id}> has been deleted due to channel restrictions.\nAllowed types: ${restrict_list.map((r) => ChannelRestrictList[r].split('_ONLY')[0]).join(', ')}`
+            `Your message in <#${channel_id}> has been deleted due to channel restrictions.\nAllowed types: ${restrict_list.map((r) => ChannelRestrictList[r]).join(', ')}`
         );
 
         await data.delete().catch((err) => Logger('error', err, data));
