@@ -1,6 +1,6 @@
 import { Client, Collection, GatewayIntentBits, Partials } from 'discord.js';
 import { DataSource } from 'typeorm';
-import { RESTCommandLoader } from './commands/loader';
+import { CommandLoaderAfterBotReady, RESTCommandLoader } from './commands/loader';
 import { EventLoader } from './events/loader';
 import { Command_t } from './types/interface/commands';
 import { BotConfiguration_t } from './types/interface/config';
@@ -15,6 +15,7 @@ export const DatabaseConfiguration: DatabaseConfiguration_t = ConfigLoader('../c
 export let DatabaseConnection: DataSource;
 
 export const BotCommands: Collection<bigint, Collection<string, Command_t>> = new Collection();
+export const LoadAfterBotReady: Collection<bigint, string[]> = new Collection();
 export const BotEvents: Collection<string, Event_t> = new Collection();
 
 export const BotClient = new Client({
@@ -39,4 +40,5 @@ export const BotClient = new Client({
     await RESTCommandLoader();
     await EventLoader();
     BotClient.login(BotConfiguration.token);
+    await CommandLoaderAfterBotReady();
 })();

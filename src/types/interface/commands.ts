@@ -11,6 +11,7 @@ export interface Command_t {
     usewithevent: string[];
     cooldown: number;
     usage: string;
+    load_after_ready: boolean;
 
     data: Array<
         (

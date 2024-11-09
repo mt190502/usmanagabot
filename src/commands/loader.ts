@@ -10,7 +10,7 @@ import {
 } from 'discord.js';
 import { globSync } from 'glob';
 import path from 'path';
-import { BotCommands, BotConfiguration, DatabaseConnection } from '../main';
+import { BotCommands, BotConfiguration, DatabaseConnection, LoadAfterBotReady } from '../main';
 import { BotData } from '../types/database/bot';
 import { Guilds } from '../types/database/guilds';
 import { Command_t } from '../types/interface/commands';
@@ -35,19 +35,27 @@ export const CommandLoader = async (custom_command_file?: string) => {
         ? [custom_command_file]
         : globSync(path.join(__dirname, './**/*.ts'), { ignore: '**/loader.ts' });
 
-    for (const file of command_file_list) {
+    for (const file of command_file_list.sort()) {
         const cmd: Command_t = (await import(file)).default;
         const filename = file.match(/([^/]+\/[^/]+)$/)[1];
 
         if (!cmd.name || !cmd.enabled) {
             Logger('warn', `Command "${filename}" does not have a name or is disabled, skipping...`);
         }
+
         Logger('info', `Loading command "${cmd.name}" from file "commands/${filename}"...`);
 
         if (cmd.type === 'customizable') {
             for (const guild of guilds) {
                 if (!BotCommands.has(BigInt(guild.gid.toString()))) {
                     BotCommands.set(BigInt(guild.gid.toString()), new Collection());
+                }
+                if (cmd.load_after_ready && !LoadAfterBotReady.get(BigInt(guild.gid.toString()))?.includes(file)) {
+                    if (!LoadAfterBotReady.has(BigInt(guild.gid.toString()))) {
+                        LoadAfterBotReady.set(BigInt(guild.gid.toString()), []);
+                    }
+                    LoadAfterBotReady.get(BigInt(guild.gid.toString())).push(file);
+                    continue;
                 }
                 if (!restCMDs.has(guild.gid.toString())) restCMDs.set(guild.gid.toString(), new Collection());
                 BotCommands.get(BigInt(guild.gid.toString())).set(cmd.name, cmd);
@@ -115,4 +123,12 @@ export const RESTCommandLoader = async (custom_guild?: bigint, custom_command_fi
     await DatabaseConnection.manager.save(last_command_refresh_date).catch((err) => {
         Logger('error', err);
     });
+};
+
+export const CommandLoaderAfterBotReady = async () => {
+    for (const [guild_id, command_file] of LoadAfterBotReady) {
+        for (const file of command_file) {
+            await RESTCommandLoader(BigInt(guild_id), file);
+        }
+    }
 };
