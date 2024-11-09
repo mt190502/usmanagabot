@@ -66,7 +66,7 @@ export default {
     type: 'standard',
     description: 'Change bot settings',
 
-    category: 'utils',
+    category: 'admin',
     cooldown: 5,
 
     data: [scb],

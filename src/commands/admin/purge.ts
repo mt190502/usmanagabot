@@ -156,7 +156,7 @@ export default {
     type: 'standard',
     description: 'Delete messages after target message',
 
-    category: 'tools',
+    category: 'admin',
     cooldown: 0,
     parameters: '<message_id|message_url>?',
 

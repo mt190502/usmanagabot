@@ -85,7 +85,7 @@ export default {
     type: 'standard',
     description: 'Fetch message URL from logger',
 
-    category: 'utils',
+    category: 'admin',
     cooldown: 5,
     parameters: '<message_url>',
 

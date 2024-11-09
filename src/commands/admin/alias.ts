@@ -219,7 +219,7 @@ export default {
     pretty_name: 'Alias',
     description: 'Manage aliases',
 
-    category: 'utils',
+    category: 'admin',
     cooldown: 5,
     parameters: '<add|remove|list> <keyword> <alias>',
     usewithevent: ['messageCreate'],
