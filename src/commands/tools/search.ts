@@ -390,6 +390,7 @@ const exec = async (interaction: CommandInteraction) => {
 export default {
     enabled: true,
     name: 'search',
+    pretty_name: 'Search',
     type: 'customizable',
     description: 'Search for something',
 

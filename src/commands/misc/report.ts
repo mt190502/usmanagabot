@@ -267,6 +267,7 @@ const scb = (): Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'
 export default {
     enabled: true,
     name: 'report',
+    pretty_name: 'Report',
     type: 'customizable',
 
     description: 'Report a user to the moderators.',

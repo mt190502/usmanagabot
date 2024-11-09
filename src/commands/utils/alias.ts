@@ -212,6 +212,7 @@ export default {
     enabled: true,
     name: 'alias',
     type: 'customizable',
+    pretty_name: 'Alias',
     description: 'Manage aliases',
 
     category: 'utils',

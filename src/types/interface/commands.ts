@@ -4,6 +4,7 @@ import { Guilds } from '../database/guilds';
 export interface Command_t {
     enabled: boolean;
     name: string;
+    pretty_name: string;
     type: 'customizable' | 'standard';
     description: string;
 

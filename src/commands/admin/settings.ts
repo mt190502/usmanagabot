@@ -62,6 +62,7 @@ const scb = async (): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSu
 export default {
     enabled: true,
     name: 'settings',
+    pretty_name: 'Settings',
     type: 'standard',
     description: 'Change bot settings',
 

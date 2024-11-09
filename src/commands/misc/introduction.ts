@@ -465,6 +465,7 @@ const scb = async (guild: Guilds): Promise<Omit<SlashCommandBuilder, 'addSubcomm
 export default {
     enabled: true,
     name: 'introduction',
+    pretty_name: 'Introduction',
     type: 'customizable',
 
     description: 'User introduction database',

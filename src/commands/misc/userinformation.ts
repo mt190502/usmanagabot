@@ -110,6 +110,7 @@ const scb = (): Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'
 export default {
     enabled: true,
     name: 'user_information',
+    pretty_name: 'User Information',
     type: 'standard',
 
     description: 'View user(s) profile.',

@@ -81,6 +81,7 @@ const scb = async (): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSu
 export default {
     enabled: true,
     name: 'find_message_in_logger',
+    pretty_name: 'Find Message in Logger',
     type: 'standard',
     description: 'Fetch message URL from logger',
 

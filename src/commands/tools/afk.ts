@@ -156,6 +156,7 @@ const exec_when_event = async (event_name: string, message: Message) => {
 export default {
     enabled: true,
     name: 'afk',
+    pretty_name: 'AFK',
     type: 'standard',
     description: 'Away from keyboard',
 

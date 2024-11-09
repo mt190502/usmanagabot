@@ -152,6 +152,7 @@ const scb = (): Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'
 export default {
     enabled: true,
     name: 'purge',
+    pretty_name: 'Purge',
     type: 'standard',
     description: 'Delete messages after target message',
 

@@ -19,6 +19,7 @@ const scb = (): Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'
 export default {
     enabled: true,
     name: 'ping',
+    pretty_name: 'Ping',
     type: 'standard',
     description: 'Ping!',
 

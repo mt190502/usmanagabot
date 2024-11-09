@@ -36,6 +36,7 @@ const scb = async (): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSu
 export default {
     enabled: true,
     name: 'randomizer',
+    pretty_name: 'Randomizer',
     type: 'standard',
     description: 'Selects a random item from a list of items.',
 
