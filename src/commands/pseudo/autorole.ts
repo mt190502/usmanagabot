@@ -191,7 +191,6 @@ export default {
 
     category: 'pseudo',
     cooldown: 0,
-    usage: '/settings',
 
     usewithevent: ['guildMemberAdd'],
     execute_when_event: exec,

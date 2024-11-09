@@ -11,7 +11,7 @@ export interface Command_t {
     category: 'admin' | 'core' | 'game' | 'misc' | 'tools' | 'pseudo' | 'utils';
     usewithevent: string[];
     cooldown: number;
-    usage: string;
+    parameters: string;
     load_after_ready: boolean;
 
     data: Array<

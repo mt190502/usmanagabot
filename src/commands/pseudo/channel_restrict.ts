@@ -405,7 +405,6 @@ export default {
 
     category: 'pseudo',
     cooldown: 0,
-    usage: '/settings',
 
     usewithevent: ['messageCreate', 'threadCreate'],
     execute_when_event: exec,

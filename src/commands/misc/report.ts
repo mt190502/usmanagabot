@@ -273,7 +273,7 @@ export default {
     description: 'Report a user to the moderators.',
     category: 'misc',
     cooldown: 5,
-    usage: '/report <@user> <reason>',
+    parameters: '<@user> <reason>',
 
     data: [scb],
     execute: exec,

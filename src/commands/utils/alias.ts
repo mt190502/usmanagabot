@@ -153,14 +153,18 @@ const scb = async (guild: Guilds): Promise<Omit<SlashCommandBuilder, 'addSubcomm
         subcommand
             .setName('remove')
             .setDescription('Remove an alias')
-            .addStringOption((option) => option.setName('alias_name').setDescription('Name').setRequired(true).setChoices(choices))
+            .addStringOption((option) =>
+                option.setName('alias_name').setDescription('Name').setRequired(true).setChoices(choices)
+            )
     );
 
     data.addSubcommand((subcommand) =>
         subcommand
             .setName('modify')
             .setDescription('Modify an alias')
-            .addStringOption((option) => option.setName('alias_name').setDescription('Name').setRequired(true).setChoices(choices))
+            .addStringOption((option) =>
+                option.setName('alias_name').setDescription('Name').setRequired(true).setChoices(choices)
+            )
             .addStringOption((option) =>
                 option
                     .setName('alias_content')
@@ -217,7 +221,7 @@ export default {
 
     category: 'utils',
     cooldown: 5,
-    usage: '/alias <add|remove|list> <keyword> <alias>',
+    parameters: '<add|remove|list> <keyword> <alias>',
     usewithevent: ['messageCreate'],
 
     data: [scb],

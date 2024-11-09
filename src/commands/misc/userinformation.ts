@@ -116,7 +116,7 @@ export default {
     description: 'View user(s) profile.',
     category: 'misc',
     cooldown: 5,
-    usage: '/user_information <@user?>',
+    parameters: '<@user?>',
 
     data: [cmcb, scb],
     execute: exec,

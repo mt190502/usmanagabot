@@ -42,7 +42,7 @@ export default {
 
     category: 'tools',
     cooldown: 5,
-    usage: '/randomizer',
+    parameters: '<item_1> <item_2> [extra_items]',
 
     data: [scb],
     execute: exec,

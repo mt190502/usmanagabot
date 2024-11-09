@@ -154,8 +154,9 @@ export default {
     name: 'log_notifier',
     type: 'customizable',
     description: 'If an anormal status has occurred, notify it to the moderators.',
+
     category: 'pseudo',
     cooldown: 0,
-    usage: '/settings',
+
     settings: settings,
 } as Command_t;

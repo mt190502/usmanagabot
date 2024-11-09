@@ -396,7 +396,7 @@ export default {
 
     category: 'tools',
     cooldown: 5,
-    usage: '/search',
+    parameters: '<engine> <query>',
 
     data: [scb],
     execute: exec,

@@ -368,7 +368,6 @@ export default {
 
     category: 'pseudo',
     cooldown: 0,
-    usage: '/settings',
     usewithevent: ['messageCreate', 'messageDelete', 'messageUpdate'],
 
     execute_when_event: exec,

@@ -68,7 +68,6 @@ export default {
 
     category: 'utils',
     cooldown: 5,
-    usage: '/settings',
 
     data: [scb],
     execute: exec,

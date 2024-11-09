@@ -87,7 +87,7 @@ export default {
 
     category: 'utils',
     cooldown: 5,
-    usage: '/find_message_in_logger <message_url>',
+    parameters: '<message_url>',
 
     data: [cmcb, scb],
     execute: exec,

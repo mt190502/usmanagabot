@@ -25,7 +25,6 @@ export default {
 
     category: 'core',
     cooldown: 5,
-    usage: '/ping',
 
     data: [scb],
     execute: exec,

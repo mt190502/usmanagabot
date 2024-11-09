@@ -158,7 +158,7 @@ export default {
 
     category: 'tools',
     cooldown: 0,
-    usage: '/purge <message_id|message_url>?',
+    parameters: '<message_id|message_url>?',
 
     data: [cmcb, scb],
     execute: exec,

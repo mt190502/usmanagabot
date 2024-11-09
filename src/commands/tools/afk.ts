@@ -162,7 +162,7 @@ export default {
 
     category: 'tools',
     cooldown: 5,
-    usage: '/afk <reason>',
+    parameters: '<reason>',
     usewithevent: ['messageCreate'],
 
     data: [scb],

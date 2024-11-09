@@ -471,7 +471,7 @@ export default {
     description: 'User introduction database',
     category: 'misc',
     cooldown: 5,
-    usage: '/<cmd_name> <col1> <col2>...',
+    parameters: '<col1> <col2>...',
 
     data: [scb],
     execute: exec,
