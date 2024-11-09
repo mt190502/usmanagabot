@@ -28,10 +28,15 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
     } else if (interaction.isChatInputCommand() || interaction.isContextMenuCommand()) {
         let command: Command_t;
         const requested_command = interaction.commandName.replaceAll(' ', '_').toLowerCase();
-        if (interaction.commandGuildId === null) {
-            command = BotCommands.get(BigInt(0)).get(requested_command);
-        } else {
-            command = BotCommands.get(BigInt(interaction.commandGuildId)).get(requested_command);
+        const guild_id = interaction.commandGuildId ? BigInt(interaction.commandGuildId) : BigInt(0);
+        command = BotCommands.get(guild_id).get(requested_command);
+        if (!command) {
+            for (const c of BotCommands.get(guild_id)) {
+                if (c[1].aliases?.includes(requested_command)) {
+                    command = c[1];
+                    break;
+                }
+            }
         }
 
         if (!command) return;

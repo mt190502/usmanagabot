@@ -10,6 +10,7 @@ export interface Command_t {
 
     category: 'admin' | 'core' | 'game' | 'misc' | 'tools' | 'pseudo' | 'utils';
     usewithevent: string[];
+    aliases: string[];
     cooldown: number;
     parameters: string;
     load_after_ready: boolean;
