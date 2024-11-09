@@ -12,6 +12,7 @@ import {
     TextChannel,
     WebhookClient,
 } from 'discord.js';
+import timers from 'node:timers/promises';
 import { DatabaseConnection } from '../../main';
 import { Guilds } from '../../types/database/guilds';
 import { MessageLogger } from '../../types/database/message_logger';
@@ -280,25 +281,47 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
                     : `https://discord.com/channels/${message.guild.id}/${message.channel.id}/${message.reference.messageId}`;
                 content += ` | [Reply](${url})`;
             }
-            content += ' | ' + message.content;
+            const contents: string[] = [];
+            if (message.content.length < 1800) {
+                content += ' | ' + message.content;
+                contents.push(message.content);
+            } else if (message.content.length > 1800 && message.content.length < 3600) {
+                content += ' | ' + message.content.slice(0, 1800) + '...';
+                contents.push(content);
+                contents.push(message.content.slice(1800));
+            } else {
+                content += ' | ' + message.content.slice(0, 1800) + '...';
+                contents.push(content);
+                content = message.content.slice(1800, 3600);
+                contents.push(content);
+                content = message.content.slice(3600);
+                contents.push(content);
+            }
             if (message.stickers.size > 0) {
                 content += 'Stickers: ' + message.stickers.map((sticker) => sticker.name).join(', ');
             }
             if (message.attachments.size > 0) content += '\n' + message.attachments.map((a) => a.url).join('\n');
 
-            const webhookMessage = await webhookClient
-                .send({
-                    content,
-                    username: message.author.username,
-                    avatarURL: message.author.displayAvatarURL(),
-                    allowedMentions: { parse: [] },
-                })
-                .catch((err) => {
-                    Logger('error', err, message);
-                    throw err;
-                });
+            let webhookMessageID: string;
+            for (const c in contents) {
+                timers.setTimeout(500);
+                const webhookMessage = await webhookClient
+                    .send({
+                        content: contents[c],
+                        username: message.author.username,
+                        avatarURL: message.author.displayAvatarURL(),
+                        allowedMentions: { parse: [] },
+                    })
+                    .catch((err) => {
+                        Logger('error', err, message);
+                        throw err;
+                    });
+                if (parseInt(c) == contents.length - 1) {
+                    webhookMessageID = webhookMessage.id;
+                }
+            }
 
-            messageInDB.logged_message_id = BigInt(webhookMessage.id);
+            messageInDB.logged_message_id = BigInt(webhookMessageID);
             await DatabaseConnection.manager.save(messageInDB).catch((err) => {
                 Logger('error', err, message);
             });
