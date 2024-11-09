@@ -13,6 +13,7 @@ import { Guilds } from '../../types/database/guilds';
 import { Users } from '../../types/database/users';
 import { Command_t } from '../../types/interface/commands';
 import { Logger } from '../../utils/logger';
+import { RESTCommandLoader } from '../loader';
 
 const exec = async (interaction: ChatInputCommandInteraction) => {
     const subcommand = interaction.options.getSubcommand();
@@ -67,6 +68,9 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
             await DatabaseConnection.manager.save(new_alias).catch((err) => {
                 Logger('error', err, interaction);
             });
+            await RESTCommandLoader(BigInt(interaction.guild.id), __filename).catch((err) => {
+                Logger('error', err, interaction);
+            });
             await interaction.reply(`Added alias **${alias_name}** for keyword **${alias_content}**`);
             break;
         }
@@ -116,11 +120,20 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
     }
 };
 
-const scb = async (): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>> => {
+const scb = async (guild: Guilds): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>> => {
     const data = new SlashCommandBuilder()
         .setName('alias')
         .setDescription('Create an alias for keyword')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
+
+    const db = await DatabaseConnection.manager.find(Alias, {
+        where: { from_guild: { gid: guild.gid } },
+    });
+
+    const choices: { name: string; value: string }[] = [];
+    for (const alias of db) {
+        choices.push({ name: alias.name, value: alias.name });
+    }
 
     data.addSubcommand((subcommand) =>
         subcommand
@@ -136,19 +149,18 @@ const scb = async (): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSu
                     .setRequired(true)
             )
     );
-
     data.addSubcommand((subcommand) =>
         subcommand
             .setName('remove')
             .setDescription('Remove an alias')
-            .addStringOption((option) => option.setName('alias_name').setDescription('Name').setRequired(true))
+            .addStringOption((option) => option.setName('alias_name').setDescription('Name').setRequired(true).setChoices(choices))
     );
 
     data.addSubcommand((subcommand) =>
         subcommand
             .setName('modify')
             .setDescription('Modify an alias')
-            .addStringOption((option) => option.setName('alias_name').setDescription('Name').setRequired(true))
+            .addStringOption((option) => option.setName('alias_name').setDescription('Name').setRequired(true).setChoices(choices))
             .addStringOption((option) =>
                 option
                     .setName('alias_content')
