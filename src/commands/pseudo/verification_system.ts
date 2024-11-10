@@ -361,9 +361,7 @@ const exec = async (event_name: string, member: GuildMember) => {
             where: { from_user: { uid: BigInt(member.id) }, from_guild: { gid: BigInt(member.guild.id) } },
         })) || new Verification();
 
-    console.log('1');
     if (verification.id && event_name === 'guildMemberRemove') {
-        console.log('2');
         await DatabaseConnection.manager
             .delete(Verification, { id: verification.id })
             .catch((err) => Logger('error', err, member));
