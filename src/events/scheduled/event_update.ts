@@ -7,7 +7,7 @@ export default {
     once: false,
     name: 'scheduledEventUpdate',
     data: Events.GuildScheduledEventUpdate,
-    execute: async (oldEvent: GuildScheduledEvent, newEvent: GuildScheduledEvent) => {
-        Logger('info', `Scheduled event updated: ${oldEvent.name} -> ${newEvent.name}`);
+    execute: async (old_event: GuildScheduledEvent, new_event: GuildScheduledEvent) => {
+        Logger('info', `Scheduled event updated: ${old_event.name} -> ${new_event.name}`);
     },
 } as Event_t;

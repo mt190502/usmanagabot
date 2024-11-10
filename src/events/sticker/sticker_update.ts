@@ -7,7 +7,7 @@ export default {
     once: false,
     name: 'stickerUpdate',
     data: Events.GuildStickerUpdate,
-    execute: async (oldSticker: Sticker, newSticker: Sticker) => {
-        Logger('info', `${oldSticker.name} -> ${newSticker.name} was updated in ${oldSticker.guild.id}`);
+    execute: async (old_sticker: Sticker, new_sticker: Sticker) => {
+        Logger('info', `${old_sticker.name} -> ${new_sticker.name} was updated in ${old_sticker.guild.id}`);
     },
 } as Event_t;

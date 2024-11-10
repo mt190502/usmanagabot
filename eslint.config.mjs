@@ -65,6 +65,10 @@ export default [
                     modifiers: ['exported'],
                     format: ['PascalCase'],
                 },
+                {
+                    selector: 'parameter',
+                    format: ['snake_case'],
+                },
             ],
 
             'no-restricted-syntax': [

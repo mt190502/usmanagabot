@@ -7,10 +7,10 @@ export default {
     once: false,
     name: 'emojiUpdate',
     data: Events.GuildEmojiUpdate,
-    execute: async (oldEmoji: GuildEmoji, newEmoji: GuildEmoji) => {
+    execute: async (old_emoji: GuildEmoji, new_emoji: GuildEmoji) => {
         Logger(
             'info',
-            `Emoji "${oldEmoji.name} (${oldEmoji.id})" updated to "${newEmoji.name} (${newEmoji.id})" in "${oldEmoji.guild.name} (${oldEmoji.guild.id})"`
+            `Emoji "${old_emoji.name} (${old_emoji.id})" updated to "${new_emoji.name} (${new_emoji.id})" in "${old_emoji.guild.name} (${old_emoji.guild.id})"`
         );
     },
 } as Event_t;

@@ -7,7 +7,7 @@ export default {
     once: false,
     name: 'threadMemberUpdate',
     data: Events.ThreadMemberUpdate,
-    execute: async (oldMember: ThreadMember, newMember: ThreadMember) => {
-        Logger('info', `${oldMember.id} -> ${newMember.id} was updated in ${oldMember.guildMember.guild.id}`);
+    execute: async (old_member: ThreadMember, new_member: ThreadMember) => {
+        Logger('info', `${old_member.id} -> ${new_member.id} was updated in ${old_member.guildMember.guild.id}`);
     },
 } as Event_t;

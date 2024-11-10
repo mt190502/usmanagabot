@@ -239,7 +239,7 @@ const settings = async (interaction: StringSelectMenuInteraction) => {
     }
 };
 
-const exec = async (event_name: string, message: Message, newMessage?: Message) => {
+const exec = async (event_name: string, message: Message, new_message?: Message) => {
     const logger = await DatabaseConnection.manager
         .findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(message.guild.id) } },
@@ -347,9 +347,9 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
                 .setColor(Colors.Yellow)
                 .setTimestamp()
                 .setDescription(
-                    (newMessage.content !== '' ? `**New Message:**\n${newMessage.content}\n\n` : '') +
-                        (newMessage.attachments.size > 0
-                            ? `**New Attachments:**\n${newMessage.attachments.map((a) => a.url).join('\n')}`
+                    (new_message.content !== '' ? `**New Message:**\n${new_message.content}\n\n` : '') +
+                        (new_message.attachments.size > 0
+                            ? `**New Attachments:**\n${new_message.attachments.map((a) => a.url).join('\n')}`
                             : '')
                 );
             if (message_in_database?.logged_message_id) {

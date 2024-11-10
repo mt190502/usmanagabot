@@ -8,9 +8,9 @@ export default {
     name: 'threadMembersUpdate',
     data: Events.ThreadMembersUpdate,
     execute: async (
-        oldMembers: Collection<Snowflake, ThreadMember>,
-        newMembers: Collection<Snowflake, ThreadMember>
+        old_members: Collection<Snowflake, ThreadMember>,
+        new_members: Collection<Snowflake, ThreadMember>
     ) => {
-        Logger('info', `Thread members updated in ${oldMembers} -> ${newMembers}`);
+        Logger('info', `Thread members updated in ${old_members} -> ${new_members}`);
     },
 } as Event_t;
