@@ -5,7 +5,7 @@ import { DatabaseConfiguration_t } from '../types/interface/database';
 import { Logger } from './logger';
 
 export const DatabaseLoader = async (database: DatabaseConfiguration_t) => {
-    const dataSource = new DataSource({
+    const data_source = new DataSource({
         type: database.driver ? database.driver : 'postgres',
         host: database.host,
         port: database.port,
@@ -18,10 +18,14 @@ export const DatabaseLoader = async (database: DatabaseConfiguration_t) => {
         migrations: await glob('src/types/database/migrations/*.ts'),
     });
 
-    await dataSource.initialize()
-        .then(() => { Logger('info', 'Database initialized') })
-        .catch((err: Error) => { Logger('error', err.message); });
-    
-    return dataSource;
-};
+    await data_source
+        .initialize()
+        .then(() => {
+            Logger('info', 'Database initialized');
+        })
+        .catch((err: Error) => {
+            Logger('error', err.message);
+        });
 
+    return data_source;
+};

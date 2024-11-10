@@ -1,9 +1,9 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Users } from './users';
 import { Guilds } from './guilds';
+import { Users } from './users';
 
 @Entity()
-export class Verification {
+export class VerificationSystem {
     @PrimaryGeneratedColumn({ type: 'smallint' })
     id: number;
 
@@ -32,5 +32,24 @@ export class Verification {
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     timestamp: Date;
+}
 
+@Entity()
+export class Verification {
+    @PrimaryGeneratedColumn({ type: 'smallint' })
+    id: number;
+
+    @Column({ type: 'timestamp', nullable: true })
+    remaining_time: Date;
+
+    @ManyToOne(() => Users, { nullable: false, eager: true })
+    @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
+    from_user: Users;
+
+    @ManyToOne(() => Guilds, { nullable: false, eager: true })
+    @JoinColumn({ name: 'from_guild', referencedColumnName: 'id' })
+    from_guild: Guilds;
+
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    timestamp: Date;
 }

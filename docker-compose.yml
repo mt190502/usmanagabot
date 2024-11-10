@@ -1,14 +1,4 @@
-version: "3.7"
-
 services:
-  bot:
-    image: fedora:latest
-    volumes:
-      - ./dist:/bot
-    security_opt:
-      - label:disable
-    restart: always
-
   db:
     image: postgres:latest
     volumes:
@@ -18,10 +8,10 @@ services:
     expose:
       - "5432"
     environment:
-      POSTGRES_USER: UsmanAga
-      POSTGRES_PASSWORD: AdMiNpAsSwOrD
-      POSTGRES_ROOT_PASSWORD: RoOtPaSsWoRd
-      POSTGRES_DB: BotDB
+      POSTGRES_USER: usmanagabot
+      POSTGRES_PASSWORD: usmanagabot
+      POSTGRES_ROOT_PASSWORD: usmanagabot
+      POSTGRES_DB: usmanagabot
     security_opt:
       - label:disable
     restart: always

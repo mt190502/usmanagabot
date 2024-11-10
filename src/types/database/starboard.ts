@@ -8,7 +8,7 @@ import { Users } from './users';
 export class Starboard {
     @PrimaryGeneratedColumn({ type: 'smallint' })
     id: number;
-    
+
     @Column({ type: 'smallint', nullable: false })
     star_count: number;
 

@@ -6,5 +6,5 @@ export class BotData {
     key: string;
 
     @Column({ type: 'varchar', default: '0' })
-    value: any;
+    value: string;
 }

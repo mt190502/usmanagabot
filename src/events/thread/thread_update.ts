@@ -3,11 +3,11 @@ import { Event_t } from '../../types/interface/events';
 import { Logger } from '../../utils/logger';
 
 export default {
-    enabled: true,
+    enabled: false,
     once: false,
     name: 'threadUpdate',
     data: Events.ThreadUpdate,
-    execute: async (oldThread: ThreadChannel, newThread: ThreadChannel) => {
-        Logger('info', `${oldThread.name} -> ${newThread.name} was updated in ${oldThread.guild.id}`);
+    execute: async (old_thread: ThreadChannel, new_thread: ThreadChannel) => {
+        Logger('info', `${old_thread.name} -> ${new_thread.name} was updated in ${old_thread.guild.id}`);
     },
 } as Event_t;

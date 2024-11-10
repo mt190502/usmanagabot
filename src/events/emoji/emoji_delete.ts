@@ -2,9 +2,8 @@ import { Events, GuildEmoji } from 'discord.js';
 import { Event_t } from '../../types/interface/events';
 import { Logger } from '../../utils/logger';
 
-
 export default {
-    enabled: true,
+    enabled: false,
     once: false,
     name: 'emojiDelete',
     data: Events.GuildEmojiDelete,

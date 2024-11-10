@@ -13,14 +13,14 @@ export class RSS {
 
     @Column({ type: 'varchar', nullable: false })
     feed_url: string;
-    
+
     @Column({ type: 'simple-array', default: [] })
     last_feed_items: string;
-    
+
     @ManyToOne(() => Channels, { nullable: false, eager: true })
     @JoinColumn({ name: 'feed_channel_id', referencedColumnName: 'id' })
     feed_channel_id: string;
-    
+
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
     from_user: Users;

@@ -1,6 +1,6 @@
-import { Events, MessageReaction, User } from "discord.js";
-import { Event_t } from "../../types/interface/events";
-import { Logger } from "../../utils/logger";
+import { Events, MessageReaction, User } from 'discord.js';
+import { Event_t } from '../../types/interface/events';
+import { Logger } from '../../utils/logger';
 
 export default {
     enabled: true,

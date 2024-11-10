@@ -1,31 +1,33 @@
-import { Events, Message } from "discord.js";
-import { BotCommands, DatabaseConnection } from "../../main";
-import { Messages } from "../../types/database/messages";
-import { Event_t } from "../../types/interface/events";
-import { CheckAndAddChannel, CheckAndAddUser } from "../../utils/common";
-import { Logger } from "../../utils/logger";
+import { Events, Message } from 'discord.js';
+import { BotCommands, DatabaseConnection } from '../../main';
+import { Messages } from '../../types/database/messages';
+import { Event_t } from '../../types/interface/events';
+import { CheckAndAddChannel, CheckAndAddUser } from '../../utils/common';
+import { Logger } from '../../utils/logger';
 
-const exec = async (oldMessage: Message, newMessage: Message) => {
-    if ((oldMessage.author?.bot && newMessage.author?.bot) || (!oldMessage.author?.id && newMessage.author?.id)) return;
-
-    await CheckAndAddUser(oldMessage, null);
-    await CheckAndAddChannel(oldMessage, null);
-
-    const oldMessageInDB = await DatabaseConnection.manager.findOne(Messages, { where: { message_id: BigInt(oldMessage.id) } });
-    if (!oldMessageInDB) {
-        Logger('warn', `Message ${oldMessage.id} not found in database`);
+const exec = async (old_message: Message, new_message: Message) => {
+    if ((old_message.author?.bot && new_message.author?.bot) || (!old_message.author?.id && new_message.author?.id)) {
         return;
     }
 
-    oldMessageInDB.message_is_edited = true;
-    oldMessageInDB.old_message = oldMessageInDB.message;
-    oldMessageInDB.message = newMessage.content;
+    await CheckAndAddUser(old_message.author, old_message);
+    await CheckAndAddChannel(old_message.channel, old_message);
 
-    await DatabaseConnection.manager.save(oldMessageInDB);
+    const old_message_in_db = await DatabaseConnection.manager.findOne(Messages, {
+        where: { message_id: BigInt(old_message.id) },
+    });
+    if (!old_message_in_db) {
+        Logger('warn', `Message ${old_message.id} not found in database`);
+        return;
+    }
 
-    for (const cmd_data of BotCommands.get(BigInt(oldMessage.guild?.id)).values()) {
-        if ((cmd_data.category == 'pseudo') && (cmd_data.usewithevent?.includes('messageUpdate'))) {
-            cmd_data.pseudo_execute('messageUpdate', oldMessage, newMessage);
+    old_message_in_db.message_is_edited = true;
+
+    await DatabaseConnection.manager.save(old_message_in_db);
+
+    for (const [, cmd_data] of BotCommands.get(BigInt(old_message.guild?.id)).concat(BotCommands.get(BigInt(0)))) {
+        if (cmd_data.usewithevent?.includes('messageUpdate')) {
+            cmd_data.execute_when_event('messageUpdate', old_message, new_message);
         }
     }
 };

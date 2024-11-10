@@ -2,9 +2,8 @@ import { Events, TextBasedChannel } from 'discord.js';
 import { Event_t } from '../../types/interface/events';
 import { Logger } from '../../utils/logger';
 
-
 export default {
-    enabled: true,
+    enabled: false,
     once: false,
     name: 'pinsupdate',
     data: Events.ChannelPinsUpdate,

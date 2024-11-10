@@ -14,7 +14,7 @@ export class Reminder {
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
     from_user: Users;
 
-    @ManyToOne(() => Guilds, { nullable: false, eager: true }) 
+    @ManyToOne(() => Guilds, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_guild', referencedColumnName: 'id' })
     from_guild: Guilds;
 
