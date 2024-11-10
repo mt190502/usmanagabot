@@ -281,9 +281,12 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
                     : `https://discord.com/channels/${message.guild.id}/${message.channel.id}/${message.reference.messageId}`;
                 content += ` | [Reply](${url})`;
             }
-            if (message.content.length === 0 && message.attachments.size === 0) return;
+
             const contents: string[] = [];
-            if (message.content.length < 1800) {
+            if (message.content.length == 0 && message.system) {
+                content += ' | Member joined';
+                contents.push(content);
+            } else if (message.content.length < 1800) {
                 content += ' | ' + message.content;
                 contents.push(message.content);
             } else if (message.content.length > 1800 && message.content.length < 3600) {
