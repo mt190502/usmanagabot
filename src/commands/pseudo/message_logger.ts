@@ -267,6 +267,7 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
 
     switch (event_name) {
         case 'messageCreate': {
+            if (![0, 19].includes(message.type)) return;
             let content = message.url;
             if (message.reference?.messageId) {
                 const ref_message = await DatabaseConnection.manager
@@ -282,37 +283,35 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
                 content += ` | [Reply](${url})`;
             }
 
-            const contents: string[] = [];
-            if (message.content.length == 0 && message.system) {
-                content += ' | Member joined';
-                contents.push(content);
-            } else if (message.content.length < 1800) {
-                content += ' | ' + message.content;
-                contents.push(message.content);
-            } else if (message.content.length > 1800 && message.content.length < 3600) {
-                content += ' | ' + message.content.slice(0, 1800) + '...';
-                contents.push(content);
-                contents.push(message.content.slice(1800));
-            } else {
-                content += ' | ' + message.content.slice(0, 1800) + '...';
-                contents.push(content);
-                content = message.content.slice(1800, 3600);
-                contents.push(content);
-                content = message.content.slice(3600);
-                contents.push(content);
-            }
             if (message.stickers.size > 0) {
-                content += 'Stickers: ' + message.stickers.map((sticker) => sticker.name).join(', ');
+                content += ' | Stickers: ' + message.stickers.map((sticker) => sticker.url).join('\n');
+                content += '\n';
             }
-            if (message.attachments.size > 0) content += '\n' + message.attachments.map((a) => a.url).join('\n');
 
-            if (contents.length == 0) return;
+            if (message.attachments.size > 0) {
+                content += ' | Attachments: ' + message.attachments.map((a) => a.url).join('\n');
+                content += '\n';
+            }
+
+            const contents: string[] = [];
+            if (message.content.length > 0 && message.content.length < 1800) {
+                content += ' | ' + message.content;
+                contents.push(content);
+            } else {
+                let spliced_content = content + ' | ' + message.content;
+                while (spliced_content.length > 1800) {
+                    contents.push(spliced_content.slice(0, 1800));
+                    spliced_content = spliced_content.slice(1800);
+                }
+                contents.push(spliced_content);
+            }
+
             let webhook_msg_id: string;
-            for (const c in contents) {
+            for (const index in contents) {
                 timers.setTimeout(500);
                 const webhook_message = await webhook_client
                     .send({
-                        content: contents[c],
+                        content: contents[index],
                         username: message.author.username,
                         avatarURL: message.author.displayAvatarURL(),
                         allowedMentions: { parse: [] },
@@ -321,7 +320,7 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
                         Logger('error', err, message);
                         throw err;
                     });
-                if (parseInt(c) == contents.length - 1) {
+                if (parseInt(index) == contents.length - 1) {
                     webhook_msg_id = webhook_message.id;
                 }
             }
