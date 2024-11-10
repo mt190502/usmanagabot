@@ -11,6 +11,7 @@ const exec = async (member: GuildMember) => {
         }
     }
 };
+
 export default {
     enabled: true,
     once: false,

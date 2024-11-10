@@ -1,13 +1,21 @@
 import { Events, GuildMember } from 'discord.js';
+import { BotCommands } from '../../main';
 import { Event_t } from '../../types/interface/events';
 import { Logger } from '../../utils/logger';
+
+const exec = async (member: GuildMember) => {
+    Logger('info', `Member left: "${member.user.tag} (${member.id})"`);
+    for (const [, cmd_data] of BotCommands.get(BigInt(member.guild?.id)).concat(BotCommands.get(BigInt(0)))) {
+        if (cmd_data.usewithevent?.includes('guildMemberRemove')) {
+            cmd_data.execute_when_event('guildMemberRemove', member);
+        }
+    }
+};
 
 export default {
     enabled: true,
     once: false,
     name: 'guildMemberRemove',
     data: Events.GuildMemberRemove,
-    execute: async (member: GuildMember) => {
-        Logger('info', `Member left: "${member.user.tag} (${member.id})"`);
-    },
+    execute: exec,
 } as Event_t;
