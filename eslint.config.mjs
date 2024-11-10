@@ -67,6 +67,14 @@ export default [
                 },
             ],
 
+            'no-restricted-syntax': [
+                'error',
+                {
+                    selector: 'CallExpression[callee.property.name="forEach"]',
+                    message: 'Using "forEach" is not allowed. Please use "for...of" or a regular loop.',
+                },
+            ],
+
             'comma-spacing': [
                 'error',
                 {
