@@ -247,9 +247,9 @@ const settings = async (
             });
             break;
         case '31': {
-            const server_roles = interaction.guild.roles.cache.sort((a, b) => b.position - a.position);
-            const bot_role = server_roles.find((role) => role.name === BotClient.user.username);
-            const requested_role = server_roles.get((interaction as StringSelectMenuInteraction).values[0]);
+            const server_roles = (await interaction.guild.roles.fetch()).sort((a, b) => b.position - a.position);
+            const bot_role = interaction.guild.members.resolve(BotClient.user).roles.highest;
+            const requested_role = server_roles.get((interaction as RoleSelectMenuInteraction).values[0]);
 
             if (requested_role.position >= bot_role.position) {
                 await (interaction as StringSelectMenuInteraction).update({
@@ -369,17 +369,16 @@ const exec = async (event_name: string, member: GuildMember) => {
         return;
     }
 
-    const message = [
-        { key: '{{user}}', value: `<@${member.id}>` },
-        { key: '{{user_id}}', value: member.id },
-        { key: '{{guild}}', value: member.guild.name },
-        { key: '{{minimumage}}', value: verification_system.minimum_days.toString() },
-    ].reduce((msg, replace) => msg.replaceAll(replace.key, replace.value), verification_system.message);
-
     if (
         verification_system.is_enabled &&
         member.user.createdTimestamp > Date.now() - verification_system.minimum_days * 86400000
     ) {
+        const message = [
+            { key: '{{user}}', value: `<@${member.id}>` },
+            { key: '{{user_id}}', value: member.id },
+            { key: '{{guild}}', value: member.guild.name },
+            { key: '{{minimumage}}', value: verification_system.minimum_days.toString() },
+        ].reduce((msg, replace) => msg.replaceAll(replace.key, replace.value), verification_system.message);
         member.roles.add(verification_system.role_id);
 
         verification.remaining_time = new Date(Date.now() + verification_system.minimum_days * 86400000);
