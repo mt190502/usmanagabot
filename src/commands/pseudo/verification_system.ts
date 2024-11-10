@@ -20,12 +20,15 @@ import {
     TextInputBuilder,
     TextInputStyle,
 } from 'discord.js';
+import timers from 'node:timers/promises';
 import { BotClient, DatabaseConnection } from '../../main';
 import { Guilds } from '../../types/database/guilds';
 import { Users } from '../../types/database/users';
-import { Verification } from '../../types/database/verification';
+import { Verification, VerificationSystem } from '../../types/database/verification';
 import { Command_t } from '../../types/interface/commands';
 import { Logger } from '../../utils/logger';
+
+const verification_list: Verification[] = [];
 
 const settings = async (
     interaction:
@@ -35,7 +38,7 @@ const settings = async (
         | RoleSelectMenuInteraction
 ) => {
     const verification_system = await DatabaseConnection.manager
-        .findOne(Verification, {
+        .findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guild.id) } },
         })
         .catch((err) => {
@@ -44,7 +47,7 @@ const settings = async (
         });
 
     if (!verification_system) {
-        const new_verification = new Verification();
+        const new_verification = new VerificationSystem();
         new_verification.from_guild = await DatabaseConnection.manager
             .findOne(Guilds, {
                 where: { gid: BigInt(interaction.guild.id) },
@@ -311,6 +314,20 @@ const settings = async (
                 });
                 return;
             }
+            if (days < 0) {
+                await (interaction as StringSelectMenuInteraction).update({
+                    embeds: [genPostEmbed('The minimum days must be a positive number.')],
+                    components: [genMenuOptions()],
+                });
+                return;
+            }
+            if (days > 365) {
+                await (interaction as StringSelectMenuInteraction).update({
+                    embeds: [genPostEmbed('The minimum days must be less than 365.')],
+                    components: [genMenuOptions()],
+                });
+                return;
+            }
             verification_system.minimum_days = days;
             await DatabaseConnection.manager.save(verification_system).catch((err) => {
                 Logger('error', err, interaction);
@@ -332,33 +349,62 @@ const settings = async (
 
 const exec = async (event_name: string, member: GuildMember) => {
     const verification_system = await DatabaseConnection.manager
-        .findOne(Verification, {
+        .findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(member.guild.id) } },
         })
-        .catch((err) => {
-            Logger('error', err, member);
-        });
+        .catch((err) => Logger('error', err, member));
+
     if (!verification_system) return;
 
-    const replace_table = [
+    const verification =
+        (await DatabaseConnection.manager.findOne(Verification, {
+            where: { from_user: { uid: BigInt(member.id) }, from_guild: { gid: BigInt(member.guild.id) } },
+        })) || new Verification();
+
+    console.log('1');
+    if (verification.id && event_name === 'guildMemberRemove') {
+        console.log('2');
+        await DatabaseConnection.manager
+            .delete(Verification, { id: verification.id })
+            .catch((err) => Logger('error', err, member));
+        verification_list.splice(verification_list.indexOf(verification), 1);
+        return;
+    }
+
+    const message = [
         { key: '{{user}}', value: `<@${member.id}>` },
         { key: '{{user_id}}', value: member.id },
         { key: '{{guild}}', value: member.guild.name },
         { key: '{{minimumage}}', value: verification_system.minimum_days.toString() },
-    ];
-
-    replace_table.forEach((replace) => {
-        verification_system.message = verification_system.message.replaceAll(replace.key, replace.value);
-    });
+    ].reduce((msg, replace) => msg.replaceAll(replace.key, replace.value), verification_system.message);
 
     if (
         verification_system.is_enabled &&
         member.user.createdTimestamp > Date.now() - verification_system.minimum_days * 86400000
     ) {
         member.roles.add(verification_system.role_id);
-        (member.guild.channels.cache.get(verification_system.channel_id) as TextChannel)?.send(
-            verification_system.message
-        );
+
+        verification.remaining_time = new Date(Date.now() + verification_system.minimum_days * 86400000);
+        verification.from_user = await DatabaseConnection.manager
+            .findOne(Users, {
+                where: { uid: BigInt(member.id) },
+            })
+            .catch((err) => {
+                Logger('error', err, member);
+                throw err;
+            });
+        verification.from_guild = await DatabaseConnection.manager
+            .findOne(Guilds, {
+                where: { gid: BigInt(member.guild.id) },
+            })
+            .catch((err) => {
+                Logger('error', err, member);
+                throw err;
+            });
+
+        verification_list.push(verification);
+        await DatabaseConnection.manager.save(verification).catch((err) => Logger('error', err, member));
+        (member.guild.channels.cache.get(verification_system.channel_id) as TextChannel)?.send(message);
     }
 };
 
@@ -370,8 +416,47 @@ export default {
 
     category: 'pseudo',
     cooldown: 0,
-    usewithevent: ['guildMemberAdd'],
+    usewithevent: ['guildMemberAdd', 'guildMemberRemove', 'ready'],
 
     execute_when_event: exec,
     settings: settings,
 } as Command_t;
+
+(async () => {
+    const approveUser = async (verification: Verification) => {
+        const member = (await BotClient.guilds.cache.get(verification.from_guild.gid.toString()).members.fetch()).get(
+            verification.from_user.uid.toString()
+        );
+        if (!member) return;
+
+        const verification_system = await DatabaseConnection.manager.findOne(VerificationSystem, {
+            where: { from_guild: { gid: verification.from_guild.gid } },
+        });
+        if (verification_system.is_enabled && verification_system.role_id) {
+            await member.roles.remove(verification_system.role_id);
+            await DatabaseConnection.manager.delete(Verification, { id: verification.id });
+            verification_list.splice(verification_list.indexOf(verification), 1);
+        }
+    };
+
+    let verifications = await DatabaseConnection.manager.find(Verification);
+    while (!BotClient.isReady() || !verifications || verifications.length === 0) {
+        await timers.setTimeout(5000);
+        verifications = await DatabaseConnection.manager.find(Verification);
+    }
+    verification_list.push(...verifications);
+
+    setInterval(async () => {
+        for (const verification of verifications) {
+            const remaining_time = verification.remaining_time.getTime() - Date.now();
+            if (remaining_time <= 0 && verification_list.includes(verification)) {
+                approveUser(verification);
+                return;
+            } else {
+                setTimeout(async () => {
+                    approveUser(verification);
+                }, remaining_time);
+            }
+        }
+    }, 30000);
+})();
