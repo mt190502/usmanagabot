@@ -14,8 +14,8 @@ import { BotCommands } from '../../main';
 import { Command_t } from '../../types/interface/commands';
 
 const exec = async (interaction: ChatInputCommandInteraction | StringSelectMenuInteraction): Promise<void> => {
-    const guildID = BigInt(interaction.guild.id);
-    const settings = BotCommands.get(guildID)
+    const guild_id = BigInt(interaction.guild.id);
+    const settings = BotCommands.get(guild_id)
         .filter((command) => command.settings)
         .map((command) => ({
             label: command.name

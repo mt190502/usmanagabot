@@ -79,7 +79,7 @@ const scb = async (): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSu
     return data;
 };
 
-const exec_when_event = async (event_name: string, message: Message) => {
+const ExecWhenEvent = async (event_name: string, message: Message) => {
     const post = new EmbedBuilder();
     switch (event_name) {
         case 'messageCreate': {
@@ -167,5 +167,5 @@ export default {
 
     data: [scb],
     execute: exec,
-    execute_when_event: exec_when_event,
+    execute_when_event: ExecWhenEvent,
 } as Command_t;

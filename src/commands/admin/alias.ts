@@ -179,7 +179,7 @@ const scb = async (guild: Guilds): Promise<Omit<SlashCommandBuilder, 'addSubcomm
     return data;
 };
 
-const exec_when_event = async (event_name: string, message: Message) => {
+const execWhenEvent = async (event_name: string, message: Message) => {
     const replace_table = [
         { key: '{{user}}', value: `<@${message.author.id}>` },
         { key: '{{user_id}}', value: message.author.id },
@@ -226,5 +226,5 @@ export default {
 
     data: [scb],
     execute: exec,
-    execute_when_event: exec_when_event,
+    execute_when_event: execWhenEvent,
 } as Command_t;

@@ -11,15 +11,15 @@ const exec = async (message: Message) => {
     await CheckAndAddUser(message, null);
     await CheckAndAddChannel(message, null);
 
-    const messageInDB = await DatabaseConnection.manager.findOne(Messages, {
+    const message_in_database = await DatabaseConnection.manager.findOne(Messages, {
         where: { message_id: BigInt(message.id) },
     });
-    if (!messageInDB) {
+    if (!message_in_database) {
         Logger('warn', 'Message not found in database');
         return;
     }
-    messageInDB.message_is_deleted = true;
-    await DatabaseConnection.manager.save(messageInDB);
+    message_in_database.message_is_deleted = true;
+    await DatabaseConnection.manager.save(message_in_database);
 
     for (const [, cmd_data] of BotCommands.get(BigInt(message.guild?.id)).concat(BotCommands.get(BigInt(0)))) {
         if (cmd_data.usewithevent?.includes('messageDelete')) {

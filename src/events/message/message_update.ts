@@ -11,17 +11,17 @@ const exec = async (oldMessage: Message, newMessage: Message) => {
     await CheckAndAddUser(oldMessage, null);
     await CheckAndAddChannel(oldMessage, null);
 
-    const oldMessageInDB = await DatabaseConnection.manager.findOne(Messages, {
+    const old_message_in_db = await DatabaseConnection.manager.findOne(Messages, {
         where: { message_id: BigInt(oldMessage.id) },
     });
-    if (!oldMessageInDB) {
+    if (!old_message_in_db) {
         Logger('warn', `Message ${oldMessage.id} not found in database`);
         return;
     }
 
-    oldMessageInDB.message_is_edited = true;
+    old_message_in_db.message_is_edited = true;
 
-    await DatabaseConnection.manager.save(oldMessageInDB);
+    await DatabaseConnection.manager.save(old_message_in_db);
 
     for (const [, cmd_data] of BotCommands.get(BigInt(oldMessage.guild?.id)).concat(BotCommands.get(BigInt(0)))) {
         if (cmd_data.usewithevent?.includes('messageUpdate')) {

@@ -9,13 +9,13 @@ const exec = async (message: Message) => {
     if (message.author?.bot || !message.author?.id) return;
     const guild = await DatabaseConnection.manager.findOne(Guilds, { where: { gid: BigInt(message.guild?.id) } });
 
-    const newMessage = new Messages();
-    newMessage.timestamp = new Date(message.createdTimestamp);
-    newMessage.message_id = BigInt(message.id);
-    newMessage.from_channel = await CheckAndAddChannel(message, null);
-    newMessage.from_user = await CheckAndAddUser(message, null);
-    newMessage.from_guild = guild;
-    await DatabaseConnection.manager.save(newMessage);
+    const new_message = new Messages();
+    new_message.timestamp = new Date(message.createdTimestamp);
+    new_message.message_id = BigInt(message.id);
+    new_message.from_channel = await CheckAndAddChannel(message, null);
+    new_message.from_user = await CheckAndAddUser(message, null);
+    new_message.from_guild = guild;
+    await DatabaseConnection.manager.save(new_message);
 
     for (const [, cmd_data] of BotCommands.get(BigInt(message.guild?.id)).concat(BotCommands.get(BigInt(0)))) {
         if (cmd_data.usewithevent?.includes('messageCreate')) {

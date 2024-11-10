@@ -5,7 +5,7 @@ import { Event_t } from '../../types/interface/events';
 import { CheckAndAddChannel, CheckAndAddUser } from '../../utils/common';
 import { Logger } from '../../utils/logger';
 
-const interactionCooldown: Collection<string, Collection<bigint, number>> = new Collection();
+const cooldowns: Collection<string, Collection<bigint, number>> = new Collection();
 
 const exec = async (interaction: Interaction): Promise<void | InteractionResponse<boolean>> => {
     await CheckAndAddUser(null, interaction);
@@ -40,25 +40,25 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
         }
 
         if (!command) return;
-        if (!interactionCooldown.has(command.name)) interactionCooldown.set(command.name, new Collection());
+        if (!cooldowns.has(command.name)) cooldowns.set(command.name, new Collection());
 
         const now = Date.now();
-        const timestamps = interactionCooldown.get(command.name);
-        const cooldownAmount = (command.cooldown ?? 5) * 1000;
+        const timestamps = cooldowns.get(command.name);
+        const cooldown_amount = (command.cooldown ?? 5) * 1000;
 
         if (timestamps.has(BigInt(interaction.user.id))) {
-            const expirationTime = timestamps.get(BigInt(interaction.user.id)) + cooldownAmount;
+            const expiration_time = timestamps.get(BigInt(interaction.user.id)) + cooldown_amount;
 
-            if (now < expirationTime) {
-                const timeLeft = (expirationTime - now) / 1000;
+            if (now < expiration_time) {
+                const time_left = (expiration_time - now) / 1000;
                 return interaction.reply({
-                    content: `Please wait ${timeLeft} second(s) before reusing the \`${command.name}\` command.`,
+                    content: `Please wait ${time_left.toFixed()} second(s) before reusing the \`${command.name}\` command.`,
                     ephemeral: true,
                 });
             }
         }
         timestamps.set(BigInt(interaction.user.id), now);
-        setTimeout(() => timestamps.delete(BigInt(interaction.user.id)), cooldownAmount);
+        setTimeout(() => timestamps.delete(BigInt(interaction.user.id)), cooldown_amount);
 
         await command.execute(interaction);
     } else if (interaction.isModalSubmit() || interaction.isAnySelectMenu() || interaction.isButton()) {

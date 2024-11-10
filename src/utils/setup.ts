@@ -17,11 +17,11 @@ export const InitialSetup = async () => {
             Logger('info', `Logged in as ${client.user.tag}`);
             try {
                 for (const guild of client.guilds.cache) {
-                    const newGuild = new Guilds();
-                    newGuild.name = guild[1].name;
-                    newGuild.gid = BigInt(guild[0]);
-                    newGuild.country = client.guilds.cache.get(guild[0]).preferredLocale;
-                    await DatabaseConnection.manager.save(newGuild);
+                    const new_guild = new Guilds();
+                    new_guild.name = guild[1].name;
+                    new_guild.gid = BigInt(guild[0]);
+                    new_guild.country = client.guilds.cache.get(guild[0]).preferredLocale;
+                    await DatabaseConnection.manager.save(new_guild);
                 }
             } catch (error) {
                 Logger('error', `Failed to save guilds to database: ${error}`);

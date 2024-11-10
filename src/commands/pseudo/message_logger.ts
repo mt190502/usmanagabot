@@ -252,7 +252,7 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
 
     if (logger.ignored_channels?.some((channel) => channel.toString() === message.channel.id)) return;
 
-    const messageInDB = await DatabaseConnection.manager
+    const message_in_database = await DatabaseConnection.manager
         .findOne(Messages, {
             where: { message_id: BigInt(message.id) },
         })
@@ -260,27 +260,28 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
             Logger('error', err, message);
             throw err;
         });
-    if (!messageInDB) return Logger('warn', 'Message not found in database');
+    if (!message_in_database) return Logger('warn', 'Message not found in database');
 
-    const webhookClient = new WebhookClient({ id: logger.webhook_id, token: logger.webhook_token });
+    const webhook_client = new WebhookClient({ id: logger.webhook_id, token: logger.webhook_token });
     let embed: EmbedBuilder;
 
     switch (event_name) {
         case 'messageCreate': {
             let content = message.url;
             if (message.reference?.messageId) {
-                const referenceMessage = await DatabaseConnection.manager
+                const ref_message = await DatabaseConnection.manager
                     .findOne(Messages, {
                         where: { message_id: BigInt(message.reference.messageId) },
                     })
                     .catch((err) => {
                         Logger('error', err, message);
                     });
-                const url = referenceMessage
-                    ? `https://discord.com/channels/${referenceMessage.from_guild.gid}/${logger.channel_id}/${referenceMessage.logged_message_id}`
+                const url = ref_message
+                    ? `https://discord.com/channels/${ref_message.from_guild.gid}/${logger.channel_id}/${ref_message.logged_message_id}`
                     : `https://discord.com/channels/${message.guild.id}/${message.channel.id}/${message.reference.messageId}`;
                 content += ` | [Reply](${url})`;
             }
+            if (message.content.length === 0 && message.attachments.size === 0) return;
             const contents: string[] = [];
             if (message.content.length < 1800) {
                 content += ' | ' + message.content;
@@ -302,10 +303,10 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
             }
             if (message.attachments.size > 0) content += '\n' + message.attachments.map((a) => a.url).join('\n');
 
-            let webhookMessageID: string;
+            let webhook_msg_id: string;
             for (const c in contents) {
                 timers.setTimeout(500);
-                const webhookMessage = await webhookClient
+                const webhook_message = await webhook_client
                     .send({
                         content: contents[c],
                         username: message.author.username,
@@ -317,21 +318,21 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
                         throw err;
                     });
                 if (parseInt(c) == contents.length - 1) {
-                    webhookMessageID = webhookMessage.id;
+                    webhook_msg_id = webhook_message.id;
                 }
             }
 
-            messageInDB.logged_message_id = BigInt(webhookMessageID);
-            await DatabaseConnection.manager.save(messageInDB).catch((err) => {
+            message_in_database.logged_message_id = BigInt(webhook_msg_id);
+            await DatabaseConnection.manager.save(message_in_database).catch((err) => {
                 Logger('error', err, message);
             });
             break;
         }
         case 'messageDelete':
             embed = new EmbedBuilder().setTitle('Deleted Message').setColor(Colors.Red).setTimestamp();
-            if (messageInDB?.logged_message_id) {
-                await webhookClient
-                    .editMessage(messageInDB.logged_message_id.toString(), { embeds: [embed] })
+            if (message_in_database?.logged_message_id) {
+                await webhook_client
+                    .editMessage(message_in_database.logged_message_id.toString(), { embeds: [embed] })
                     .catch((err) => {
                         Logger('error', err, message);
                     });
@@ -348,9 +349,9 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
                             ? `**New Attachments:**\n${newMessage.attachments.map((a) => a.url).join('\n')}`
                             : '')
                 );
-            if (messageInDB?.logged_message_id) {
-                await webhookClient
-                    .editMessage(messageInDB.logged_message_id.toString(), { embeds: [embed] })
+            if (message_in_database?.logged_message_id) {
+                await webhook_client
+                    .editMessage(message_in_database.logged_message_id.toString(), { embeds: [embed] })
                     .catch((err) => {
                         Logger('error', err, message);
                     });

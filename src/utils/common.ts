@@ -11,10 +11,10 @@ export const CheckAndAddUser = async (message?: Message, interaction?: Interacti
         .findOne(Users, { where: { uid: user_id } })
         .then((user) => {
             if (user) return user;
-            const newUser = new Users();
-            newUser.name = user_name;
-            newUser.uid = user_id;
-            return DatabaseConnection.manager.save(newUser);
+            const new_user = new Users();
+            new_user.name = user_name;
+            new_user.uid = user_id;
+            return DatabaseConnection.manager.save(new_user);
         })
         .catch((error) => {
             console.error(error);
@@ -29,9 +29,9 @@ export const CheckAndAddChannel = async (message?: Message, interaction?: Intera
         .findOne(Channels, { where: { cid: channel_id } })
         .then((channel) => {
             if (channel) return channel;
-            const newChannel = new Channels();
-            newChannel.cid = channel_id;
-            return DatabaseConnection.manager.save(newChannel);
+            const new_channel = new Channels();
+            new_channel.cid = channel_id;
+            return DatabaseConnection.manager.save(new_channel);
         })
         .catch((error) => {
             console.error(error);

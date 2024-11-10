@@ -239,16 +239,16 @@ const settings = async (
                 parsed = parsed.slice(0, 8);
             }
 
-            const namesSet = new Set<string>();
+            const name_set = new Set<string>();
             for (const column of parsed) {
-                if (namesSet.has(column.name)) {
+                if (name_set.has(column.name)) {
                     await (interaction as ModalSubmitInteraction).reply({
                         embeds: [genPostEmbed(`Column name \`${column.name}\` is duplicated`)],
                         ephemeral: true,
                     });
                     return;
                 }
-                namesSet.add(column.name);
+                name_set.add(column.name);
             }
 
             for (let i = 0; i < 8; i++) {
@@ -449,14 +449,17 @@ const scb = async (guild: Guilds): Promise<Omit<SlashCommandBuilder, 'addSubcomm
         .setDescription(introduction.cmd_desc)
         .setNameLocalization(guild.country, introduction.cmd_name);
     for (let i = 1; i <= 8; i++) {
-        const colName = `col${i}` as keyof Introduction;
-        if ((introduction[colName] as string[])[0] === null && (introduction[colName] as string[])[1] === null) {
+        const column_name = `col${i}` as keyof Introduction;
+        if (
+            (introduction[column_name] as string[])[0] === null &&
+            (introduction[column_name] as string[])[1] === null
+        ) {
             continue;
         }
         data.addStringOption((option) =>
             option
-                .setName((introduction[colName] as string[])[0])
-                .setDescription((introduction[colName] as string[])[1])
+                .setName((introduction[column_name] as string[])[0])
+                .setDescription((introduction[column_name] as string[])[1])
         );
     }
     return data;

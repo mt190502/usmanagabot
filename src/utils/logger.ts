@@ -6,10 +6,10 @@ import { LogNotifier } from '../types/database/syslog_notifier';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const Logger = async (type: 'debug' | 'error' | 'info' | 'log' | 'warn', msg: string, interaction?: any) => {
     const line = new Error().stack.split('\n')[2].split('/').at(-1);
-    const [filename, lineNumber] = line.split(':');
+    const [filename, line_number] = line.split(':');
     const currdate = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
-    const logColors = {
+    const colors = {
         debug: '\x1b[35mDEBU\x1b[0m',
         error: '\x1b[31mERRO\x1b[0m',
         info: '\x1b[34mINFO\x1b[0m',
@@ -17,8 +17,8 @@ export const Logger = async (type: 'debug' | 'error' | 'info' | 'log' | 'warn', 
         warn: '\x1b[33mWARN\x1b[0m',
     };
 
-    const logMessage = `[${currdate}][${filename}:${lineNumber}] ${msg}`;
-    console[type](`${logColors[type]}${logMessage}`);
+    const log_message = `[${currdate}][${filename}:${line_number}] ${msg}`;
+    console[type](`${colors[type]}${log_message}`);
 
     if (interaction && ['error', 'info', 'warn'].includes(type)) {
         const notify = new EmbedBuilder()
@@ -27,7 +27,7 @@ export const Logger = async (type: 'debug' | 'error' | 'info' | 'log' | 'warn', 
             )
             .setColor(type === 'error' ? 'Red' : type === 'warn' ? 'Yellow' : 'Blue')
             .setDescription(
-                `${type === 'warn' ? ':warning:' : type === 'error' ? ':octagonal_sign:' : ':information_source:'} **${type.charAt(0).toUpperCase() + type.slice(1)}**: ${msg}\n:page_facing_up: **File**: ${filename}\n:1234: **Line**: ${lineNumber}`
+                `${type === 'warn' ? ':warning:' : type === 'error' ? ':octagonal_sign:' : ':information_source:'} **${type.charAt(0).toUpperCase() + type.slice(1)}**: ${msg}\n:page_facing_up: **File**: ${filename}\n:1234: **Line**: ${line_number}`
             );
 
         const log_notifier = await DatabaseConnection.manager.findOne(LogNotifier, {

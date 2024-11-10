@@ -17,7 +17,7 @@ import { Command_t } from '../types/interface/commands';
 import { Logger } from '../utils/logger';
 
 const rest = new REST({ version: '10' });
-const restCMDs: Collection<
+const rest_commands: Collection<
     string,
     Collection<
         string,
@@ -57,11 +57,11 @@ export const CommandLoader = async (custom_command_file?: string) => {
                     LoadAfterBotReady.get(BigInt(guild.gid.toString())).push(file);
                     continue;
                 }
-                if (!restCMDs.has(guild.gid.toString())) restCMDs.set(guild.gid.toString(), new Collection());
+                if (!rest_commands.has(guild.gid.toString())) rest_commands.set(guild.gid.toString(), new Collection());
                 BotCommands.get(BigInt(guild.gid.toString())).set(cmd.name, cmd);
                 if (cmd.category != 'pseudo') {
                     for (const index in cmd.data) {
-                        restCMDs
+                        rest_commands
                             .get(guild.gid.toString())
                             .set(`${cmd.name}_${index}`, (await cmd.data[index](guild)).toJSON());
                     }
@@ -69,11 +69,11 @@ export const CommandLoader = async (custom_command_file?: string) => {
             }
         } else {
             if (!BotCommands.has(BigInt(0))) BotCommands.set(BigInt(0), new Collection());
-            if (!restCMDs.has('0')) restCMDs.set('0', new Collection());
+            if (!rest_commands.has('0')) rest_commands.set('0', new Collection());
             BotCommands.get(BigInt(0)).set(cmd.name, cmd);
             for (const builder in cmd.data) {
                 if (cmd.category != 'pseudo') {
-                    restCMDs.get('0').set(`${cmd.name}_${builder}`, (await cmd.data[builder]()).toJSON());
+                    rest_commands.get('0').set(`${cmd.name}_${builder}`, (await cmd.data[builder]()).toJSON());
                 }
             }
         }
@@ -83,7 +83,7 @@ export const CommandLoader = async (custom_command_file?: string) => {
 export const RESTCommandLoader = async (custom_guild?: bigint, custom_command_file?: string) => {
     await CommandLoader(custom_command_file);
     rest.setToken(BotConfiguration.token);
-    for (const [guild, commands] of restCMDs) {
+    for (const [guild, commands] of rest_commands) {
         if (custom_guild && custom_guild != BigInt(guild)) continue;
         try {
             if (guild === '0') {

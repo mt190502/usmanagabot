@@ -14,11 +14,11 @@ export default {
 
         let success = false;
         try {
-            const newGuild = new Guilds();
-            newGuild.name = guild.name;
-            newGuild.gid = BigInt(guild.id);
-            newGuild.country = guild.preferredLocale;
-            await DatabaseConnection.manager.save(newGuild);
+            const new_guild = new Guilds();
+            new_guild.name = guild.name;
+            new_guild.gid = BigInt(guild.id);
+            new_guild.country = guild.preferredLocale;
+            await DatabaseConnection.manager.save(new_guild);
             success = true;
         } catch (error) {
             Logger('warn', `Failed to save guilds to database: ${error}`);
