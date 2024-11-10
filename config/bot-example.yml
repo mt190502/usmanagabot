@@ -1,0 +1,11 @@
+#* Application ID
+app_id: ''
+
+#* Timezone
+timezone: 'Europe/Istanbul'
+
+#* Token
+token: ''
+
+#* Settings
+clear_old_commands: true
