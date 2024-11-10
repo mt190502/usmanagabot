@@ -306,6 +306,7 @@ const exec = async (event_name: string, message: Message, newMessage?: Message) 
             }
             if (message.attachments.size > 0) content += '\n' + message.attachments.map((a) => a.url).join('\n');
 
+            if (contents.length == 0) return;
             let webhook_msg_id: string;
             for (const c in contents) {
                 timers.setTimeout(500);
