@@ -6,7 +6,9 @@ import { CheckAndAddChannel, CheckAndAddUser } from '../../utils/common';
 import { Logger } from '../../utils/logger';
 
 const exec = async (old_message: Message, new_message: Message) => {
-    if ((old_message.author?.bot && new_message.author?.bot) || (!old_message.author?.id && new_message.author?.id)) return;
+    if ((old_message.author?.bot && new_message.author?.bot) || (!old_message.author?.id && new_message.author?.id)) {
+        return;
+    }
 
     await CheckAndAddUser(old_message.author, old_message);
     await CheckAndAddChannel(old_message.channel, old_message);

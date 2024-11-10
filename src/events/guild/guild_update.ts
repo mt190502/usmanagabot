@@ -10,7 +10,10 @@ export default {
     name: 'guildUpdate',
     data: Events.GuildUpdate,
     execute: async (old_guild: Guild, new_guild: Guild) => {
-        Logger('info', `Guild is updated: "${old_guild.name}" (${old_guild.id}) -> "${new_guild.name}" (${new_guild.id})`);
+        Logger(
+            'info',
+            `Guild is updated: "${old_guild.name}" (${old_guild.id}) -> "${new_guild.name}" (${new_guild.id})`
+        );
 
         let success = false;
         try {
