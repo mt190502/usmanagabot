@@ -21,7 +21,7 @@ export default [
             '@typescript-eslint': typescriptEslint,
         },
 
-        ignores: ['node_modules', 'dist', 'build', '**/src/types/*/*'],
+        ignores: ['node_modules', 'dist', 'build', '**/src/types/*/*', 'database', 'eslint.config.mjs'],
 
         languageOptions: {
             globals: {
@@ -29,6 +29,9 @@ export default [
             },
 
             parser: tsParser,
+            parserOptions: {
+                project: 'tsconfig.json',
+            },
             ecmaVersion: 'latest',
             sourceType: 'module',
         },
@@ -39,6 +42,28 @@ export default [
                 {
                     before: true,
                     after: true,
+                },
+            ],
+
+            '@typescript-eslint/naming-convention': [
+                'error',
+                {
+                    selector: 'function',
+                    format: ['camelCase', 'PascalCase'],
+                },
+                {
+                    selector: 'variable',
+                    format: ['snake_case'],
+                },
+                {
+                    selector: 'variable',
+                    types: ['function'],
+                    format: ['camelCase', 'PascalCase'],
+                },
+                {
+                    selector: 'variable',
+                    modifiers: ['exported'],
+                    format: ['PascalCase'],
                 },
             ],
 
