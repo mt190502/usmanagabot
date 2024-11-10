@@ -358,10 +358,14 @@ const exec = async (event_name: string, member: GuildMember) => {
 
     const verification =
         (await DatabaseConnection.manager.findOne(Verification, {
-            where: { from_user: { uid: BigInt(member.id) }, from_guild: { gid: BigInt(member.guild.id) } },
+            where: {
+                from_user: { uid: BigInt(member.id) },
+                from_guild: { gid: BigInt(member.guild.id) },
+            },
         })) || new Verification();
 
-    if (verification.id && event_name === 'guildMemberRemove') {
+    if (event_name === 'guildMemberRemove') {
+        if (!verification.id) return;
         await DatabaseConnection.manager
             .delete(Verification, { id: verification.id })
             .catch((err) => Logger('error', err, member));
@@ -380,7 +384,6 @@ const exec = async (event_name: string, member: GuildMember) => {
             { key: '{{minimumage}}', value: verification_system.minimum_days.toString() },
         ].reduce((msg, replace) => msg.replaceAll(replace.key, replace.value), verification_system.message);
         member.roles.add(verification_system.role_id);
-
         verification.remaining_time = new Date(Date.now() + verification_system.minimum_days * 86400000);
         verification.from_user = await DatabaseConnection.manager
             .findOne(Users, {
