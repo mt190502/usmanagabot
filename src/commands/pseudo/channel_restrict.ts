@@ -357,14 +357,17 @@ const exec = async (event_name: string, data: Message | ThreadChannel) => {
             await (data as Message).author.send({ embeds: [post] }).catch((err) => Logger('error', err, data));
         } else if (is_thread) {
             setTimeout(async () => {
-                (await (data as ThreadChannel).parent.messages.fetch({ limit: 10 })).forEach(async (msg) => {
+                const messages = await (data as ThreadChannel).parent.messages.fetch({ limit: 10 });
+                for (const msg of messages.values()) {
                     if (msg.id === (data as ThreadChannel).id) {
-                        msg.delete().catch((err) => {
+                        try {
+                            await msg.delete();
+                        } catch (err) {
                             Logger('error', err, data);
-                        });
-                        return;
+                        }
+                        break;
                     }
-                });
+                }
             }, 1000);
             const owner = await (data as ThreadChannel).guild.members.fetch((data as ThreadChannel).ownerId);
             await owner.send({ embeds: [post] }).catch((err) => Logger('error', err, data));

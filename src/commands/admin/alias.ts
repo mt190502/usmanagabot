@@ -4,7 +4,6 @@ import {
     PartialDMChannel,
     PermissionFlagsBits,
     SlashCommandBuilder,
-    User,
 } from 'discord.js';
 import { DatabaseConnection } from '../../main';
 import { Alias } from '../../types/database/alias';
@@ -200,12 +199,12 @@ const execWhenEvent = async (event_name: string, message: Message) => {
                 });
             if (!alias) return;
 
-            message.mentions.users.forEach((user: User) => {
+            for (const user of message.mentions.users.values()) {
                 replace_table.find((replace) => replace.key === '{{mentioned_users}}').value += `<@${user.id}>, `;
-            });
-            replace_table.forEach((replace) => {
+            }
+            for (const replace of replace_table) {
                 alias.content = alias.content.replaceAll(replace.key, replace.value);
-            });
+            }
             (message.channel as PartialDMChannel).send(alias.content);
             break;
         }
