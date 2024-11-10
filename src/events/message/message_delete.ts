@@ -8,8 +8,8 @@ import { Logger } from '../../utils/logger';
 const exec = async (message: Message) => {
     if (message.author?.bot || !message.author?.id) return;
 
-    await CheckAndAddUser(message, null);
-    await CheckAndAddChannel(message, null);
+    await CheckAndAddUser(message.author, message);
+    await CheckAndAddChannel(message.channel, message);
 
     const message_in_database = await DatabaseConnection.manager.findOne(Messages, {
         where: { message_id: BigInt(message.id) },

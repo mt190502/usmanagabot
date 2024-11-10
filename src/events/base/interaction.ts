@@ -8,13 +8,12 @@ import { Logger } from '../../utils/logger';
 const cooldowns: Collection<string, Collection<bigint, number>> = new Collection();
 
 const exec = async (interaction: Interaction): Promise<void | InteractionResponse<boolean>> => {
-    await CheckAndAddUser(null, interaction);
-    await CheckAndAddChannel(null, interaction);
+    await CheckAndAddUser(interaction.user, null);
+    await CheckAndAddChannel(interaction.channel, null);
 
     if (interaction.isStringSelectMenu()) {
         const [type, name] = interaction.values[0].split(':');
         let command;
-
         if (type == 'settings') {
             command = BotCommands.get(BigInt(interaction.guild.id)).get(name) ?? BotCommands.get(BigInt(0)).get(name);
             if (command) command.settings(interaction);

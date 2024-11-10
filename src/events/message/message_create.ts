@@ -12,8 +12,8 @@ const exec = async (message: Message) => {
     const new_message = new Messages();
     new_message.timestamp = new Date(message.createdTimestamp);
     new_message.message_id = BigInt(message.id);
-    new_message.from_channel = await CheckAndAddChannel(message, null);
-    new_message.from_user = await CheckAndAddUser(message, null);
+    new_message.from_channel = await CheckAndAddChannel(message.channel, message);
+    new_message.from_user = await CheckAndAddUser(message.author, message);
     new_message.from_guild = guild;
     await DatabaseConnection.manager.save(new_message);
 
