@@ -288,11 +288,6 @@ const exec = async (event_name: string, message: Message, new_message?: Message)
                 content += '\n';
             }
 
-            if (message.attachments.size > 0) {
-                content += ' | Attachments: ' + message.attachments.map((a) => a.url).join('\n');
-                content += '\n';
-            }
-
             const contents: string[] = [];
             if (message.content.length > 0 && message.content.length < 1800) {
                 content += ' | ' + message.content;
@@ -315,6 +310,7 @@ const exec = async (event_name: string, message: Message, new_message?: Message)
                         username: message.author.username,
                         avatarURL: message.author.displayAvatarURL(),
                         allowedMentions: { parse: [] },
+                        files: message.attachments.map((a) => a.url),
                     })
                     .catch((err) => {
                         Logger('error', err, message);
