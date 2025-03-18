@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:latest
     volumes:
-      - ./database:/var/lib/postgresql/data
+      - database:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     expose:
@@ -15,3 +15,7 @@ services:
     security_opt:
       - label:disable
     restart: always
+
+volumes:
+  database:
+    driver: local
