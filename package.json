@@ -51,7 +51,7 @@
         "eslint:fix": "eslint . --fix",
         "prettier": "prettier --config .prettierrc.json 'src/**/*.ts'",
         "prettier:fix": "prettier --config .pretterrc.json 'src/**/*.ts' --write",
-        "start": "ts-node src/main.ts",
-        "test": "ts-node src/utils/configParser.ts"
+        "start": "bun run src/main.ts",
+        "test": "bun run src/utils/configParser.ts"
     }
 }
