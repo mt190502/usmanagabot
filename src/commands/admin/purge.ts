@@ -11,6 +11,7 @@ import {
     InteractionResponse,
     Message,
     MessageContextMenuCommandInteraction,
+    MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder,
 } from 'discord.js';
@@ -109,7 +110,7 @@ const exec = async (
                 .replaceAll(/(\s|<|>|@|&|!)/g, '');
             if (!message_id) {
                 post.setTitle(':warning: Warning').setDescription('Message ID is required').setColor(Colors.Yellow);
-                await interaction.reply({ embeds: [post], ephemeral: true });
+                await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
                 return;
             }
             try {
@@ -120,7 +121,7 @@ const exec = async (
                         'Message not found in this channel\nAre you sure the message ID is correct or the message is in this channel?'
                     )
                     .setColor(Colors.Yellow);
-                interaction.reply({ embeds: [post], ephemeral: true });
+                interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
                 Logger('error', err, interaction);
                 return;
             }
@@ -129,7 +130,11 @@ const exec = async (
             .setDescription('Are you sure you want to purge messages?')
             .setColor(Colors.Yellow);
         const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents([ok_btn, cancel_btn]);
-        question_message = await interaction.reply({ embeds: [post], components: [buttons], ephemeral: true });
+        question_message = await interaction.reply({
+            embeds: [post],
+            components: [buttons],
+            flags: MessageFlags.Ephemeral,
+        });
     }
 };
 

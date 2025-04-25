@@ -5,6 +5,7 @@ import {
     Colors,
     CommandInteraction,
     EmbedBuilder,
+    MessageFlags,
     ModalActionRowComponentBuilder,
     ModalBuilder,
     ModalSubmitInteraction,
@@ -379,7 +380,7 @@ const exec = async (interaction: CommandInteraction) => {
             .setColor(Colors.Yellow);
         await interaction.reply({
             embeds: [post],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }

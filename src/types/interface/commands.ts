@@ -26,6 +26,6 @@ export interface Command_t {
             | Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>>
     >;
     execute: (interaction: unknown, ...args: unknown[]) => Promise<void>;
-    execute_when_event: (event_name: string, data: unknown, ...args: unknown[]) => Promise<void>;
+    execute_when_event: (event_name: string, data?: unknown, ...args: unknown[]) => Promise<void>;
     settings: (interaction: unknown) => Promise<void>;
 }

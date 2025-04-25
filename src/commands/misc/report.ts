@@ -7,6 +7,7 @@ import {
     ChatInputCommandInteraction,
     Colors,
     EmbedBuilder,
+    MessageFlags,
     SlashCommandBuilder,
     StringSelectMenuBuilder,
     StringSelectMenuInteraction,
@@ -176,7 +177,7 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
             .setColor(Colors.Red);
         await interaction.reply({
             embeds: [post],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }
@@ -199,7 +200,7 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
         for (const url of message_url) {
             if (!pattern.test(url)) {
                 post.setTitle(':warning: Warning').setDescription(`Invalid message URL: ${url}`).setColor(Colors.Red);
-                await interaction.reply({ content: `Invalid message URL: ${url}`, ephemeral: true });
+                await interaction.reply({ content: `Invalid message URL: ${url}`, flags: MessageFlags.Ephemeral });
                 return;
             }
         }
@@ -222,7 +223,7 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
                 .setColor(Colors.Red);
             await interaction.reply({
                 embeds: [post],
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
             return;
         }
@@ -238,7 +239,7 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
             .setColor(Colors.Red);
         await interaction.reply({
             embeds: [post],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }
@@ -251,7 +252,7 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
     post.setTitle(':white_check_mark: Success').setDescription(
         `**User**: ${user} reported successfully.\n**Reason**: ${reason}`
     );
-    await interaction.reply({ embeds: [post], ephemeral: true });
+    await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
 };
 
 const scb = (): Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'> => {
