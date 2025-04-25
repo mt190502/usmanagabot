@@ -5,8 +5,18 @@ import { LogNotifier } from '../types/database/syslog_notifier';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const Logger = async (type: 'debug' | 'error' | 'info' | 'log' | 'warn', msg: string, interaction?: any) => {
-    const line = new Error().stack.split('\n')[2].split('/').at(-1);
-    const [filename, line_number] = line.split(':');
+    const stack_lines = new Error().stack?.split('\n') ?? [];
+    let caller_line = '';
+    for (let i = 2; i < stack_lines.length; i++) {
+        if (!stack_lines[i].includes('logger.ts')) {
+            caller_line = stack_lines[i];
+            break;
+        }
+    }
+    const match = caller_line.match(/([^(/]+):(\d+):\d+\)?$/);
+    const filename = match ? match[1].split('/').pop() : 'unknown';
+    const line_number = match ? match[2] : 'unknown';
+
     const currdate = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
     const colors = {
