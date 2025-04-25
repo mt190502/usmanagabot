@@ -4,6 +4,7 @@ import {
     EmbedBuilder,
     GuildMember,
     Message,
+    MessageFlags,
     SlashCommandBuilder,
 } from 'discord.js';
 import { DatabaseConnection } from '../../main';
@@ -29,7 +30,7 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
         post.setTitle(':warning: You are already AFK').setColor(Colors.Yellow);
         await interaction.reply({
             embeds: [post],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }
@@ -69,7 +70,7 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
     }
     await interaction.reply({
         embeds: [post],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
     });
 };
 

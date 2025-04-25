@@ -1,4 +1,4 @@
-import { Collection, Events, Interaction, InteractionResponse } from 'discord.js';
+import { Collection, Events, Interaction, InteractionResponse, MessageFlags } from 'discord.js';
 import { BotCommands } from '../../main';
 import { Command_t } from '../../types/interface/commands';
 import { Event_t } from '../../types/interface/events';
@@ -52,7 +52,7 @@ const exec = async (interaction: Interaction): Promise<void | InteractionRespons
                 const time_left = (expiration_time - now) / 1000;
                 return interaction.reply({
                     content: `Please wait ${time_left.toFixed()} second(s) before reusing the \`${command.name}\` command.`,
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
             }
         }

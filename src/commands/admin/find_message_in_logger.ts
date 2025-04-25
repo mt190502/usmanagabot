@@ -3,6 +3,7 @@ import {
     ChatInputCommandInteraction,
     ContextMenuCommandBuilder,
     MessageContextMenuCommandInteraction,
+    MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder,
 } from 'discord.js';
@@ -25,7 +26,7 @@ const exec = async (interaction: MessageContextMenuCommandInteraction | ChatInpu
     if (!logger || !logger.is_enabled) {
         await interaction.reply({
             content: 'Logger is not enabled in this server',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }
@@ -49,14 +50,14 @@ const exec = async (interaction: MessageContextMenuCommandInteraction | ChatInpu
     if (!message_in_logger) {
         await interaction.reply({
             content: 'Message not found in logger',
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }
 
     await interaction.reply({
         content: `https://discord.com/channels/${logger.from_guild.gid}/${logger.channel_id}/${message_in_logger}`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
     });
 };
 

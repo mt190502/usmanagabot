@@ -2,6 +2,7 @@ import {
     ChatInputCommandInteraction,
     Colors,
     EmbedBuilder,
+    MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder,
 } from 'discord.js';
@@ -35,7 +36,7 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
             message += `**${command.pretty_name}** - ${command.description}\n`;
         }
         post.setDescription(message);
-        await interaction.reply({ embeds: [post], ephemeral: true });
+        await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
         return;
     } else {
         const [, command] = commands.find(([, c]) => c.name == interaction.options.getString('command'));
@@ -51,7 +52,7 @@ const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => 
             message += `**Usage:** </${command.name}:${command_id}> ` + (command.parameters ??= '') + '\n';
             message += `**Cooldown:** ${command.cooldown} seconds\n`;
             post.setDescription(message);
-            await interaction.reply({ embeds: [post], ephemeral: true });
+            await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
             return;
         }
     }
