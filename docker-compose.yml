@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:latest
     volumes:
-      - database:/var/lib/postgresql/data
+      - usmanagabot_db:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     expose:
@@ -17,5 +17,5 @@ services:
     restart: always
 
 volumes:
-  database:
+  usmanagabot_db:
     driver: local

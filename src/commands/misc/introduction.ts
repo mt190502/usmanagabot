@@ -9,6 +9,7 @@ import {
     ColorResolvable,
     Colors,
     EmbedBuilder,
+    MessageFlags,
     ModalActionRowComponentBuilder,
     ModalBuilder,
     ModalSubmitInteraction,
@@ -212,7 +213,7 @@ const settings = async (
                 await (interaction as ModalSubmitInteraction).reply({
                     embeds: [genPostEmbed('Command name and description cannot be empty')],
                     components: [genMenuOptions()],
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
                 return;
             }
@@ -244,7 +245,7 @@ const settings = async (
                 if (name_set.has(column.name)) {
                     await (interaction as ModalSubmitInteraction).reply({
                         embeds: [genPostEmbed(`Column name \`${column.name}\` is duplicated`)],
-                        ephemeral: true,
+                        flags: MessageFlags.Ephemeral,
                     });
                     return;
                 }
@@ -321,7 +322,7 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
         post.setTitle(':warning: Warning').setDescription(msg).setColor(Colors.Red);
         await interaction.reply({
             embeds: [post],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }
@@ -335,7 +336,7 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
             .setColor(Colors.Red);
         await interaction.reply({
             embeds: [post],
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
         return;
     }
@@ -363,7 +364,7 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
 
     if (values === 0) {
         post.setTitle(':warning: Warning').setDescription('Please provide at least one value').setColor(Colors.Red);
-        await interaction.reply({ embeds: [post], ephemeral: true });
+        await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
         return;
     }
 
@@ -427,7 +428,7 @@ const exec = async (interaction: ChatInputCommandInteraction) => {
         );
     await interaction.reply({
         embeds: [post],
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
     });
 };
 

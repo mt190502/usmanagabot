@@ -5,6 +5,7 @@ import {
     ChatInputCommandInteraction,
     Colors,
     EmbedBuilder,
+    MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder,
     StringSelectMenuBuilder,
@@ -42,7 +43,7 @@ const exec = async (interaction: ChatInputCommandInteraction | StringSelectMenuI
             ? (interaction as ChatInputCommandInteraction).reply.bind(interaction)
             : (interaction as StringSelectMenuInteraction).update.bind(interaction)
     )({
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
         embeds: [genPostEmbed()],
         components: [
             new ActionRowBuilder()

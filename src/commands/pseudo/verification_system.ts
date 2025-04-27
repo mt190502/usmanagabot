@@ -416,7 +416,7 @@ export default {
 
     category: 'pseudo',
     cooldown: 0,
-    usewithevent: ['guildMemberAdd', 'guildMemberRemove', 'ready'],
+    usewithevent: ['guildMemberAdd', 'guildMemberRemove'],
 
     execute_when_event: exec,
     settings: settings,

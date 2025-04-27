@@ -6,6 +6,7 @@ import {
     ContextMenuCommandBuilder,
     EmbedBuilder,
     MessageContextMenuCommandInteraction,
+    MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder,
     User,
@@ -28,7 +29,7 @@ const exec = async (interaction: ChatInputCommandInteraction | MessageContextMen
             .setTitle(':warning: Warning')
             .setDescription('User not found.')
             .setColor(Colors.Yellow);
-        await interaction.reply({ embeds: [post], ephemeral: true });
+        await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
         return;
     }
 

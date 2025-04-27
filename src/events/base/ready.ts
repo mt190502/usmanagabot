@@ -1,5 +1,5 @@
 import { ActivityType, Client, Events } from 'discord.js';
-import { DatabaseConnection } from '../../main';
+import { BotCommands, DatabaseConnection } from '../../main';
 import { BotData } from '../../types/database/bot';
 import { Event_t } from '../../types/interface/events';
 import { Logger } from '../../utils/logger';
@@ -28,5 +28,13 @@ export default {
         setInterval(setActivity, 3600000);
 
         Logger('info', `Logged in as ${client.user.tag}`);
+
+        setInterval(() => {
+            for (const guild of client.guilds.cache.values()) {
+                for (const [, cmd_data] of BotCommands.get(BigInt(guild.id)).concat(BotCommands.get(BigInt(0)))) {
+                    if (cmd_data.usewithevent?.includes('ready')) cmd_data.execute_when_event('ready', guild.id);
+                }
+            }
+        }, 5000);
     },
 } as Event_t;
