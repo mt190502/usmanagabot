@@ -384,7 +384,7 @@ const exec = async (event_name: string, member: GuildMember) => {
             { key: '{{minimumage}}', value: verification_system.minimum_days.toString() },
         ].reduce((msg, replace) => msg.replaceAll(replace.key, replace.value), verification_system.message);
         member.roles.add(verification_system.role_id);
-        verification.remaining_time = new Date(Date.now() + verification_system.minimum_days * 86400000);
+        verification.remaining_time = new Date(member.user.createdTimestamp + verification_system.minimum_days * 86400000);
         verification.from_user = await DatabaseConnection.manager
             .findOne(Users, {
                 where: { uid: BigInt(member.id) },
