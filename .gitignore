@@ -1,0 +1,47 @@
+# Shell & Environment
+**/.bash*
+**/.direnv
+**/.envrc
+**/.zcompdump*
+**/.zsh*
+
+# IDE & Editor
+**/.idea
+**/.vscode
+
+# Configuration files
+**/config/*
+!**/config/*-example.jsonc
+
+# Database & Logs
+**/*.db
+**/*.log
+**/logs
+
+# Process files & Temporary
+**/*.pid
+**/*.pid.lock
+**/*.seed
+**/*.tmp
+**/pids
+
+# Caches & Package manager
+**/.cache
+**/.eslintcache
+**/.npm
+**/npm-debug.log*
+**/package-lock.json
+**/yarn-debug.log*
+**/yarn-error.log*
+
+# Node modules & build artifacts
+**/build
+**/dist
+**/node_modules
+**/out
+**/result
+**/target
+
+# Miscellaneous
+**/TODO.md
+**/test.ts
