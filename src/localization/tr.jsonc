@@ -1,0 +1,4 @@
+{
+    "services.config.parsing_error": "Yapılandırma ayrıştırma hatası: {0}",
+    "services.database.initialization_error": "Veritabanı başlatma hatası: {0}",
+}

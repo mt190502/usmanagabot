@@ -1,0 +1,4 @@
+{
+    "services.config.parsing_error": "Error parsing configuration: {0}",
+    "services.database.initialization_error": "Database initialization error: {0}",
+}
