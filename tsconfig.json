@@ -18,10 +18,13 @@
         "noImplicitReturns": true,
         "noImplicitThis": true,
         "paths": {
+            "@commands/*": ["./src/commands/*"],
             "@config/*": ["./config/*"],
-            "@database/*": ["./src/types/database/*"],
+            "@events/*": ["./src/events/*"],
+            "@localization/*": ["./src/localization/*"],
             "@services/*": ["./src/services/*"],
             "@src/*": ["./src/*"],
+            "@utils/*": ["./src/utils/*"],
             "*": ["./node_modules/*"]
         },
         "strict": true,
