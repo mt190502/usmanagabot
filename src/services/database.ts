@@ -4,20 +4,48 @@ import { Config, DatabaseConfig_t } from './config';
 import { Logger } from './logger';
 
 /**
- * Database service module.
- * This module is responsible for managing database connections and operations.
- * Currently, it serves as a placeholder for future database-related functionalities.
+ * Database service class responsible for initializing and exposing TypeORM DataSource.
+ *
+ * Responsibilities:
+ * - Discover entity/migration/subscriber modules from src/types/database and initialize TypeORM DataSource.
+ * - Expose the initialized DataSource for use by repositories and other services.
+ * - Provide a singleton accessor to ensure a single DB connection per process.
+ *
+ * Note: Initialization errors are logged via the Logger singleton; this class does not throw during init.
  */
 export class Database {
+    /**
+     * Singleton reference for the Database service.
+     */
     private static instance: Database | null = null;
+
+    /**
+     * `Logger` singleton used for reporting initialization errors and other important events.
+     * @static
+     * @type {Logger}
+     */
     private static logger = Logger.getInstance();
+
+    /**
+     * The currently loaded database configuration used to build the `DataSource`.
+     * @readonly
+     * @type {DatabaseConfig_t}
+     */
     public readonly current_dbcfg: DatabaseConfig_t;
+
+    /**
+     * The TypeORM `DataSource` instance once initialization completes.
+     * Will be `null` until `init()` successfully runs.
+     * @type {(DataSource | null)}
+     */
     public dataSource: DataSource | null = null;
 
     /**
-     * Initializes the DatabaseService singleton instance.
-     * @param {DatabaseConfig_t} c_dbcfg Optional database configuration object.
-     * @returns An instance of DatabaseService with the initialized DataSource.
+     * Obtain the Database singleton. If not yet created, it constructs the object and
+     * attempts to initialize the underlying TypeORM DataSource.
+     *
+     * @param {DatabaseConfig_t} [c_dbcfg] Optional override for the database configuration (useful for tests).
+     * @returns {Promise<Database>} Promise resolving to the singleton Database instance.
      */
     public static async getInstance(c_dbcfg?: DatabaseConfig_t): Promise<Database> {
         if (!Database.instance) {
@@ -28,10 +56,14 @@ export class Database {
     }
 
     /**
-     * Initializes the database connection using TypeORM.
-     * This method sets up the DataSource with the provided configuration
-     * and connects to the database.
-     * @throws Error if there is an issue initializing the database connection.
+     * Initialize the TypeORM `DataSource`:
+     * - Scans repository for entities, migrations, and subscribers.
+     * - Constructs a `DataSource` using the loaded configuration and modules.
+     * - Calls `dataSource.initialize()` and logs any errors encountered.
+     *
+     * @private
+     * @async
+     * @returns {Promise<void>} Resolves when initialization completes (or after logging on error).
      */
     private async init() {
         const entities = (await glob('src/models/entities/*.ts')).sort((a, b) => a.localeCompare(b));
@@ -58,8 +90,9 @@ export class Database {
     }
 
     /**
-     * Creates a new instance of DatabaseService with the provided configuration.
-     * @param c_dbcfg Optional database configuration object.
+     * Private constructor to enforce singleton usage.
+     *
+     * @param {DatabaseConfig_t} [c_dbcfg] Optional database configuration override.
      */
     private constructor(c_dbcfg?: DatabaseConfig_t) {
         this.current_dbcfg = c_dbcfg || Config.getInstance().current_dbcfg;

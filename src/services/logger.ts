@@ -4,8 +4,8 @@ import jsonc from 'jsonc-parser';
 import path from 'path';
 
 /**
- * Enumeration for log levels.
- * This enum defines the various log levels used in the Logger class.
+ * Log levels used by the Logger.
+ * Values are ordered by severity and used for filtering.
  */
 export enum LogLevels {
     off = 0,
@@ -17,8 +17,7 @@ export enum LogLevels {
 }
 
 /**
- * Enumeration for supported languages.
- * This enum defines the supported languages for localization.
+ * Supported languages for localization files under src/localization.
  */
 export enum SupportedLanguages {
     EN = 'en',
@@ -26,22 +25,36 @@ export enum SupportedLanguages {
 }
 
 /**
- * Logger class for managing logging functionality.
- * This class provides methods to log messages at different levels
- * and format them for console output.
+ * Logger provides localized, leveled logging with formatted output.
+ *
+ * Features:
+ * - Language-aware message lookup using jsonc files.
+ * - Level filtering via a selected minimum threshold.
+ * - Message formatting with timestamp, file and line metadata.
+ *
+ * Use Logger.getInstance() to access the singleton.
  */
 export class Logger {
+    /**
+     * Singleton instance reference.
+     */
     private static instance: Logger | null = null;
+
+    /**
+     * Current language used when resolving localization keys.
+     */
     private static current_language: SupportedLanguages = SupportedLanguages.EN;
+
+    /**
+     * Currently selected minimum log level. Messages with a numerically greater
+     * value than this threshold are filtered out.
+     */
     private static selected_log_level: LogLevels =
         process.env.NODE_ENV === 'production' ? LogLevels.error : LogLevels.debug;
 
     /**
-     * Gets the current caller information (filename and line number).
-     * This method retrieves the caller's filename and line number from the stack trace.
-     * @return {Object} object: An object containing the filename and line number of the caller.
-     * @return {string} object.filename - The filename of the caller.
-     * @return {string} object.linenumber - The line number of the caller.
+     * Determine caller filename and line from a stack trace.
+     * @returns {{filename: string, linenumber: string}} The caller's source filename and line number.
      */
     private getCallerInfo(): { filename: string; linenumber: string } {
         const stack_lines = new Error().stack?.split('\n') ?? [];
@@ -59,14 +72,13 @@ export class Logger {
     }
 
     /**
-     * Formats the log message with the current date, type, filename, and line number.
-     * This method formats the log message for console output.
-     * @param {Object} params - The parameters for formatting the log message.
-     * @param {LogLevels} params.type - The type of log message (debug, error, info, log, warn).
-     * @param {string} params.message - The log message to format.
-     * @param {string} params.filename - The filename of the caller.
-     * @param {string} params.linenumber - The line number of the caller.
-     * @return The formatted log message as a string.
+     * Format a log message with timestamp, level tag, and location metadata.
+     * @param {object} params - Formatting parameters.
+     * @param {LogLevels} params.type - The log level.
+     * @param {string} params.message - The log message.
+     * @param {string} params.filename - The name of the file where the log originated.
+     * @param {string} params.linenumber - The line number in the file where the log originated.
+     * @returns {string} The formatted message.
      */
     private format({
         type,
@@ -91,10 +103,10 @@ export class Logger {
     }
 
     /**
-     * Translates a given key into the current language, optionally formatting it with provided arguments (synchronous version).
-     * @param key The key to translate.
-     * @param args Optional arguments to format the translated string.
-     * @returns The translated and formatted string.
+     * Resolve a localization key and optionally apply numbered replacements.
+     * @param {string} key Localization key (e.g., 'events.index.loading').
+     * @param {(string | number | unknown)[]} [replacements] Optional values to replace {0}, {1}, ... in the template.
+     * @returns {string} Localized and formatted message.
      */
     public querySync(key: string, replacements?: (string | number | unknown)[]): string {
         const file = jsonc.parse(
@@ -110,9 +122,10 @@ export class Logger {
     }
 
     /**
-     * Sends a notification to Discord
-     * @param {keyof typeof LogLevels} level - The log level of the message.
-     * @param {string} formatted_message - The formatted log message.
+     * Placeholder hook to send logs to Discord for higher-severity levels.
+     * Currently prints to console to indicate where an integration could be added.
+     * @param {keyof typeof LogLevels} level Log severity of the message.
+     * @param {string} formatted_message Already formatted message string.
      */
     private sendNotificationToDiscord(level: keyof typeof LogLevels, formatted_message: string): void {
         if (LogLevels[level] >= 4) {
@@ -121,11 +134,16 @@ export class Logger {
     }
 
     /**
-     * Sends a log message to the console based on the specified log level.
-     * This method checks the current log level and formats the message accordingly.
-     * @param {keyof typeof LogLevels} type - The type of log message (debug, error, info, log, warn).
-     * @param {string} key - The translation key for the log message.
-     * @param {(string | number | unknown)[]} [replacements] - Optional replacements for the translation key.
+     * Log a message at the provided level after localization and formatting.
+     *
+     * Behavior:
+     * - If the level is filtered out by the current threshold, nothing is logged.
+     * - For 'error' level, the process exits with code 1 after logging.
+     *
+     * @param {keyof typeof LogLevels} type One of 'debug' | 'error' | 'info' | 'log' | 'warn'.
+     * @param {string} key Localization key for the message template.
+     * @param {(string | number | unknown)[]} [replacements] Optional template replacement values.
+     * @returns {void}
      */
     public send(type: keyof typeof LogLevels, key: string, replacements?: (string | number | unknown)[]): void {
         if (LogLevels[type] > Logger.selected_log_level) return;
@@ -149,27 +167,24 @@ export class Logger {
     }
 
     /**
-     * Updates the current language for localization.
-     * This method allows dynamic updating of the language used for translations.
-     * @param {SupportedLanguages} lang - The new language to set.
+     * Update the current language for subsequent localization lookups.
+     * @param {SupportedLanguages} lang New language to set.
      */
     public set setLanguage(lang: SupportedLanguages) {
         if (lang.toUpperCase() in SupportedLanguages) Logger.current_language = lang;
     }
 
     /**
-     * Updates the log level settings based on the provided configuration.
-     * This method allows dynamic updating of the log level.
-     * @param {BotConfig_t['log_level']} cfg - The new log level to set.
+     * Update the minimum log level threshold.
+     * @param {LogLevels} level New log level to set as threshold.
      */
     public set setLogLevel(level: LogLevels) {
         if (level in LogLevels) Logger.selected_log_level = level;
     }
 
     /**
-     * Gets the singleton instance of the Logger class.
-     * This method ensures that only one instance of Logger is created.
-     * @return The singleton instance of Logger.
+     * Obtain the Logger singleton instance.
+     * @returns {Logger} Singleton instance.
      */
     public static getInstance(): Logger {
         if (!Logger.instance) Logger.instance = new Logger();

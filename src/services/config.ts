@@ -5,17 +5,21 @@ import { z } from 'zod';
 import { Logger, LogLevels, SupportedLanguages } from './logger';
 
 /**
- * Schema for validating the bot configuration.
- * This schema defines the structure and validation rules for the bot configuration.
- * @property {string} app_id - The application ID of the bot.
- * @property {boolean} clear_old_commands_on_startup - Whether to clear old commands on startup.
- * @property {enum<SupportedLanguages>} language - The default language for the bot.
- * @property {string} log_level - The logging level for the bot.
- * @property {object} management - Configuration for management features.
- * @property {boolean} management.enabled - Whether management features are enabled.
- * @property {string} management.main_guild_id - The main guild ID for management features.
- * @property {string} management.channel_id - The channel ID for management features.
- * @property {string} token - The bot token for authentication.
+ * Configuration module.
+ * Provides zod schemas and a singleton Config class that loads and validates
+ * bot and database configuration from the repository defaults or provided overrides.
+ */
+
+/**
+ * Zod schema for the bot configuration.
+ *
+ * Validated properties:
+ * - app_id: Discord application ID (string, required)
+ * - clear_old_commands_on_startup: whether to clear commands on startup (boolean)
+ * - language: localization language (enum of SupportedLanguages)
+ * - log_level: minimum log level (enum of LogLevels)
+ * - management: nested object with management feature flags and IDs
+ * - token: bot token used for login (string, required)
  */
 const bot_config_schema = z.object({
     app_id: z.string().min(1, 'Application ID cannot be empty'),
@@ -40,15 +44,16 @@ const bot_config_schema = z.object({
 export type BotConfig_t = z.infer<typeof bot_config_schema>;
 
 /**
- * Schema for validating the database configuration.
- * This schema defines the structure and validation rules for the database configuration.
- * @property {string} host - The database host.
- * @property {number} port - The database port.
- * @property {string} username - The database username.
- * @property {string} password - The database password (optional).
- * @property {string} database - The name of the database.
- * @property {boolean} synchronize - Whether to synchronize the database schema.
- * @property {boolean} logging - Whether to enable logging for database operations.
+ * Zod schema for the database configuration.
+ *
+ * Validated properties:
+ * - host: database host (string)
+ * - port: database port (number)
+ * - username: database user (string)
+ * - password: database password (string|undefined)
+ * - database: database name (string)
+ * - synchronize: whether to synchronize schema (boolean)
+ * - logging: enable TypeORM logging (boolean)
  */
 const database_config_schema = z.object({
     host: z.string().min(1, 'Database host cannot be empty').default('localhost'),
@@ -62,22 +67,50 @@ const database_config_schema = z.object({
 export type DatabaseConfig_t = z.infer<typeof database_config_schema>;
 
 /**
- * Config class for managing the bot and database configurations.
- * This class provides methods to initialize and access the current configurations.
+ * Config is a singleton that loads, validates and exposes runtime configuration.
+ *
+ * It prefers provided overrides (useful for tests) and falls back to the project's
+ * default JSONC files imported at module scope.
  */
 export class Config {
+    /**
+     * Singleton instance reference for the Config class. Set during getInstance().
+     */
     private static instance: Config | null = null;
+
+    /**
+     * Shared `Logger` singleton for structured logging and localization-backed messages.
+     * @static
+     * @type {Logger}
+     */
     private static logger = Logger.getInstance();
+
+    /**
+     * The currently loaded and validated bot configuration.
+     * @readonly
+     * @type {BotConfig_t}
+     */
     public readonly current_botcfg: BotConfig_t;
+
+    /**
+     * The currently loaded and validated database configuration.
+     * @readonly
+     * @type {DatabaseConfig_t}
+     */
     public readonly current_dbcfg: DatabaseConfig_t;
 
     /**
-     * Parses the provided data using the specified schema.
-     * If the data is a string, it reads the content from the file.
-     * If the data is an object, it parses it directly.
-     * @param {string | object} data - The configuration data to parse.
-     * @param {z.ZodType<T>} schema - The Zod schema to validate the data against.
-     * @return {T} The parsed and validated configuration data.
+     * Parse raw configuration data using the provided Zod schema.
+     *
+     * Behavior:
+     * - If `data` is a string, it reads the file contents and parses JSON.
+     * - If `data` is already an object, it validates that object directly.
+     * - On validation or parse error, an error is logged and an empty object cast to T is returned.
+     *
+     * @template T
+     * @param {string|object} data Path to a JSON file or an in-memory object to validate.
+     * @param {z.ZodType<T>} schema A Zod schema instance that validates the shape of T.
+     * @returns {T} The validated configuration typed as T. Returns {} as T on error.
      */
     private parse<T>(data: string | object, schema: z.ZodType<T>): T {
         try {
@@ -99,11 +132,11 @@ export class Config {
     }
 
     /**
-     * Initializes the Config instance with the provided bot and database configurations.
-     * If no configurations are provided, it uses default configurations.
-     * @param {BotConfig_t} c_botcfg - Optional bot configuration object.
-     * @param {DatabaseConfig_t} c_dbcfg - Optional database configuration object.
-     * @return An instance of Config with the initialized configurations.
+     * Return the singleton Config instance, creating it if necessary.
+     *
+     * @param {BotConfig_t} [c_botcfg] Optional override for bot configuration (useful in tests).
+     * @param {DatabaseConfig_t} [c_dbcfg] Optional override for database configuration.
+     * @returns {Config} Singleton instance with validated configurations loaded.
      */
     public static getInstance(c_botcfg?: BotConfig_t, c_dbcfg?: DatabaseConfig_t): Config {
         if (!Config.instance) {
@@ -113,9 +146,10 @@ export class Config {
     }
 
     /**
-     * Initializes the Config instance with the provided bot and database configurations.
-     * @param {BotConfig_t} c_botcfg - Optional bot configuration object.
-     * @param {DatabaseConfig_t} c_dbcfg - Optional database configuration object.
+     * Internal constructor: validates and stores current configurations.
+     *
+     * @param {BotConfig_t} [c_botcfg] Optional bot config override.
+     * @param {DatabaseConfig_t} [c_dbcfg] Optional database config override.
      */
     private constructor(c_botcfg?: BotConfig_t, c_dbcfg?: DatabaseConfig_t) {
         this.current_botcfg = this.parse(c_botcfg || botcfg, bot_config_schema as z.ZodType<BotConfig_t>);
