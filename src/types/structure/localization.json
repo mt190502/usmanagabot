@@ -1,0 +1,30 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "localization.json",
+    "title": "Localization File",
+    "description": "A JSON file used for localization of strings in the application.",
+    "type": "object",
+    "properties": {
+        "log": {
+            "type": "object",
+            "description": "Log messages used in the application.",
+            "patternProperties": {
+                "^[a-zA-Z0-9_.-]+$": {
+                    "type": "string",
+                    "description": "A log message entry."
+                }
+            }
+        },
+        "debug": {
+            "type": "object",
+            "description": "Debug messages used in the application.",
+            "patternProperties": {
+                "^[a-zA-Z0-9_.-]+$": {
+                    "type": "string",
+                    "description": "A debug message entry."
+                }
+            }
+        }
+    },
+    "required": ["log", "debug"]
+}

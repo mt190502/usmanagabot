@@ -66,7 +66,7 @@ export class Logger {
             }
         }
         const match = caller_line.match(/(?:at .*?\(?|at\s+)(?:(?:file:\/\/)?([^()]+?)|([^(/]+)):(\d+):\d+\)?$/);
-        const filename = match ? ((match[1] || match[2]).split(/[\\/]/).pop() ?? 'unknown') : 'unknown';
+        const filename = match ? ((match[1] || match[2]).match(/src\/(.+)/)![1] ?? 'unknown') : 'unknown';
         const linenumber = match ? match[3] : 'unknown';
         return { filename, linenumber };
     }
@@ -92,12 +92,13 @@ export class Logger {
         linenumber: string;
     }): string {
         const current_date = dayjs().format('YYYY-MM-DD HH:mm:ss');
-        const levels: Record<string, string> = {
+        const levels: Record<number, string | null> = {
             [LogLevels.debug]: '\x1b[35mDBG\x1b[0m',
             [LogLevels.error]: '\x1b[31mERR\x1b[0m',
             [LogLevels.info]: '\x1b[34mINF\x1b[0m',
             [LogLevels.log]: '\x1b[36mLOG\x1b[0m',
             [LogLevels.warn]: '\x1b[33mWRN\x1b[0m',
+            [LogLevels.off]: null,
         };
         return `${levels[type]}[${current_date}][${filename}:${linenumber}] ${message}`;
     }
@@ -108,11 +109,11 @@ export class Logger {
      * @param {(string | number | unknown)[]} [replacements] Optional values to replace {0}, {1}, ... in the template.
      * @returns {string} Localized and formatted message.
      */
-    public querySync(key: string, replacements?: (string | number | unknown)[]): string {
+    public querySync(mode: keyof typeof LogLevels, key: string, replacements?: (string | number | unknown)[]): string {
         const file = jsonc.parse(
             fs.readFileSync(path.join(__dirname, `../localization/${Logger.current_language}.jsonc`), 'utf-8')
         );
-        let translation = file[key] || key;
+        let translation = file[mode === 'debug' ? 'debug' : 'log'][key] || ('<missing translation> ' + key);
         if (replacements && replacements.length > 0) {
             for (const [index, value] of replacements.entries()) {
                 translation = translation.replace(`{${index}}`, String(value));
@@ -147,7 +148,7 @@ export class Logger {
      */
     public send(type: keyof typeof LogLevels, key: string, replacements?: (string | number | unknown)[]): void {
         if (LogLevels[type] > Logger.selected_log_level) return;
-        const msg = this.querySync(key, replacements);
+        const msg = this.querySync(type, key, replacements);
 
         const { filename, linenumber } = this.getCallerInfo();
         const formatted_message = this.format({ type: LogLevels[type], message: msg, filename, linenumber });

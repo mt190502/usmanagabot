@@ -2,7 +2,8 @@ import botcfg from '@config/bot.jsonc';
 import dbcfg from '@config/database.jsonc';
 import fs from 'fs';
 import { z } from 'zod';
-import { Logger, LogLevels, SupportedLanguages } from './logger';
+import { maskSensitiveFields } from '@utils/maskFields';
+import { Logger, LogLevels, SupportedLanguages } from '@services/logger';
 
 /**
  * Configuration module.
@@ -83,7 +84,7 @@ export class Config {
      * @static
      * @type {Logger}
      */
-    private static logger = Logger.getInstance();
+    private static logger: Logger = Logger.getInstance();
 
     /**
      * The currently loaded and validated bot configuration.
@@ -113,20 +114,31 @@ export class Config {
      * @returns {T} The validated configuration typed as T. Returns {} as T on error.
      */
     private parse<T>(data: string | object, schema: z.ZodType<T>): T {
+        Config.logger.send('debug', 'services.config.parse.call');
         try {
             let raw_data: T;
             if (typeof data === 'string') {
-                const file_content = fs.readFileSync(data, 'utf-8');
-                raw_data = JSON.parse(file_content) as T;
+                Config.logger.send('debug', 'services.config.parse.from_file', [data]);
+                raw_data = JSON.parse(fs.readFileSync(data, 'utf-8')) as T;
+                Config.logger.send('debug', 'services.config.parse.from_file.json_parsed', [
+                    JSON.stringify(maskSensitiveFields(raw_data)),
+                ]);
             } else {
+                Config.logger.send('debug', 'services.config.parse.from_inline_object');
                 raw_data = data as T;
             }
+            Config.logger.send('debug', 'services.config.parse.to_schema');
             const parsed = schema.parse(raw_data);
+            Config.logger.send('debug', 'services.config.parse.to_schema.success', [
+                JSON.stringify(maskSensitiveFields(parsed)),
+            ]);
+            Config.logger.send('debug', 'services.config.parse.end');
             return parsed;
         } catch (error) {
-            Config.logger.send('error', 'services.config.parsing_error', [
+            Config.logger.send('error', 'services.config.parse.parsing_error', [
                 error instanceof Error ? error.message : 'Unknown error',
             ]);
+            Config.logger.send('debug', 'services.config.parse.end');
             return {} as T;
         }
     }
@@ -139,9 +151,15 @@ export class Config {
      * @returns {Config} Singleton instance with validated configurations loaded.
      */
     public static getInstance(c_botcfg?: BotConfig_t, c_dbcfg?: DatabaseConfig_t): Config {
+        Config.logger.send('debug', 'services.getInstance.call');
+        Config.logger.send('debug', 'services.getInstance.check');
         if (!Config.instance) {
+            Config.logger.send('debug', 'services.getInstance.not_exists');
+            Config.logger.send('debug', 'services.getInstance.creating');
             Config.instance = new Config(c_botcfg, c_dbcfg);
+            Config.logger.send('debug', 'services.getInstance.created');
         }
+        Config.logger.send('debug', 'services.getInstance.returning');
         return Config.instance;
     }
 
@@ -152,7 +170,11 @@ export class Config {
      * @param {DatabaseConfig_t} [c_dbcfg] Optional database config override.
      */
     private constructor(c_botcfg?: BotConfig_t, c_dbcfg?: DatabaseConfig_t) {
+        Config.logger.send('debug', 'services.config.constructor.call');
+        Config.logger.send('debug', 'services.config.constructor.start');
         this.current_botcfg = this.parse(c_botcfg || botcfg, bot_config_schema as z.ZodType<BotConfig_t>);
         this.current_dbcfg = this.parse(c_dbcfg || dbcfg, database_config_schema as z.ZodType<DatabaseConfig_t>);
+        Config.logger.send('debug', 'services.config.constructor.success');
+        Config.logger.send('debug', 'services.config.constructor.end');
     }
 }
