@@ -48,18 +48,10 @@ export class Database {
      * @returns {Promise<Database>} Promise resolving to the singleton Database instance.
      */
     public static async getInstance(c_dbcfg?: DatabaseConfig_t): Promise<Database> {
-        Database.logger.send('debug', 'services.getInstance.call');
-        Database.logger.send('debug', 'services.getInstance.check');
         if (!Database.instance) {
-            Database.logger.send('debug', 'services.getInstance.not_exists');
-            Database.logger.send('debug', 'services.getInstance.creating');
             Database.instance = new Database(c_dbcfg);
-            Database.logger.send('debug', 'services.getInstance.created');
-            Database.logger.send('debug', 'services.getInstance.awaiting_init');
             await Database.instance.init();
-            Database.logger.send('debug', 'services.getInstance.initialized');
         }
-        Database.logger.send('debug', 'services.getInstance.returning');
         return Database.instance;
     }
 
@@ -74,17 +66,9 @@ export class Database {
      * @returns {Promise<void>} Resolves when initialization completes (or after logging on error).
      */
     private async init(): Promise<void> {
-        Database.logger.send('debug', 'services.database.init.call');
-        Database.logger.send('debug', 'services.database.init.discovering_entities');
         const entities = (await glob('src/types/database/entities/*.ts')).sort((a, b) => a.localeCompare(b));
-        Database.logger.send('debug', 'services.database.init.discovered_entities', [entities.length]);
-        Database.logger.send('debug', 'services.database.init.discovering_migrations');
         const migrations = (await glob('src/types/database/migrations/*.ts')).sort((a, b) => a.localeCompare(b));
-        Database.logger.send('debug', 'services.database.init.discovered_migrations', [migrations.length]);
-        Database.logger.send('debug', 'services.database.init.discovering_subscribers');
         const subscribers = (await glob('src/types/database/subscribers/*.ts')).sort((a, b) => a.localeCompare(b));
-        Database.logger.send('debug', 'services.database.init.discovered_subscribers', [subscribers.length]);
-        Database.logger.send('debug', 'services.database.init.datasource_creating', [this.current_dbcfg]);
         this.dataSource = new DataSource({
             type: 'postgres',
             host: this.current_dbcfg.host,
@@ -99,16 +83,13 @@ export class Database {
             subscribers,
         });
         try {
-            Database.logger.send('debug', 'services.database.init.datasource_creating');
             await this.dataSource.initialize();
-            Database.logger.send('debug', 'services.database.init.datasource_created');
             Database.logger.send('info', 'services.database.init.success');
         } catch (error) {
             Database.logger.send('error', 'services.database.init.initialization_error', [
                 error instanceof Error ? error.message : 'Unknown error',
             ]);
         }
-        Database.logger.send('debug', 'services.database.init.end');
     }
 
     /**
@@ -117,8 +98,6 @@ export class Database {
      * @param {DatabaseConfig_t} [c_dbcfg] Optional database configuration override.
      */
     private constructor(c_dbcfg?: DatabaseConfig_t) {
-        Database.logger.send('debug', 'services.database.constructor.call');
         this.current_dbcfg = c_dbcfg || Config.getInstance().current_dbcfg;
-        Database.logger.send('debug', 'services.database.constructor.end');
     }
 }
