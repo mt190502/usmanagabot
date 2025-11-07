@@ -62,14 +62,19 @@ export class EventLoader {
         }
         for (const file of await glob(path.join(__dirname, './**/*.ts'), { ignore: '**/index.ts' })) {
             const file_name_with_path = file.match(/([^/]+\/[^/]+\/[^/]+)$/)![0];
-            const event = new (await import(file)).default() as BaseEvent<keyof ClientEvents>;
-            if (!event.enabled) {
-                EventLoader.logger.send('info', 'eventloader.init.disabled', [event.type, file_name_with_path]);
-                continue;
+            const event_classes = (await import(file)).default;
+            const events = Array.isArray(event_classes) ? event_classes : [event_classes];
+
+            for (const event_class of events) {
+                const event = new event_class() as BaseEvent<keyof ClientEvents>;
+                if (!event.enabled) {
+                    EventLoader.logger.send('info', 'eventloader.init.disabled', [event.type, file_name_with_path]);
+                    continue;
+                }
+                EventLoader.logger.send('info', 'eventloader.init.loading', [event.type, file_name_with_path]);
+                EventLoader.BotEvents[event.type] = event;
+                client[event.once ? 'once' : 'on'](event.type, (...args) => event.execute(...args));
             }
-            EventLoader.logger.send('info', 'eventloader.init.loading', [event.type, file_name_with_path]);
-            EventLoader.BotEvents[event.type] = event;
-            client[event.once ? 'once' : 'on'](event.type, (...args) => event.execute(...args));
         }
         EventLoader.instance = new EventLoader();
         return client;

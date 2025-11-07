@@ -1,6 +1,6 @@
 import { BaseEvent } from '@src/types/structure/event';
 import { Client, Events } from 'discord.js';
-import pkg from '../../../package.json';
+import pkg from '../../package.json';
 
 export default class ReadyEvent extends BaseEvent<Events.ClientReady> {
     constructor() {

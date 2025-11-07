@@ -1,8 +1,9 @@
-import { Collection, Events, Interaction, MessageFlags } from 'discord.js';
-import { CommandLoader } from '../../commands';
-import { BaseCommand, CustomizableCommand } from '../../types/structure/command';
-import { BaseEvent } from '../../types/structure/event';
-import { handleCommand } from '../../utils/handleInteractionCommand';
+import { Channel, Collection, Events, Interaction, MessageFlags, User } from 'discord.js';
+import { CommandLoader } from '../commands';
+import { BaseCommand, CustomizableCommand } from '../types/structure/command';
+import { BaseEvent } from '../types/structure/event';
+import { RegisterFact } from '../utils/common';
+import { handleCommand } from '../utils/handleInteractionCommand';
 
 const cooldowns: Collection<string, Collection<bigint, number>> = new Collection();
 
@@ -12,6 +13,9 @@ export default class InteractionEvent extends BaseEvent<Events.InteractionCreate
     }
 
     public async execute(interaction: Interaction): Promise<void> {
+        await RegisterFact<User>(interaction.user, undefined);
+        await RegisterFact<Channel>(interaction.channel!, undefined);
+
         const available_cmds = new Map<string, BaseCommand | CustomizableCommand>([
             ...(CommandLoader.BotCommands.get('global') ?? new Map()),
             ...(CommandLoader.BotCommands.get(interaction.guildId ?? interaction.guild?.id ?? '') ?? new Map()),
