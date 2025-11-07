@@ -1,7 +1,7 @@
-import { glob } from 'glob';
-import { DataSource } from 'typeorm';
 import { Config, DatabaseConfig_t } from '@services/config';
 import { Logger } from '@services/logger';
+import { glob } from 'glob';
+import { DataSource } from 'typeorm';
 
 /**
  * Database service class responsible for initializing and exposing TypeORM DataSource.
@@ -17,7 +17,7 @@ export class Database {
     /**
      * Singleton reference for the Database service.
      */
-    private static instance: Database | null = null;
+    private static instance: Promise<Database> | null = null;
 
     /**
      * `Logger` singleton used for reporting initialization errors and other important events.
@@ -47,10 +47,13 @@ export class Database {
      * @param {DatabaseConfig_t} [c_dbcfg] Optional override for the database configuration (useful for tests).
      * @returns {Promise<Database>} Promise resolving to the singleton Database instance.
      */
-    public static async getInstance(c_dbcfg?: DatabaseConfig_t): Promise<Database> {
+    public static getInstance(c_dbcfg?: DatabaseConfig_t): Promise<Database> {
         if (!Database.instance) {
-            Database.instance = new Database(c_dbcfg);
-            await Database.instance.init();
+            Database.instance = (async () => {
+                const db_instance = new Database(c_dbcfg);
+                await db_instance.init();
+                return db_instance;
+            })();
         }
         return Database.instance;
     }
