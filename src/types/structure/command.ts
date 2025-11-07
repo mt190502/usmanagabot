@@ -1,10 +1,4 @@
-import {
-    ClientEvents,
-    CommandInteraction,
-    ContextMenuCommandBuilder,
-    Interaction,
-    SlashCommandBuilder,
-} from 'discord.js';
+import { CommandInteraction, ContextMenuCommandBuilder, Interaction, SlashCommandBuilder } from 'discord.js';
 import 'reflect-metadata';
 import { EntityManager } from 'typeorm';
 import { Config } from '../../services/config';
@@ -83,14 +77,6 @@ export abstract class BaseCommand {
      * @type {string[] | undefined}
      */
     public readonly aliases?: string[];
-
-    /**
-     * A list of client events that this command can be triggered by.
-     * @public
-     * @readonly
-     * @type {(keyof ClientEvents)[]}
-     */
-    public readonly use_with_events: (keyof ClientEvents)[];
     // ================================================================ //
 
     // ===================== COMMAND DATA SECTION ===================== //
@@ -133,7 +119,6 @@ export abstract class BaseCommand {
         this.usage = options.usage ?? 'No usage provided.';
         this.help = options.help ?? 'No help provided.';
         this.cooldown = options.cooldown ?? 0;
-        this.use_with_events = options.use_with_events ?? [];
         BaseCommand.main_command_data = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
     }
     // ================================================================ //
