@@ -69,7 +69,7 @@ export class EventLoader {
             }
             EventLoader.logger.send('info', 'eventloader.init.loading', [event.type, file_name_with_path]);
             EventLoader.BotEvents[event.type] = event;
-            client[event.once ? 'once' : 'on'](event.type, event.execute);
+            client[event.once ? 'once' : 'on'](event.type, (...args) => event.execute(...args));
         }
         EventLoader.instance = new EventLoader();
         return client;
