@@ -86,7 +86,7 @@ export abstract class BaseCommand {
      * @static
      * @type {(SlashCommandBuilder | ContextMenuCommandBuilder)}
      */
-    private static main_command_data: SlashCommandBuilder | ContextMenuCommandBuilder;
+    private main_command_data: SlashCommandBuilder | ContextMenuCommandBuilder;
 
     /**
      * An array of additional command data builders.
@@ -94,7 +94,7 @@ export abstract class BaseCommand {
      * @static
      * @type {(SlashCommandBuilder | ContextMenuCommandBuilder)[]}
      */
-    private static extra_command_data: (SlashCommandBuilder | ContextMenuCommandBuilder)[] = [];
+    private extra_command_data: (SlashCommandBuilder | ContextMenuCommandBuilder)[] = [];
     // ================================================================ //
 
     // ===================== COMMAND BASE SECTION ===================== //
@@ -119,7 +119,7 @@ export abstract class BaseCommand {
         this.usage = options.usage ?? 'No usage provided.';
         this.help = options.help ?? 'No help provided.';
         this.cooldown = options.cooldown ?? 0;
-        BaseCommand.main_command_data = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
+        this.main_command_data = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
     }
     // ================================================================ //
 
@@ -157,7 +157,7 @@ export abstract class BaseCommand {
      * @returns {SlashCommandBuilder | ContextMenuCommandBuilder} The main command data.
      */
     public get base_cmd_data(): SlashCommandBuilder | ContextMenuCommandBuilder {
-        return BaseCommand.main_command_data;
+        return this.main_command_data;
     }
 
     /**
@@ -166,7 +166,7 @@ export abstract class BaseCommand {
      * @param {SlashCommandBuilder | ContextMenuCommandBuilder} data - The main command data to set.
      */
     public set base_cmd_data(data: SlashCommandBuilder | ContextMenuCommandBuilder) {
-        BaseCommand.main_command_data = data;
+        this.main_command_data = data;
     }
 
     /**
@@ -175,7 +175,7 @@ export abstract class BaseCommand {
      * @returns {(SlashCommandBuilder | ContextMenuCommandBuilder)[]} An array of all command data.
      */
     public get all_cmd_data(): (SlashCommandBuilder | ContextMenuCommandBuilder)[] {
-        return [BaseCommand.main_command_data, ...(BaseCommand.extra_command_data ?? [])];
+        return [this.main_command_data, ...(this.extra_command_data ?? [])];
     }
 
     /**
@@ -184,7 +184,7 @@ export abstract class BaseCommand {
      * @param {SlashCommandBuilder | ContextMenuCommandBuilder} data - The command data to add.
      */
     public set push_cmd_data(data: SlashCommandBuilder | ContextMenuCommandBuilder) {
-        BaseCommand.extra_command_data.push(data);
+        this.extra_command_data.push(data);
     }
     // ================================================================ //
 }
