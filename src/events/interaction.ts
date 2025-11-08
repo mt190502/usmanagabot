@@ -24,32 +24,35 @@ const handleCommand = async (action: string, interaction: Interaction | CommandI
     const target = Reflect.getMetadata(`custom:${namespace}`, command.constructor);
 
     if (namespace === 'command') {
-        if (target) target.get(args[0])?.value(interaction, ...args);
+        if (target) {
+            target.get(args[0])?.value.apply(command, [interaction, ...args]);
+        } else {
+            command.execute(interaction);
+        }
     } else if (namespace === 'settings' && command instanceof CustomizableCommand) {
-        if (args.length === 1) {
-            target.get(args[0])?.value(interaction, ...args);
-        } else if (args) {
-            const subcommands: { label: string; description: string; value: string }[] = [];
-            for (const [name, setting] of target) {
-                subcommands.push({
-                    label: name,
-                    description: setting.desc,
-                    value: `settings:${command.name}:${name}`,
-                });
-            }
-            await (interaction as StringSelectMenuInteraction).update({
-                components: [
-                    new ActionRowBuilder()
-                        .addComponents(
-                            new StringSelectMenuBuilder()
-                                .setCustomId('settings')
-                                .setPlaceholder('Select a setting to configure...')
-                                .addOptions(subcommands),
-                        )
-                        .toJSON(),
-                ],
+        await target.get(args[0])?.func.value.apply(command, [interaction, ...args]);
+        if (command?.settingsInterface) command.settingsInterface(interaction);
+    } else if (namespace === 'settings' && command instanceof BaseCommand) {
+        const subcommands: { label: string; description: string; value: string }[] = [];
+        for (const [name, setting] of target) {
+            subcommands.push({
+                label: name,
+                description: setting.desc,
+                value: `settings:${command.name}:${name}`,
             });
         }
+        await (interaction as StringSelectMenuInteraction).update({
+            components: [
+                new ActionRowBuilder()
+                    .addComponents(
+                        new StringSelectMenuBuilder()
+                            .setCustomId('settings')
+                            .setPlaceholder('Select a setting to configure...')
+                            .addOptions(subcommands),
+                    )
+                    .toJSON(),
+            ],
+        });
     }
 };
 
