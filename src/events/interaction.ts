@@ -1,9 +1,57 @@
-import { Channel, Collection, Events, Interaction, MessageFlags, User } from 'discord.js';
+import {
+    ActionRowBuilder,
+    Channel,
+    Collection,
+    CommandInteraction,
+    Events,
+    Interaction,
+    MessageFlags,
+    StringSelectMenuBuilder,
+    StringSelectMenuInteraction,
+    User,
+} from 'discord.js';
 import { CommandLoader } from '../commands';
 import { BaseCommand, CustomizableCommand } from '../types/structure/command';
 import { BaseEvent } from '../types/structure/event';
 import { RegisterFact } from '../utils/common';
-import { handleCommand } from '../utils/handleInteractionCommand';
+
+const handleCommand = async (action: string, interaction: Interaction | CommandInteraction) => {
+    const [namespace, command_name, ...args] = action.split(':');
+    const command =
+        CommandLoader.BotCommands.get(interaction.guild!.id)?.get(command_name) ||
+        CommandLoader.BotCommands.get('global')?.get(command_name);
+    if (!command) return;
+    const target = Reflect.getMetadata(`custom:${namespace}`, command.constructor);
+
+    if (namespace === 'command') {
+        if (target) target.get(args[0])?.value(interaction, ...args);
+    } else if (namespace === 'settings' && command instanceof CustomizableCommand) {
+        if (args.length === 1) {
+            target.get(args[0])?.value(interaction, ...args);
+        } else if (args) {
+            const subcommands: { label: string; description: string; value: string }[] = [];
+            for (const [name, setting] of target) {
+                subcommands.push({
+                    label: name,
+                    description: setting.desc,
+                    value: `settings:${command.name}:${name}`,
+                });
+            }
+            await (interaction as StringSelectMenuInteraction).update({
+                components: [
+                    new ActionRowBuilder()
+                        .addComponents(
+                            new StringSelectMenuBuilder()
+                                .setCustomId('settings')
+                                .setPlaceholder('Select a setting to configure...')
+                                .addOptions(subcommands),
+                        )
+                        .toJSON(),
+                ],
+            });
+        }
+    }
+};
 
 const cooldowns: Collection<string, Collection<bigint, number>> = new Collection();
 
