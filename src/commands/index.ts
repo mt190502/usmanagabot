@@ -160,7 +160,9 @@ export class CommandLoader {
             : globSync(path.join(__dirname, './**/*.ts'), { ignore: ['**/index.ts'] });
 
         for (const file of commands.sort()) {
-            const cmd = new (await import(file)).default() as BaseCommand | CustomizableCommand;
+            const content = await import(file);
+            if (!content || !content.default) continue;
+            const cmd = new content.default() as BaseCommand | CustomizableCommand;
             const filename = file.match(/([^/]+\/[^/]+\/[^/]+)$/)![1];
 
             if (!cmd.name) {
