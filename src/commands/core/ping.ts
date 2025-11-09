@@ -9,7 +9,6 @@ export default class PingCommand extends BaseCommand {
             name: 'ping',
             pretty_name: 'Ping',
             description: 'Replies with Pong! and the bot latency.',
-            usage: '/ping',
             help: `
                 Use this command to check the bot's latency to the Discord servers. The bot will respond with "Pong!" along with the current latency in milliseconds.
 

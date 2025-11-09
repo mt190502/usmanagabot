@@ -18,7 +18,7 @@ export default class SettingsCommand extends BaseCommand {
             name: 'settings',
             pretty_name: 'Settings',
             description: 'Manage modules and bot settings.',
-            usage: '/settings',
+            is_admin_command: true,
             help: 'Use this command to manage various modules and settings of the bot.',
         });
         this.base_cmd_data.setDefaultMemberPermissions(

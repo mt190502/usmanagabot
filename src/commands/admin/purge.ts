@@ -26,7 +26,7 @@ export default class PurgeCommand extends BaseCommand {
             name: 'purge',
             pretty_name: 'Purge',
             description: 'Purge messages in a channel based on various filters.',
-            usage: '/purge [message_id | message_url] | Target Message > Apps > Purge',
+            is_admin_command: true,
             cooldown: 10,
             help: `
                 Purge messages in a channel based on various filters.

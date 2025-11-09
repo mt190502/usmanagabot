@@ -33,7 +33,6 @@ export default class IntroductionCommand extends CustomizableCommand {
             pretty_name: 'Introduction',
             description: 'User introduction database command.',
             cooldown: 5,
-            usage: '/introduction [options]',
             help: `
                 Introduction command allows create customizable user introductions
 

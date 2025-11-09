@@ -60,13 +60,12 @@ export abstract class BaseCommand {
     public readonly description: string;
 
     /**
-     * Instructions on how to use the command, including arguments.
-     * Example: `/command [options]`
+     * Indicates whether the command requires administrator privileges to use.
      * @public
      * @readonly
-     * @type {string}
+     * @type {boolean}
      */
-    public readonly usage: string;
+    public readonly is_admin_command: boolean = false;
 
     /**
      * Detailed help text for the command, intended for display in a help command.
@@ -131,7 +130,7 @@ export abstract class BaseCommand {
         this.name = options.name;
         this.pretty_name = options.pretty_name ?? 'No pretty name provided.';
         this.description = options.description ?? 'No description provided.';
-        this.usage = options.usage ?? 'No usage provided.';
+        this.is_admin_command = options.is_admin_command ?? false;
         this.help = options.help ?? 'No help provided.';
         this.cooldown = options.cooldown ?? 0;
         this.main_command_data = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
