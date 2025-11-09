@@ -3,6 +3,7 @@ import timers from 'timers/promises';
 import { BaseCommand } from '../../types/structure/command';
 
 export default class PingCommand extends BaseCommand {
+    // ============================ HEADER ============================ //
     constructor() {
         super({
             name: 'ping',
@@ -23,7 +24,9 @@ export default class PingCommand extends BaseCommand {
             `,
         });
     }
+    // ================================================================ //
 
+    // =========================== EXECUTE ============================ //
     public async execute(interaction: CommandInteraction): Promise<void> {
         const msg = await interaction.reply('Pinging...');
         let ping = interaction.client.ws.ping;
@@ -33,4 +36,5 @@ export default class PingCommand extends BaseCommand {
         }
         msg.edit(`Pong! 🏓\n${ping}ms`);
     }
+    // ================================================================ //
 }
