@@ -5,7 +5,6 @@ import { BaseCommand } from '../../types/structure/command';
 export default class PingCommand extends BaseCommand {
     constructor() {
         super({
-            enabled: true,
             name: 'ping',
             pretty_name: 'Ping',
             description: 'Replies with Pong! and the bot latency.',

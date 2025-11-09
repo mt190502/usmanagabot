@@ -10,6 +10,7 @@ import {
     RESTPostAPIChatInputApplicationCommandsJSONBody,
     RESTPostAPIContextMenuApplicationCommandsJSONBody,
     Routes,
+    SlashCommandBuilder,
 } from 'discord.js';
 import { globSync } from 'glob';
 import path from 'path';
@@ -182,6 +183,9 @@ export class CommandLoader {
                 if (!CommandLoader.BotCommands.has(guild)) {
                     CommandLoader.BotCommands.set(guild, new Map());
                     this.rest_commands.set(guild, []);
+                }
+                if (cmd instanceof CustomizableCommand && cmd.base_cmd_data instanceof SlashCommandBuilder && guild !== 'global') {
+                    await cmd.generateSlashCommandData(BigInt(guild));
                 }
                 CommandLoader.BotCommands.get(guild)!.set(cmd.name, cmd);
                 for (const c of cmd.all_cmd_data) {

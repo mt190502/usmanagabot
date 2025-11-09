@@ -1,15 +1,4 @@
-import {
-    ActionRowBuilder,
-    Channel,
-    Collection,
-    CommandInteraction,
-    Events,
-    Interaction,
-    MessageFlags,
-    StringSelectMenuBuilder,
-    StringSelectMenuInteraction,
-    User,
-} from 'discord.js';
+import { Channel, Collection, CommandInteraction, Events, Interaction, MessageFlags, User } from 'discord.js';
 import { CommandLoader } from '../commands';
 import { BaseCommand, CustomizableCommand } from '../types/structure/command';
 import { BaseEvent } from '../types/structure/event';
@@ -23,36 +12,36 @@ const handleCommand = async (action: string, interaction: Interaction | CommandI
     if (!command) return;
     const target = Reflect.getMetadata(`custom:${namespace}`, command.constructor);
 
-    if (namespace === 'command') {
-        if (target) {
-            target.get(args[0])?.value.apply(command, [interaction, ...args]);
-        } else {
-            command.execute(interaction);
+    switch (namespace) {
+        case 'command': {
+            target.get(args[0])?.value.apply(command, [interaction]);
+            break;
         }
-    } else if (namespace === 'settings' && command instanceof CustomizableCommand) {
-        await target.get(args[0])?.func.value.apply(command, [interaction, ...args]);
-        if (command?.settingsInterface) command.settingsInterface(interaction);
-    } else if (namespace === 'settings' && command instanceof BaseCommand) {
-        const subcommands: { label: string; description: string; value: string }[] = [];
-        for (const [name, setting] of target) {
-            subcommands.push({
-                label: name,
-                description: setting.desc,
-                value: `settings:${command.name}:${name}`,
-            });
+        case 'settings': {
+            if (action === 'settings') {
+                command.execute(interaction);
+                return;
+            }
+            if (command_name && args.length === 0 && command instanceof CustomizableCommand) {
+                if (
+                    command.settingsUI &&
+                    (interaction.isChatInputCommand() ||
+                        interaction.isStringSelectMenu() ||
+                        interaction.isChannelSelectMenu() ||
+                        interaction.isModalSubmit())
+                ) {
+                    command.settingsUI.apply(command, [interaction]);
+                }
+                return;
+            }
+            if (command_name && args.length > 0 && command instanceof CustomizableCommand) {
+                target.get(args[0])?.func.value.apply(command, [interaction]);
+                return;
+            }
+            break;
         }
-        await (interaction as StringSelectMenuInteraction).update({
-            components: [
-                new ActionRowBuilder()
-                    .addComponents(
-                        new StringSelectMenuBuilder()
-                            .setCustomId('settings')
-                            .setPlaceholder('Select a setting to configure...')
-                            .addOptions(subcommands),
-                    )
-                    .toJSON(),
-            ],
-        });
+        default:
+            return;
     }
 };
 

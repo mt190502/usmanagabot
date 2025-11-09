@@ -7,6 +7,7 @@ import {
     MessageFlags,
     PermissionFlagsBits,
     StringSelectMenuBuilder,
+    StringSelectMenuInteraction,
 } from 'discord.js';
 import { CommandLoader } from '..';
 import { BaseCommand } from '../../types/structure/command';
@@ -25,9 +26,7 @@ export default class SettingsCommand extends BaseCommand {
         );
     }
 
-    public async execute(interaction: Interaction | CommandInteraction): Promise<void> {
-        if (!interaction.isCommand() || interaction.commandName !== this.name) return;
-
+    public async execute(interaction: Interaction | CommandInteraction | StringSelectMenuInteraction): Promise<void> {
         const guild = interaction.guild!;
         const guild_commands = Array.from(CommandLoader.BotCommands.get(String(guild.id))!).map(([, cmd]) => ({
             label: cmd.pretty_name,
@@ -48,10 +47,19 @@ export default class SettingsCommand extends BaseCommand {
             .addComponents(new StringSelectMenuBuilder().addOptions(guild_commands).setCustomId('settings'))
             .toJSON();
 
-        await interaction.reply.bind(interaction)({
-            flags: MessageFlags.Ephemeral,
-            embeds: [settings_embed],
-            components: [settings_actionrow],
-        });
+        if (interaction.isStringSelectMenu()) {
+            await interaction.update({
+                embeds: [settings_embed],
+                components: [settings_actionrow],
+            });
+            return;
+        } else if (interaction.isCommand()) {
+            await interaction.reply({
+                flags: MessageFlags.Ephemeral,
+                embeds: [settings_embed],
+                components: [settings_actionrow],
+            });
+            return;
+        }
     }
 }

@@ -1,6 +1,21 @@
-import { CommandInteraction, ContextMenuCommandBuilder, Interaction, SlashCommandBuilder } from 'discord.js';
+import {
+    ActionRowBuilder,
+    ChannelSelectMenuInteraction,
+    ChatInputCommandInteraction,
+    Colors,
+    CommandInteraction,
+    ContextMenuCommandBuilder,
+    EmbedBuilder,
+    Interaction,
+    MessageFlags,
+    ModalSubmitInteraction,
+    SlashCommandBuilder,
+    StringSelectMenuBuilder,
+    StringSelectMenuInteraction,
+} from 'discord.js';
 import 'reflect-metadata';
-import { EntityManager } from 'typeorm';
+import { EntityManager, ObjectLiteral } from 'typeorm';
+import { format } from 'util';
 import { Config } from '../../services/config';
 import { Database } from '../../services/database';
 import { Logger } from '../../services/logger';
@@ -198,9 +213,96 @@ export abstract class CustomizableCommand extends BaseCommand {
     // ================================================================ //
 
     // ============== CUSTOMIZABLE COMMAND DATA SECTION =============== //
+    protected warning: string | null = null;
     // ================================================================ //
 
     // ============== CUSTOMIZABLE COMMAND BASE SECTION =============== //
+    public abstract generateSlashCommandData(guild_id: bigint): Promise<void>;
+
+    public abstract settingsUI(
+        interaction:
+            | ChatInputCommandInteraction
+            | ChannelSelectMenuInteraction
+            | StringSelectMenuInteraction
+            | ModalSubmitInteraction,
+    ): Promise<void>;
+
+    public async buildSettingsUI(
+        interaction:
+            | ChatInputCommandInteraction
+            | ChannelSelectMenuInteraction
+            | StringSelectMenuInteraction
+            | ModalSubmitInteraction,
+        settings: ObjectLiteral | null,
+    ): Promise<void> {
+        if (!settings) {
+            this.log.send('error', 'events.interaction.no_settings', [this.name]);
+            return;
+        }
+
+        const subsettings = Reflect.getMetadata('custom:settings', this.constructor);
+        const ui = new EmbedBuilder().setTitle(`:gear: ${this.pretty_name} Settings`);
+        const menu = new StringSelectMenuBuilder().setCustomId(`settings:${this.name}`);
+
+        if (this.warning) {
+            ui.setColor(Colors.Yellow);
+            ui.addFields({ name: ':warning:', value: this.warning });
+            this.warning = null;
+        } else {
+            ui.setColor(Colors.Blurple);
+        }
+
+        for (const [name, setting] of subsettings) {
+            const current_value = settings![setting.database_key as keyof unknown];
+            let value;
+            if (typeof current_value === 'boolean') {
+                value = current_value ? ':green_circle: True' : ':red_circle: False';
+            } else {
+                value = setting.database_key
+                    ? current_value
+                        ? format(setting.format_specifier, current_value ?? '')
+                        : ':orange_circle: Not Set'
+                    : '`View in Edit Mode`';
+            }
+            ui.addFields({
+                name: setting.display_name,
+                value: value,
+            });
+            menu.addOptions({
+                label: setting.pretty,
+                description: setting.description,
+                value: `settings:${this.name}:${name}`,
+            });
+        }
+        menu.addOptions({
+            label: 'Back to Main Menu',
+            description: 'Return to the main settings menu.',
+            value: 'command:settings',
+        });
+
+        if (
+            interaction.isChannelSelectMenu() ||
+            interaction.isStringSelectMenu() ||
+            interaction.isChatInputCommand() ||
+            interaction.isModalSubmit()
+        ) {
+            const payload = {
+                embeds: [ui],
+                components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu).toJSON()],
+            };
+
+            if (interaction.isChatInputCommand()) {
+                if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
+                else await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
+            } else if (interaction.isStringSelectMenu() || interaction.isChannelSelectMenu()) {
+                await interaction.update(payload);
+            } else if (interaction.isFromMessage() && interaction.isModalSubmit()) {
+                if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
+                else await interaction.update({ ...payload });
+            }
+        }
+    }
+
     /**
      * Constructs a new instance of the CustomizableCommand.
      * @param {Partial<CustomizableCommand> & { name: string }} options - The options to initialize the command with.
