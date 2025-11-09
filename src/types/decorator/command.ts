@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 
-export function CommandAction(name: string): MethodDecorator {
+export function HandleAction(name: string): MethodDecorator {
     return (target_class, property_key, descriptor_func) => {
         const exec: Map<string, typeof descriptor_func> =
             Reflect.getMetadata('custom:command', target_class.constructor) ?? new Map();

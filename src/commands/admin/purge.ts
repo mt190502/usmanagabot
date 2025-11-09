@@ -14,7 +14,7 @@ import {
     PermissionFlagsBits,
     SlashCommandBuilder,
 } from 'discord.js';
-import { CommandAction } from '../../types/decorator/command';
+import { HandleAction } from '../../types/decorator/command';
 import { BaseCommand } from '../../types/structure/command';
 
 export default class PurgeCommand extends BaseCommand {
@@ -113,7 +113,7 @@ export default class PurgeCommand extends BaseCommand {
         });
     }
 
-    @CommandAction('ok')
+    @HandleAction('ok')
     private async ok(interaction: ButtonInteraction): Promise<void> {
         const post = new EmbedBuilder();
         const selected_messages: Message<boolean>[] = [];
@@ -172,7 +172,7 @@ export default class PurgeCommand extends BaseCommand {
         PurgeCommand.question.edit({ embeds: [post], components: [] });
     }
 
-    @CommandAction('cancel')
+    @HandleAction('cancel')
     private async cancel(): Promise<void> {
         const post = new EmbedBuilder();
         post.setTitle(':x: Cancelled').setDescription('Process cancelled').setColor(Colors.Red);
