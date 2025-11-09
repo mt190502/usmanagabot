@@ -14,7 +14,11 @@ const handleCommand = async (action: string, interaction: Interaction | CommandI
 
     switch (namespace) {
         case 'command': {
-            target.get(args[0])?.value.apply(command, [interaction]);
+            if (args.length === 0) {
+                command.execute(interaction);
+                break;
+            }
+            target.get(args[0])?.value.apply(command, [interaction, ...args.slice(1)]);
             break;
         }
         case 'settings': {
@@ -35,7 +39,7 @@ const handleCommand = async (action: string, interaction: Interaction | CommandI
                 return;
             }
             if (command_name && args.length > 0 && command instanceof CustomizableCommand) {
-                target.get(args[0])?.func.value.apply(command, [interaction]);
+                target.get(args[0])?.func.value.apply(command, [interaction, ...args.slice(1)]);
                 return;
             }
             break;
