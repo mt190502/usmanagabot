@@ -10,7 +10,7 @@ export function HandleAction(name: string): MethodDecorator {
 }
 
 export function CommandSetting(options: {
-    display_name: string;
+    display_name?: string;
     database_key?: string;
     pretty: string;
     description: string;
@@ -22,7 +22,7 @@ export function CommandSetting(options: {
         settings.set(property_key as string, {
             pretty: options.pretty,
             database_key: options.database_key,
-            display_name: options.display_name ?? (property_key as string),
+            display_name: options.display_name,
             description: options.description,
             format_specifier: options.format_specifier ?? '`View in Edit Mode`',
             func: descriptor_func,

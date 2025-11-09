@@ -254,19 +254,21 @@ export abstract class CustomizableCommand extends BaseCommand {
         for (const [name, setting] of subsettings) {
             const current_value = settings![setting.database_key as keyof unknown];
             let value;
-            if (typeof current_value === 'boolean') {
-                value = current_value ? ':green_circle: True' : ':red_circle: False';
-            } else {
-                value = setting.database_key
-                    ? current_value
-                        ? format(setting.format_specifier, current_value ?? '')
-                        : ':orange_circle: Not Set'
-                    : '`View in Edit Mode`';
+            if (setting.display_name) {
+                if (typeof current_value === 'boolean') {
+                    value = current_value ? ':green_circle: True' : ':red_circle: False';
+                } else {
+                    value = setting.database_key
+                        ? current_value
+                            ? format(setting.format_specifier, current_value ?? '')
+                            : ':orange_circle: Not Set'
+                        : '`View in Edit Mode`';
+                }
+                ui.addFields({
+                    name: setting.display_name,
+                    value: value,
+                });
             }
-            ui.addFields({
-                name: setting.display_name,
-                value: value,
-            });
             menu.addOptions({
                 label: setting.pretty,
                 description: setting.description,
