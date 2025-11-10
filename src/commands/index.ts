@@ -160,10 +160,17 @@ export class CommandLoader {
             : globSync(path.join(__dirname, './**/*.ts'), { ignore: ['**/index.ts'] });
 
         for (const file of commands.sort()) {
-            const content = await import(file);
-            if (!content || !content.default) continue;
-            const cmd = new content.default() as BaseCommand | CustomizableCommand;
-            const filename = file.match(/([^/]+\/[^/]+\/[^/]+)$/)![1];
+            let cmd: BaseCommand | CustomizableCommand;
+            let filename: string;
+            if (custom_command) {
+                cmd = custom_command;
+                filename = 'inline';
+            } else {
+                const content = await import(file as string);
+                if (!content || !content.default) continue;
+                cmd = new content.default() as BaseCommand | CustomizableCommand;
+                filename = (file as string).match(/([^/]+\/[^/]+\/[^/]+)$/)![1];
+            }
 
             if (!cmd.name) {
                 CommandLoader.logger.send('error', 'commandloader.read_command_files.noname', [filename]);
@@ -179,6 +186,16 @@ export class CommandLoader {
             const targets =
                 cmd instanceof CustomizableCommand && guilds?.length ? guilds.map((g) => g.gid.toString()) : ['global'];
             for (const guild of targets) {
+                if (custom_command) {
+                    const rest_entry = this.rest_commands.get(guild);
+                    if (rest_entry) {
+                        for (let i = rest_entry.length - 1; i >= 0; i--) {
+                            if (rest_entry[i].name === cmd.name) {
+                                rest_entry.splice(i, 1);
+                            }
+                        }
+                    }
+                }
                 if (!CommandLoader.BotCommands.has(guild)) {
                     CommandLoader.BotCommands.set(guild, new Map());
                     this.rest_commands.set(guild, []);
@@ -210,36 +227,31 @@ export class CommandLoader {
      * @param {bigint} [custom_guild] - An optional guild ID to limit the deployment to a single guild.
      * @returns {Promise<void>} A promise that resolves once the deployment is complete.
      */
-    private async restCommandLoader(custom_command?: string, custom_guild?: bigint): Promise<void> {
+    public async RESTCommandLoader(custom_command?: CustomizableCommand, custom_guild?: string): Promise<void> {
         await this.readCommandFiles(custom_command);
-        const rest = new REST({ version: '10' }).setToken(CommandLoader.config.current_botcfg.token);
+        const cfg = CommandLoader.config.current_botcfg;
+        const rest = new REST({ version: '10' }).setToken(cfg.token);
         for (const [guild_id, commands] of this.rest_commands) {
-            if (custom_guild && BigInt(guild_id) !== custom_guild) continue;
+            if (custom_guild && guild_id !== custom_guild) continue;
             try {
                 if (guild_id === 'global') {
-                    if (CommandLoader.config.current_botcfg.clear_old_commands_on_startup) {
-                        await rest.put(Routes.applicationCommands(CommandLoader.config.current_botcfg.app_id), {
+                    if (cfg.clear_old_commands_on_startup) {
+                        await rest.put(Routes.applicationCommands(cfg.app_id), {
                             body: [],
                         });
                     }
-                    await rest.put(Routes.applicationCommands(CommandLoader.config.current_botcfg.app_id), {
+                    await rest.put(Routes.applicationCommands(cfg.app_id), {
                         body: Object.values(commands),
                     });
                 } else {
-                    if (CommandLoader.config.current_botcfg.clear_old_commands_on_startup) {
-                        await rest.put(
-                            Routes.applicationGuildCommands(CommandLoader.config.current_botcfg.app_id, guild_id),
-                            {
-                                body: [],
-                            },
-                        );
+                    if (cfg.clear_old_commands_on_startup) {
+                        await rest.put(Routes.applicationGuildCommands(cfg.app_id, guild_id), {
+                            body: [],
+                        });
                     }
-                    await rest.put(
-                        Routes.applicationGuildCommands(CommandLoader.config.current_botcfg.app_id, guild_id),
-                        {
-                            body: Object.values(commands),
-                        },
-                    );
+                    await rest.put(Routes.applicationGuildCommands(cfg.app_id, guild_id), {
+                        body: Object.values(commands),
+                    });
                 }
             } catch (error) {
                 CommandLoader.logger.send('error', 'commandloader.rest_command_loader.rest_error', [
@@ -266,7 +278,7 @@ export class CommandLoader {
             return;
         }
         this.instance = new CommandLoader();
-        await this.instance.restCommandLoader();
+        await this.instance.RESTCommandLoader();
     }
 
     /**

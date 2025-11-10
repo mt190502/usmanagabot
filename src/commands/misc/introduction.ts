@@ -22,6 +22,7 @@ import yaml from 'yaml';
 import { Introduction, IntroductionSubmit } from '../../types/database/entities/introduction';
 import { CommandSetting } from '../../types/decorator/command';
 import { CustomizableCommand } from '../../types/structure/command';
+import { CommandLoader } from '..';
 
 export default class IntroductionCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
@@ -48,7 +49,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         const guild = await this.db.getGuild(guild_id);
         const introduction = await this.db.findOne(Introduction, { where: { from_guild: guild! } });
         if (!introduction) return;
-        const data: SlashCommandBuilder = this.base_cmd_data as SlashCommandBuilder;
+        const data: SlashCommandBuilder = new SlashCommandBuilder().setName(this.name);
         data.setDescription(introduction.cmd_desc || this.description).setNameLocalization(
             guild!.country,
             introduction.cmd_name,
@@ -245,6 +246,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             if (new_cmd_name) introduction!.cmd_name = new_cmd_name;
             if (new_cmd_desc) introduction!.cmd_desc = new_cmd_desc;
             await this.db.save(Introduction, introduction!);
+            await CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await interaction.deferUpdate();
             return;
         } else if (interaction.isStringSelectMenu()) {
@@ -288,6 +290,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             }
             introduction!.yaml_data = columns;
             await this.db.save(Introduction, introduction!);
+            await CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await interaction.deferUpdate();
         }
         if (interaction.isStringSelectMenu()) {
