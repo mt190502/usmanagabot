@@ -42,13 +42,33 @@ export default class SearchCommand extends CustomizableCommand {
 
     public async generateSlashCommandData(guild_id: bigint): Promise<void> {
         const guild = await this.db.getGuild(guild_id);
-        const search = await this.db.findOne(Search, { where: { from_guild: guild! } });
+        let search = await this.db.findOne(Search, { where: { from_guild: guild! } });
+        const system_user = await this.db.getUser(BigInt(0));
         const engines = await this.db.find(SearchEngines, { where: { from_guild: guild! } });
-        if (!search) return;
+        if (!search) {
+            const new_settings = new Search();
+            new_settings.is_enabled = true;
+            new_settings.from_user = system_user!;
+            new_settings.from_guild = guild!;
+
+            const engine_google = new SearchEngines();
+            engine_google.engine_name = 'Google';
+            engine_google.engine_url = 'https://google.com/search?q=';
+            engine_google.from_user = system_user!;
+            engine_google.from_guild = guild!;
+
+            const engine_duckduckgo = new SearchEngines();
+            engine_duckduckgo.engine_name = 'DuckDuckGo';
+            engine_duckduckgo.engine_url = 'https://duckduckgo.com/?q=';
+            engine_duckduckgo.from_user = system_user!;
+            engine_duckduckgo.from_guild = guild!;
+
+            await this.db.save(engine_google);
+            await this.db.save(engine_duckduckgo);
+            search = await this.db.save(new_settings);
+        }
         this.enabled = search.is_enabled;
-        const data: SlashCommandBuilder = new SlashCommandBuilder()
-            .setName(this.name)
-            .setDescription(this.description);
+        const data: SlashCommandBuilder = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
         if (engines.length === 0) {
             data.addStringOption((o) =>
                 o
@@ -280,31 +300,7 @@ export default class SearchCommand extends CustomizableCommand {
             | ModalSubmitInteraction,
     ): Promise<void> {
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
-        const user = await this.db.getUser(BigInt(interaction.user.id));
-        let search = await this.db.findOne(Search, { where: { from_guild: guild! } });
-
-        if (!search) {
-            const new_settings = new Search();
-            new_settings.is_enabled = true;
-            new_settings.from_user = user!;
-            new_settings.from_guild = guild!;
-
-            const engine_google = new SearchEngines();
-            engine_google.engine_name = 'Google';
-            engine_google.engine_url = 'https://google.com/search?q=';
-            engine_google.from_user = user!;
-            engine_google.from_guild = guild!;
-
-            const engine_duckduckgo = new SearchEngines();
-            engine_duckduckgo.engine_name = 'DuckDuckGo';
-            engine_duckduckgo.engine_url = 'https://duckduckgo.com/?q=';
-            engine_duckduckgo.from_user = user!;
-            engine_duckduckgo.from_guild = guild!;
-
-            await this.db.save(engine_google);
-            await this.db.save(engine_duckduckgo);
-            search = await this.db.save(new_settings);
-        }
+        const search = await this.db.findOne(Search, { where: { from_guild: guild! } });
 
         await this.buildSettingsUI(interaction, search);
     }

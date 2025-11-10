@@ -16,6 +16,7 @@ import { globSync } from 'glob';
 import path from 'path';
 import timers from 'timers/promises';
 import { TypeORMError } from 'typeorm';
+import { Users } from '../types/database/entities/users';
 import { BaseCommand, CustomizableCommand } from '../types/structure/command';
 
 /**
@@ -123,6 +124,10 @@ export class CommandLoader {
                 new_guild.country = guild.preferredLocale;
                 await Database.dbManager.save(new_guild);
             }
+            const system_user = new Users();
+            system_user.uid = BigInt(0);
+            system_user.name = 'root';
+            await Database.dbManager.save(system_user);
         } catch (error) {
             CommandLoader.logger.send('error', 'commandloader.register_guilds.database.guild_save_error', [
                 (error as Error).message,

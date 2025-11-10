@@ -47,8 +47,17 @@ export default class IntroductionCommand extends CustomizableCommand {
 
     public async generateSlashCommandData(guild_id: bigint): Promise<void> {
         const guild = await this.db.getGuild(guild_id);
-        const introduction = await this.db.findOne(Introduction, { where: { from_guild: guild! } });
-        if (!introduction) return;
+        const system_user = await this.db.getUser(BigInt(0));
+        let introduction = await this.db.findOne(Introduction, { where: { from_guild: guild! } });
+        if (!introduction) {
+            const new_settings = new Introduction();
+            new_settings.is_enabled = false;
+            new_settings.cmd_name = this.name;
+            new_settings.cmd_desc = this.description;
+            new_settings.from_guild = guild!;
+            new_settings.from_user = system_user!;
+            introduction = await this.db.save(new_settings);
+        }
         this.enabled = introduction.is_enabled;
         const data: SlashCommandBuilder = new SlashCommandBuilder().setName(this.name);
         data.setDescription(introduction.cmd_desc || this.description).setNameLocalization(
@@ -362,21 +371,8 @@ export default class IntroductionCommand extends CustomizableCommand {
             | ModalSubmitInteraction,
     ): Promise<void> {
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
-        const user = await this.db.getUser(BigInt(interaction.user.id));
-        let settings = await this.db.findOne(Introduction, {
-            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
-        });
-
-        if (!settings) {
-            const new_settings = new Introduction();
-            new_settings.cmd_name = this.name;
-            new_settings.cmd_desc = this.description;
-            new_settings.from_guild = guild!;
-            new_settings.from_user = user!;
-            settings = await this.db.save(new_settings);
-        }
-
-        await this.buildSettingsUI(interaction, settings);
+        const introduction = await this.db.findOne(Introduction, { where: { from_guild: guild! } });
+        await this.buildSettingsUI(interaction, introduction);
     }
     // ================================================================ //
 }
