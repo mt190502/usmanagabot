@@ -34,8 +34,8 @@ export default class SearchCommand extends CustomizableCommand {
                 - \`/search [engine] query\` - Searches for the query using the specified search engine.
                 
                 **Examples:**
-                - \`/search engine:google query:cats\`
-                - \`/search engine:duckduckgo query:programming tutorials\`
+                - \`/search engine:Google query:cats\`
+                - \`/search engine:DuckDuckGo query:programming tutorials\`
             `,
         });
     }
