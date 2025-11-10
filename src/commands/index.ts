@@ -5,12 +5,12 @@ import { Guilds } from '@src/types/database/entities/guilds';
 import {
     Client,
     Collection,
+    ContextMenuCommandBuilder,
     GatewayIntentBits,
     REST,
     RESTPostAPIChatInputApplicationCommandsJSONBody,
     RESTPostAPIContextMenuApplicationCommandsJSONBody,
     Routes,
-    SlashCommandBuilder,
 } from 'discord.js';
 import { globSync } from 'glob';
 import path from 'path';
@@ -207,7 +207,7 @@ export class CommandLoader {
                 }
                 if (
                     cmd instanceof CustomizableCommand &&
-                    cmd.base_cmd_data instanceof SlashCommandBuilder &&
+                    !(cmd.base_cmd_data instanceof ContextMenuCommandBuilder) &&
                     guild !== 'global'
                 ) {
                     await cmd.generateSlashCommandData(BigInt(guild));
@@ -221,7 +221,7 @@ export class CommandLoader {
                         ]);
                         continue;
                     }
-                    this.rest_commands.get(guild)!.push(c.toJSON());
+                    if (c) this.rest_commands.get(guild)!.push(c.toJSON());
                 }
             }
         }

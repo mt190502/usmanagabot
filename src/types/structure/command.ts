@@ -9,6 +9,7 @@ import {
     Interaction,
     MessageFlags,
     ModalSubmitInteraction,
+    RoleSelectMenuInteraction,
     SlashCommandBuilder,
     StringSelectMenuBuilder,
     StringSelectMenuInteraction,
@@ -101,7 +102,7 @@ export abstract class BaseCommand {
      * @static
      * @type {(SlashCommandBuilder | ContextMenuCommandBuilder)}
      */
-    private main_command_data: SlashCommandBuilder | ContextMenuCommandBuilder;
+    private main_command_data: SlashCommandBuilder | ContextMenuCommandBuilder | null = null;
 
     /**
      * An array of additional command data builders.
@@ -120,7 +121,7 @@ export abstract class BaseCommand {
      * @param {Interaction | CommandInteraction} interaction - The interaction object from Discord.js.
      * @returns {Promise<void>} A promise that resolves when the command execution is complete.
      */
-    public abstract execute(interaction: Interaction | CommandInteraction): Promise<void>;
+    public abstract execute(interaction: Interaction | CommandInteraction | unknown): Promise<void>;
 
     /**
      * Constructs a new instance of the BaseCommand.
@@ -166,7 +167,7 @@ export abstract class BaseCommand {
      * @public
      * @returns {SlashCommandBuilder | ContextMenuCommandBuilder} The main command data.
      */
-    public get base_cmd_data(): SlashCommandBuilder | ContextMenuCommandBuilder {
+    public get base_cmd_data(): SlashCommandBuilder | ContextMenuCommandBuilder | null {
         return this.main_command_data;
     }
 
@@ -175,7 +176,7 @@ export abstract class BaseCommand {
      * @public
      * @param {SlashCommandBuilder | ContextMenuCommandBuilder} data - The main command data to set.
      */
-    public set base_cmd_data(data: SlashCommandBuilder | ContextMenuCommandBuilder) {
+    public set base_cmd_data(data: SlashCommandBuilder | ContextMenuCommandBuilder | null) {
         this.main_command_data = data;
     }
 
@@ -184,7 +185,7 @@ export abstract class BaseCommand {
      * @public
      * @returns {(SlashCommandBuilder | ContextMenuCommandBuilder)[]} An array of all command data.
      */
-    public get all_cmd_data(): (SlashCommandBuilder | ContextMenuCommandBuilder)[] {
+    public get all_cmd_data(): (SlashCommandBuilder | ContextMenuCommandBuilder | null)[] {
         return [this.main_command_data, ...(this.extra_command_data ?? [])];
     }
 
@@ -219,7 +220,8 @@ export abstract class CustomizableCommand extends BaseCommand {
             | ChatInputCommandInteraction
             | ChannelSelectMenuInteraction
             | StringSelectMenuInteraction
-            | ModalSubmitInteraction,
+            | ModalSubmitInteraction
+            | RoleSelectMenuInteraction,
     ): Promise<void>;
 
     public async buildSettingsUI(
@@ -227,7 +229,8 @@ export abstract class CustomizableCommand extends BaseCommand {
             | ChatInputCommandInteraction
             | ChannelSelectMenuInteraction
             | StringSelectMenuInteraction
-            | ModalSubmitInteraction,
+            | ModalSubmitInteraction
+            | RoleSelectMenuInteraction,
         settings: ObjectLiteral | null,
     ): Promise<void> {
         if (!settings) {
@@ -281,6 +284,7 @@ export abstract class CustomizableCommand extends BaseCommand {
             interaction.isChannelSelectMenu() ||
             interaction.isStringSelectMenu() ||
             interaction.isChatInputCommand() ||
+            interaction.isRoleSelectMenu() ||
             interaction.isModalSubmit()
         ) {
             const payload = {
@@ -293,7 +297,7 @@ export abstract class CustomizableCommand extends BaseCommand {
                 else await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
             } else if (interaction.isStringSelectMenu() || interaction.isChannelSelectMenu()) {
                 await interaction.update(payload);
-            } else if (interaction.isFromMessage() && interaction.isModalSubmit()) {
+            } else if ((interaction.isModalSubmit() && interaction.isFromMessage()) || interaction.isRoleSelectMenu()) {
                 if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
                 else await interaction.update({ ...payload });
             }
