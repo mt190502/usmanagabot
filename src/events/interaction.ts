@@ -18,7 +18,11 @@ const handleCommand = async (action: string, interaction: Interaction | CommandI
                 command.execute(interaction);
                 break;
             }
-            target.get(args[0])?.value.apply(command, [interaction, ...args.slice(1)]);
+            if (target.get(args[0])) {
+                target.get(args[0])?.value.apply(command, [interaction, ...args.slice(1)]);
+                break;
+            }
+            target.get(args[0].replaceAll('_', ''))?.value.apply(command, [interaction, ...args.slice(1)]);
             break;
         }
         case 'settings': {
@@ -39,8 +43,12 @@ const handleCommand = async (action: string, interaction: Interaction | CommandI
                 return;
             }
             if (command_name && args.length > 0 && command instanceof CustomizableCommand) {
-                target.get(args[0])?.func.value.apply(command, [interaction, ...args.slice(1)]);
-                return;
+                if (target.get(args[0])) {
+                    target.get(args[0])?.func.value.apply(command, [interaction, ...args.slice(1)]);
+                    break;
+                }
+                target.get(args[0].replaceAll('_', ''))?.func.value.apply(command, [interaction, ...args.slice(1)]);
+                break;
             }
             break;
         }
@@ -68,6 +76,10 @@ export default class InteractionEvent extends BaseEvent<Events.InteractionCreate
         if (interaction.isChatInputCommand() || interaction.isContextMenuCommand()) {
             const req = interaction.commandName.replaceAll(' ', '_').toLowerCase();
             let command = available_cmds.get(req);
+            if (!command) {
+                const alt_req = interaction.commandName.replaceAll(' ', '').toLowerCase();
+                command = available_cmds.get(alt_req);
+            }
             if (!command) {
                 for (const [, cmd] of available_cmds) {
                     if (cmd.aliases?.includes(req)) {

@@ -308,7 +308,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         if (interaction.isStringSelectMenu()) {
             await interaction.showModal(
                 new ModalBuilder()
-                    .setCustomId('settings:introduction:customize_columns')
+                    .setCustomId('settings:introduction:customizecolumns')
                     .setTitle('Customize Introduction Columns')
                     .addComponents(
                         new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
