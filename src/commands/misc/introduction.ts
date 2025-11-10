@@ -49,6 +49,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         const guild = await this.db.getGuild(guild_id);
         const introduction = await this.db.findOne(Introduction, { where: { from_guild: guild! } });
         if (!introduction) return;
+        this.enabled = introduction.is_enabled;
         const data: SlashCommandBuilder = new SlashCommandBuilder().setName(this.name);
         data.setDescription(introduction.cmd_desc || this.description).setNameLocalization(
             guild!.country,
@@ -211,7 +212,9 @@ export default class IntroductionCommand extends CustomizableCommand {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
         introduction!.is_enabled = !introduction!.is_enabled;
+        this.enabled = introduction!.is_enabled;
         await this.db.save(Introduction, introduction!);
+        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
     }
 

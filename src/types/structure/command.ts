@@ -34,7 +34,7 @@ export abstract class BaseCommand {
      * @type {boolean}
      * @default true
      */
-    public readonly enabled: boolean = true;
+    public enabled: boolean = true;
 
     /**
      * The unique name of the command.

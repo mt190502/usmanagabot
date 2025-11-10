@@ -177,7 +177,7 @@ export class CommandLoader {
                 continue;
             }
 
-            if (!cmd.enabled) {
+            if (!cmd.enabled && !custom_command) {
                 CommandLoader.logger.send('info', 'commandloader.read_command_files.disabled', [cmd.name]);
                 continue;
             }
@@ -209,6 +209,13 @@ export class CommandLoader {
                 }
                 CommandLoader.BotCommands.get(guild)!.set(cmd.name, cmd);
                 for (const c of cmd.all_cmd_data) {
+                    if (!cmd.enabled) {
+                        CommandLoader.logger.send('info', 'commandloader.read_command_files.custom_disabled', [
+                            cmd.name,
+                            guild,
+                        ]);
+                        continue;
+                    }
                     this.rest_commands.get(guild)!.push(c.toJSON());
                 }
             }

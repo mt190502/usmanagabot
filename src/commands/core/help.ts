@@ -64,6 +64,7 @@ export default class HelpCommand extends BaseCommand {
         ].sort((a, b) => a[1].pretty_name?.localeCompare(b[1].pretty_name || b[0]) || a[0].localeCompare(b[0]))) {
             if (!command) continue;
             for (const [name, cmd] of [command]) {
+                if (!cmd.enabled) continue;
                 if (cmd.is_admin_command) {
                     const member = interaction.guild?.members.cache.get(user_id);
                     if (!member?.permissions.has(PermissionFlagsBits.Administrator | PermissionFlagsBits.ManageGuild)) {

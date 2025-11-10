@@ -45,6 +45,7 @@ export default class SearchCommand extends CustomizableCommand {
         const search = await this.db.findOne(Search, { where: { from_guild: guild! } });
         const engines = await this.db.find(SearchEngines, { where: { from_guild: guild! } });
         if (!search) return;
+        this.enabled = search.is_enabled;
         const data: SlashCommandBuilder = new SlashCommandBuilder()
             .setName(this.name)
             .setDescription(this.description);
@@ -118,7 +119,9 @@ export default class SearchCommand extends CustomizableCommand {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
         search!.is_enabled = !search!.is_enabled;
+        this.enabled = search!.is_enabled;
         await this.db.save(Search, search!);
+        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
     }
 
