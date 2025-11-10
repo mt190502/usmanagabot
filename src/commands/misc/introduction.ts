@@ -67,7 +67,7 @@ export default class IntroductionCommand extends CustomizableCommand {
 
     // =========================== EXECUTE ============================ //
     public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-        const guild = await this.db.getGuild(BigInt(interaction.guild!.id));
+        const guild = await this.db.getGuild(BigInt(interaction.guildId!));
         const user = await this.db.getUser(BigInt(interaction.user.id));
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: guild! },
@@ -219,7 +219,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         pretty: 'Customize Introduction Command Name and Description',
         description: 'Customize the name and description of the introduction command for this server.',
     })
-    public async customize_command(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
+    public async customizeCommand(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -262,7 +262,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         pretty: 'Customize Columns',
         description: 'Customize the names and descriptions of the introduction command columns.',
     })
-    public async customize_columns(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
+    public async customizeColumns(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -357,18 +357,16 @@ export default class IntroductionCommand extends CustomizableCommand {
     ): Promise<void> {
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
         const user = await this.db.getUser(BigInt(interaction.user.id));
-
         let settings = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
 
         if (!settings) {
-            const new_settings = this.db.create(Introduction, {
-                cmd_name: this.name,
-                cmd_desc: this.description,
-                from_guild: guild!,
-                from_user: user!,
-            });
+            const new_settings = new Introduction();
+            new_settings.cmd_name = this.name;
+            new_settings.cmd_desc = this.description;
+            new_settings.from_guild = guild!;
+            new_settings.from_user = user!;
             settings = await this.db.save(new_settings);
         }
 
