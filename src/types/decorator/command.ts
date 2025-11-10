@@ -19,7 +19,7 @@ export function CommandSetting(options: {
     return (target_class, property_key, descriptor_func) => {
         const settings: Map<string, typeof options & { func: typeof descriptor_func }> =
             Reflect.getMetadata('custom:settings', target_class.constructor) ?? new Map();
-        settings.set(property_key as string, {
+        settings.set(property_key.toString().toLowerCase() as string, {
             pretty: options.pretty,
             database_key: options.database_key,
             display_name: options.display_name,

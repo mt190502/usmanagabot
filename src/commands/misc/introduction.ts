@@ -250,7 +250,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         } else if (interaction.isStringSelectMenu()) {
             await interaction.showModal(
                 new ModalBuilder()
-                    .setCustomId('settings:introduction:customize_command')
+                    .setCustomId('settings:introduction:customizecommand')
                     .setTitle('Customize Introduction Command')
                     .addComponents([cmd_name, cmd_desc]),
             );
@@ -319,7 +319,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         description: 'Set the target channel where introductions will be posted.',
         format_specifier: '<#%s>',
     })
-    public async change_target_channel(
+    public async changeTargetChannel(
         interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
     ): Promise<void> {
         const introduction = await this.db.findOne(Introduction, {
@@ -338,7 +338,7 @@ export default class IntroductionCommand extends CustomizableCommand {
                     new ActionRowBuilder<ChannelSelectMenuBuilder>()
                         .addComponents(
                             new ChannelSelectMenuBuilder()
-                                .setCustomId('settings:introduction:change_target_channel')
+                                .setCustomId('settings:introduction:changetargetchannel')
                                 .setPlaceholder('Select a channel')
                                 .setChannelTypes(ChannelType.GuildText),
                         )
