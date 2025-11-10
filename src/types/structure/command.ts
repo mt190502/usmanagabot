@@ -14,11 +14,12 @@ import {
     StringSelectMenuInteraction,
 } from 'discord.js';
 import 'reflect-metadata';
-import { EntityManager, ObjectLiteral } from 'typeorm';
+import { ObjectLiteral } from 'typeorm';
 import { format } from 'util';
 import { Config } from '../../services/config';
 import { Database } from '../../services/database';
 import { Logger } from '../../services/logger';
+import { DatabaseManager } from './database';
 
 /**
  * An abstract class representing a base command.
@@ -156,13 +157,8 @@ export abstract class BaseCommand {
         return Logger.getInstance();
     }
 
-    /**
-     * Provides a promise that resolves to the database entity manager.
-     * @protected
-     * @returns {Promise<EntityManager>} A promise that resolves to the entity manager.
-     */
-    protected get db(): Promise<EntityManager> {
-        return (async () => (await Database.getInstance()).dataSource!.manager)();
+    protected get db(): DatabaseManager {
+        return Database.dbManager;
     }
 
     /**

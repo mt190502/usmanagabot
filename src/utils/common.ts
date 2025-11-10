@@ -8,7 +8,7 @@ export const RegisterFact = async <T extends User | Channel>(
     message?: Message,
 ): Promise<T extends User ? Users : Channels> => {
     if (message && message.author?.bot) return Promise.reject();
-    const db = (await Database.getInstance()).dataSource!.manager;
+    const db = Database.dbManager;
 
     if (entity instanceof User) {
         const name = message ? message.author.username : entity.username;

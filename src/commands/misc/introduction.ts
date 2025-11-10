@@ -19,9 +19,7 @@ import {
 } from 'discord.js';
 import 'reflect-metadata';
 import yaml from 'yaml';
-import { Guilds } from '../../types/database/entities/guilds';
 import { Introduction, IntroductionSubmit } from '../../types/database/entities/introduction';
-import { Users } from '../../types/database/entities/users';
 import { CommandSetting } from '../../types/decorator/command';
 import { CustomizableCommand } from '../../types/structure/command';
 
@@ -47,8 +45,8 @@ export default class IntroductionCommand extends CustomizableCommand {
     }
 
     public async generateSlashCommandData(guild_id: bigint): Promise<void> {
-        const guild = await (await this.db).findOne(Guilds, { where: { gid: guild_id } });
-        const introduction = await (await this.db).findOne(Introduction, { where: { from_guild: guild! } });
+        const guild = await this.db.getGuild(guild_id);
+        const introduction = await this.db.findOne(Introduction, { where: { from_guild: guild! } });
         if (!introduction) return;
         const data: SlashCommandBuilder = this.base_cmd_data as SlashCommandBuilder;
         data.setDescription(introduction.cmd_desc || this.description).setNameLocalization(
@@ -69,14 +67,13 @@ export default class IntroductionCommand extends CustomizableCommand {
 
     // =========================== EXECUTE ============================ //
     public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-        const db = await this.db;
-        const guild = await db.findOne(Guilds, { where: { gid: BigInt(interaction.guild!.id) } });
-        const user = await db.findOne(Users, { where: { uid: BigInt(interaction.user.id) } });
-        const introduction = await db.findOne(Introduction, {
+        const guild = await this.db.getGuild(BigInt(interaction.guild!.id));
+        const user = await this.db.getUser(BigInt(interaction.user.id));
+        const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: guild! },
         });
         const last_introduction_submit_from_user =
-            (await db.findOne(IntroductionSubmit, {
+            (await this.db.findOne(IntroductionSubmit, {
                 where: {
                     from_guild: guild!,
                     from_user: user!,
@@ -186,7 +183,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         last_introduction_submit_from_user.timestamp = new Date();
         last_introduction_submit_from_user.from_user = user!;
         last_introduction_submit_from_user.from_guild = guild!;
-        await db.save(last_introduction_submit_from_user);
+        await this.db.save(last_introduction_submit_from_user);
 
         post.setTitle(':white_check_mark: Success')
             .setColor(Colors.Green)
@@ -209,13 +206,11 @@ export default class IntroductionCommand extends CustomizableCommand {
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
-        const introduction = await (
-            await this.db
-        ).findOne(Introduction, {
+        const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
         introduction!.is_enabled = !introduction!.is_enabled;
-        await (await this.db).save(Introduction, introduction!);
+        await this.db.save(Introduction, introduction!);
         await this.settingsUI(interaction);
     }
 
@@ -225,9 +220,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         description: 'Customize the name and description of the introduction command for this server.',
     })
     public async customize_command(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
-        const introduction = await (
-            await this.db
-        ).findOne(Introduction, {
+        const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
         const cmd_name = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
@@ -251,7 +244,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             const new_cmd_desc = interaction.fields.getTextInputValue('cmd_desc');
             if (new_cmd_name) introduction!.cmd_name = new_cmd_name;
             if (new_cmd_desc) introduction!.cmd_desc = new_cmd_desc;
-            await (await this.db).save(Introduction, introduction!);
+            await this.db.save(Introduction, introduction!);
             await interaction.deferUpdate();
             return;
         } else if (interaction.isStringSelectMenu()) {
@@ -270,9 +263,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         description: 'Customize the names and descriptions of the introduction command columns.',
     })
     public async customize_columns(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
-        const introduction = await (
-            await this.db
-        ).findOne(Introduction, {
+        const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
 
@@ -296,7 +287,7 @@ export default class IntroductionCommand extends CustomizableCommand {
                 (introduction![`col${i + 1}` as keyof Introduction] as string[]) = [parsed[i].name, parsed[i].value];
             }
             introduction!.yaml_data = columns;
-            await (await this.db).save(Introduction, introduction!);
+            await this.db.save(Introduction, introduction!);
             await interaction.deferUpdate();
         }
         if (interaction.isStringSelectMenu()) {
@@ -331,16 +322,14 @@ export default class IntroductionCommand extends CustomizableCommand {
     public async change_target_channel(
         interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
     ): Promise<void> {
-        const introduction = await (
-            await this.db
-        ).findOne(Introduction, {
+        const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
 
         if (interaction.isChannelSelectMenu()) {
             const selected_channel = interaction.values[0];
             introduction!.channel_id = selected_channel;
-            await (await this.db).save(Introduction, introduction!);
+            await this.db.save(Introduction, introduction!);
             await this.settingsUI(interaction);
         }
         if (interaction.isStringSelectMenu()) {
@@ -366,22 +355,21 @@ export default class IntroductionCommand extends CustomizableCommand {
             | StringSelectMenuInteraction
             | ModalSubmitInteraction,
     ): Promise<void> {
-        const db = await this.db;
-        const guild = await db.findOne(Guilds, { where: { gid: BigInt(interaction.guildId!) } });
-        const user = await db.findOne(Users, { where: { uid: BigInt(interaction.user.id) } });
+        const guild = await this.db.getGuild(BigInt(interaction.guildId!));
+        const user = await this.db.getUser(BigInt(interaction.user.id));
 
-        let settings = await db.findOne(Introduction, {
+        let settings = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
 
         if (!settings) {
-            const new_settings = db.create(Introduction, {
+            const new_settings = this.db.create(Introduction, {
                 cmd_name: this.name,
                 cmd_desc: this.description,
                 from_guild: guild!,
                 from_user: user!,
             });
-            settings = await db.save(new_settings);
+            settings = await this.db.save(new_settings);
         }
 
         await this.buildSettingsUI(interaction, settings);

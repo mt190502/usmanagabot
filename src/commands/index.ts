@@ -104,8 +104,7 @@ export class CommandLoader {
      * @returns {Promise<Guilds[] | undefined>} - A promise that resolves to the list of registered guilds, or undefined if registration could not be completed.
      */
     private async registerGuilds(): Promise<Guilds[] | undefined> {
-        const db = await CommandLoader.database;
-        if (!db.dataSource) return;
+        if (!Database.dataSource) return;
 
         const client = new Client({ intents: [GatewayIntentBits.Guilds] });
         await client.login(CommandLoader.config.current_botcfg.token);
@@ -122,7 +121,7 @@ export class CommandLoader {
                 new_guild.name = guild.name;
                 new_guild.gid = BigInt(id);
                 new_guild.country = guild.preferredLocale;
-                await db.dataSource.manager.save(new_guild);
+                await Database.dbManager.save(new_guild);
             }
         } catch (error) {
             CommandLoader.logger.send('error', 'commandloader.register_guilds.database.guild_save_error', [
@@ -130,7 +129,7 @@ export class CommandLoader {
             ]);
         }
         await client.destroy();
-        return await db.dataSource.manager.find(Guilds);
+        return await Database.dbManager.find(Guilds);
     }
 
     /**
@@ -144,10 +143,10 @@ export class CommandLoader {
      * @param {string} [custom_command] - An optional path to a specific command file to load. If not provided, all command files will be loaded.
      * @returns {Promise<void>} A promise that resolves once all command files have been processed.
      */
-    private async readCommandFiles(custom_command?: string): Promise<void> {
+    private async readCommandFiles(custom_command?: CustomizableCommand): Promise<void> {
         let guilds: Guilds[] | undefined;
         try {
-            guilds = await (await CommandLoader.database).dataSource?.manager.find(Guilds);
+            guilds = await Database.dbManager.find(Guilds);
         } catch (error) {
             if (error instanceof TypeORMError && error.message.includes('No metadata for')) {
                 CommandLoader.logger.send('error', 'commandloader.read_command_files.database.no_metadata');
@@ -184,7 +183,11 @@ export class CommandLoader {
                     CommandLoader.BotCommands.set(guild, new Map());
                     this.rest_commands.set(guild, []);
                 }
-                if (cmd instanceof CustomizableCommand && cmd.base_cmd_data instanceof SlashCommandBuilder && guild !== 'global') {
+                if (
+                    cmd instanceof CustomizableCommand &&
+                    cmd.base_cmd_data instanceof SlashCommandBuilder &&
+                    guild !== 'global'
+                ) {
                     await cmd.generateSlashCommandData(BigInt(guild));
                 }
                 CommandLoader.BotCommands.get(guild)!.set(cmd.name, cmd);

@@ -1,8 +1,8 @@
 import { Awaitable, ClientEvents } from 'discord.js';
-import { EntityManager } from 'typeorm';
 import { Config } from '../../services/config';
 import { Database } from '../../services/database';
 import { Logger } from '../../services/logger';
+import { DatabaseManager } from './database';
 
 /**
  * An abstract class representing a base event handler.
@@ -83,8 +83,8 @@ export abstract class BaseEvent<T extends keyof ClientEvents> {
      * @protected
      * @returns {Promise<EntityManager>} A promise that resolves to the entity manager.
      */
-    protected get db(): Promise<EntityManager> {
-        return (async () => (await Database.getInstance()).dataSource!.manager)();
+    protected get db(): DatabaseManager {
+        return Database.dbManager;
     }
     // ================================================================ //
 }

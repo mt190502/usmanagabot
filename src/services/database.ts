@@ -2,6 +2,9 @@ import { Config, DatabaseConfig_t } from '@services/config';
 import { Logger } from '@services/logger';
 import { glob } from 'glob';
 import { DataSource } from 'typeorm';
+import { Guilds } from '../types/database/entities/guilds';
+import { Users } from '../types/database/entities/users';
+import { DatabaseManager } from '../types/structure/database';
 
 /**
  * Database service class responsible for initializing and exposing TypeORM DataSource.
@@ -38,7 +41,7 @@ export class Database {
      * Will be `null` until `init()` successfully runs.
      * @type {(DataSource | null)}
      */
-    public dataSource: DataSource | null = null;
+    public static dataSource: DataSource | null = null;
 
     /**
      * Obtain the Database singleton. If not yet created, it constructs the object and
@@ -59,6 +62,36 @@ export class Database {
     }
 
     /**
+     * Provides a proxy-wrapped TypeORM `EntityManager` with added convenience methods
+     * for retrieving `Guilds` and `Users` entities by their IDs.
+     *
+     * @returns {DatabaseManager} Proxy-wrapped EntityManager with custom methods.
+     */
+    public static get dbManager(): DatabaseManager {
+        return new Proxy(this.dataSource!.manager, {
+            get: (target, prop: keyof DatabaseManager) => {
+                switch (prop) {
+                    case 'getGuild':
+                        return async (guild_id: bigint): Promise<Guilds | null> => {
+                            return target.findOne(Guilds, { where: { gid: BigInt(guild_id) } });
+                        };
+                    case 'getUser':
+                        return async (user_id: bigint): Promise<Users | null> => {
+                            return target.findOne(Users, { where: { uid: BigInt(user_id) } });
+                        };
+                }
+                const original = target[prop];
+                if (typeof original === 'function') {
+                    return (...args: unknown[]) => {
+                        return (original as (...a: unknown[]) => unknown).apply(target, args);
+                    };
+                }
+                return original;
+            },
+        }) as DatabaseManager;
+    }
+
+    /**
      * Initialize the TypeORM `DataSource`:
      * - Scans repository for entities, migrations, and subscribers.
      * - Constructs a `DataSource` using the loaded configuration and modules.
@@ -72,7 +105,7 @@ export class Database {
         const entities = (await glob('src/types/database/entities/*.ts')).sort((a, b) => a.localeCompare(b));
         const migrations = (await glob('src/types/database/migrations/*.ts')).sort((a, b) => a.localeCompare(b));
         const subscribers = (await glob('src/types/database/subscribers/*.ts')).sort((a, b) => a.localeCompare(b));
-        this.dataSource = new DataSource({
+        Database.dataSource = new DataSource({
             type: 'postgres',
             host: this.current_dbcfg.host,
             port: this.current_dbcfg.port,
@@ -86,7 +119,7 @@ export class Database {
             subscribers,
         });
         try {
-            await this.dataSource.initialize();
+            await Database.dataSource.initialize();
             Database.logger.send('info', 'services.database.init.success');
         } catch (error) {
             Database.logger.send('error', 'services.database.init.initialization_error', [
