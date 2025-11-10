@@ -14,6 +14,7 @@ import {
     TextInputBuilder,
     TextInputStyle,
 } from 'discord.js';
+import { CommandLoader } from '..';
 import { Search, SearchEngines } from '../../types/database/entities/search';
 import { CommandSetting } from '../../types/decorator/command';
 import { CustomizableCommand } from '../../types/structure/command';
@@ -44,7 +45,9 @@ export default class SearchCommand extends CustomizableCommand {
         const search = await this.db.findOne(Search, { where: { from_guild: guild! } });
         const engines = await this.db.find(SearchEngines, { where: { from_guild: guild! } });
         if (!search) return;
-        const data: SlashCommandBuilder = this.base_cmd_data as SlashCommandBuilder;
+        const data: SlashCommandBuilder = new SlashCommandBuilder()
+            .setName(this.name)
+            .setDescription(this.description);
         if (engines.length === 0) {
             data.addStringOption((o) =>
                 o
@@ -145,6 +148,7 @@ export default class SearchCommand extends CustomizableCommand {
             new_engine.from_user = user!;
             new_engine.from_guild = guild!;
             await this.db.save(new_engine);
+            CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await this.settingsUI(interaction);
             return;
         } else if (interaction.isStringSelectMenu()) {
@@ -180,6 +184,7 @@ export default class SearchCommand extends CustomizableCommand {
             engine.from_user = user!;
             engine.from_guild = guild!;
             await this.db.save(engine);
+            CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await this.settingsUI(interaction);
             return;
         } else if (interaction.isStringSelectMenu()) {
@@ -258,6 +263,7 @@ export default class SearchCommand extends CustomizableCommand {
             return;
         } else if (interaction.customId.startsWith('settings:search:removeengine')) {
             await this.db.remove(engines.find((e) => e.engine_name === engine_name)!);
+            CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await this.settingsUI(interaction);
             return;
         }

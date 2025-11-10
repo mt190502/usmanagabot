@@ -19,10 +19,10 @@ import {
 } from 'discord.js';
 import 'reflect-metadata';
 import yaml from 'yaml';
+import { CommandLoader } from '..';
 import { Introduction, IntroductionSubmit } from '../../types/database/entities/introduction';
 import { CommandSetting } from '../../types/decorator/command';
 import { CustomizableCommand } from '../../types/structure/command';
-import { CommandLoader } from '..';
 
 export default class IntroductionCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
@@ -246,7 +246,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             if (new_cmd_name) introduction!.cmd_name = new_cmd_name;
             if (new_cmd_desc) introduction!.cmd_desc = new_cmd_desc;
             await this.db.save(Introduction, introduction!);
-            await CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+            CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await interaction.deferUpdate();
             return;
         } else if (interaction.isStringSelectMenu()) {
@@ -290,7 +290,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             }
             introduction!.yaml_data = columns;
             await this.db.save(Introduction, introduction!);
-            await CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+            CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await interaction.deferUpdate();
         }
         if (interaction.isStringSelectMenu()) {
