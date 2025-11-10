@@ -27,11 +27,13 @@ export default class SettingsCommand extends BaseCommand {
     }
 
     public async execute(interaction: Interaction | CommandInteraction | StringSelectMenuInteraction): Promise<void> {
-        const guild_commands = Array.from(CommandLoader.BotCommands.get(interaction.guild!.id)!).map(([, cmd]) => ({
-            label: cmd.pretty_name,
-            description: cmd.description,
-            value: `settings:${cmd.name}`,
-        }));
+        const guild_commands = Array.from(CommandLoader.BotCommands.get(interaction.guild!.id)!)
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([, cmd]) => ({
+                label: cmd.pretty_name,
+                description: cmd.description,
+                value: `settings:${cmd.name}`,
+            }));
         const settings_embed = new EmbedBuilder()
             .setTitle(':gear: Settings')
             .setColor(Colors.Blurple)
