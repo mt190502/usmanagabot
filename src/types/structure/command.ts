@@ -15,7 +15,6 @@ import {
     StringSelectMenuInteraction,
 } from 'discord.js';
 import 'reflect-metadata';
-import { ObjectLiteral } from 'typeorm';
 import { format } from 'util';
 import { Config } from '../../services/config';
 import { Database } from '../../services/database';
@@ -215,29 +214,14 @@ export abstract class CustomizableCommand extends BaseCommand {
     // ============== CUSTOMIZABLE COMMAND BASE SECTION =============== //
     public abstract generateSlashCommandData(guild_id: bigint): Promise<void>;
 
-    public abstract settingsUI(
+    public async settingsUI(
         interaction:
             | ChatInputCommandInteraction
             | ChannelSelectMenuInteraction
             | StringSelectMenuInteraction
             | ModalSubmitInteraction
             | RoleSelectMenuInteraction,
-    ): Promise<void>;
-
-    public async buildSettingsUI(
-        interaction:
-            | ChatInputCommandInteraction
-            | ChannelSelectMenuInteraction
-            | StringSelectMenuInteraction
-            | ModalSubmitInteraction
-            | RoleSelectMenuInteraction,
-        settings: ObjectLiteral | null,
     ): Promise<void> {
-        if (!settings) {
-            this.log.send('error', 'events.interaction.no_settings', [this.name]);
-            return;
-        }
-
         const subsettings = Reflect.getMetadata('custom:settings', this.constructor);
         const ui = new EmbedBuilder().setTitle(`:gear: ${this.pretty_name} Settings`);
         const menu = new StringSelectMenuBuilder().setCustomId(`settings:${this.name}`);
@@ -251,15 +235,31 @@ export abstract class CustomizableCommand extends BaseCommand {
         }
 
         for (const [name, setting] of subsettings) {
-            const current_value = settings![setting.database_key as keyof unknown];
-            let value;
             if (setting.display_name) {
-                if (typeof current_value === 'boolean') {
-                    value = current_value ? ':green_circle: True' : ':red_circle: False';
+                let row;
+                if (setting.db_column_is_array) {
+                    const rows = await this.db.find(setting.database, {
+                        where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+                    });
+                    row = rows.map((r) => r[setting.database_key as keyof unknown]);
+                } else {
+                    row = (await this.db.findOne(setting.database, {
+                        where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+                    }))![setting.database_key as keyof unknown];
+                }
+                let value;
+                if (typeof row === 'boolean') {
+                    value = row ? ':green_circle: True' : ':red_circle: False';
+                } else if (setting.db_column_is_array) {
+                    value = setting.database_key
+                        ? Array.isArray(row) && row.length > 0
+                            ? row.map((val: string | number) => format(setting.format_specifier, val)).join(', ')
+                            : ':orange_circle: Not Set'
+                        : '`View in Edit Mode`';
                 } else {
                     value = setting.database_key
-                        ? current_value
-                            ? format(setting.format_specifier, current_value ?? '')
+                        ? row
+                            ? format(setting.format_specifier, row ?? '')
                             : ':orange_circle: Not Set'
                         : '`View in Edit Mode`';
                 }

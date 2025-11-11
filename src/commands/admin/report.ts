@@ -7,7 +7,6 @@ import {
     Colors,
     EmbedBuilder,
     MessageFlags,
-    ModalSubmitInteraction,
     SlashCommandBuilder,
     StringSelectMenuInteraction,
     TextChannel,
@@ -145,6 +144,7 @@ export default class ReportCommand extends CustomizableCommand {
     // =========================== SETTINGS =========================== //
     @CommandSetting({
         display_name: 'Enabled',
+        database: Reports,
         database_key: 'is_enabled',
         pretty: 'Toggle Report Command',
         description: 'Toggle the report command enabled/disabled.',
@@ -163,6 +163,7 @@ export default class ReportCommand extends CustomizableCommand {
 
     @CommandSetting({
         display_name: 'Target Channel',
+        database: Reports,
         database_key: 'channel_id',
         pretty: 'Set Report Target Channel',
         description: 'Set the target channel where reports will be posted.',
@@ -195,19 +196,6 @@ export default class ReportCommand extends CustomizableCommand {
                 ],
             });
         }
-    }
-
-    public async settingsUI(
-        interaction:
-            | ChatInputCommandInteraction
-            | ChannelSelectMenuInteraction
-            | StringSelectMenuInteraction
-            | ModalSubmitInteraction,
-    ): Promise<void> {
-        const guild = await this.db.getGuild(BigInt(interaction.guildId!));
-        const report = await this.db.findOne(Reports, { where: { from_guild: guild! } });
-
-        await this.buildSettingsUI(interaction, report);
     }
     // ================================================================ //
 }

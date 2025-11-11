@@ -1,10 +1,7 @@
 import {
     ActionRowBuilder,
-    ChannelSelectMenuInteraction,
-    ChatInputCommandInteraction,
     Events,
     GuildMember,
-    ModalSubmitInteraction,
     RoleSelectMenuBuilder,
     RoleSelectMenuInteraction,
     StringSelectMenuInteraction,
@@ -67,6 +64,7 @@ export default class AutoroleCommand extends CustomizableCommand {
     // =========================== SETTINGS =========================== //
     @CommandSetting({
         display_name: 'Enabled',
+        database: Autorole,
         database_key: 'is_enabled',
         pretty: 'Toggle Autorole System',
         description: 'Toggle the autorole system enabled/disabled.',
@@ -84,6 +82,7 @@ export default class AutoroleCommand extends CustomizableCommand {
 
     @CommandSetting({
         display_name: 'Role to Assign',
+        database: Autorole,
         database_key: 'role_id',
         pretty: 'Set Role to Assign',
         description: 'Set the role that will be automatically assigned to new members.',
@@ -116,20 +115,6 @@ export default class AutoroleCommand extends CustomizableCommand {
                 components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(role_select).toJSON()],
             });
         }
-    }
-
-    public async settingsUI(
-        interaction:
-            | ChatInputCommandInteraction
-            | ChannelSelectMenuInteraction
-            | StringSelectMenuInteraction
-            | ModalSubmitInteraction
-            | RoleSelectMenuInteraction,
-    ): Promise<void> {
-        const guild = await this.db.getGuild(BigInt(interaction.guildId!));
-        const autorole = await this.db.findOne(Autorole, { where: { from_guild: guild! } });
-
-        await this.buildSettingsUI(interaction, autorole);
     }
     // ================================================================ //
 }

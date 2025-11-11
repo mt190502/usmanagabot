@@ -21,7 +21,7 @@ export default class SettingsCommand extends BaseCommand {
             is_admin_command: true,
             help: 'Use this command to manage various modules and settings of the bot.',
         });
-        this.base_cmd_data.setDefaultMemberPermissions(
+        this.base_cmd_data!.setDefaultMemberPermissions(
             PermissionFlagsBits.BanMembers | PermissionFlagsBits.KickMembers,
         );
     }

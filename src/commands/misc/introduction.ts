@@ -211,6 +211,7 @@ export default class IntroductionCommand extends CustomizableCommand {
     // =========================== SETTINGS =========================== //
     @CommandSetting({
         display_name: 'Enabled',
+        database: Introduction,
         database_key: 'is_enabled',
         pretty: 'Toggle Introduction Command',
         description: 'Toggle the introduction command enabled/disabled.',
@@ -228,7 +229,6 @@ export default class IntroductionCommand extends CustomizableCommand {
     }
 
     @CommandSetting({
-        display_name: 'Command Name and Description',
         pretty: 'Customize Introduction Command Name and Description',
         description: 'Customize the name and description of the introduction command for this server.',
     })
@@ -272,7 +272,6 @@ export default class IntroductionCommand extends CustomizableCommand {
     }
 
     @CommandSetting({
-        display_name: 'Columns',
         pretty: 'Customize Columns',
         description: 'Customize the names and descriptions of the introduction command columns.',
     })
@@ -291,7 +290,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             for (const column of parsed) {
                 if (name_set.has(column.name)) {
                     this.warning = `Column name \`${column.name}\` is duplicated. Please ensure all column names are unique.`;
-                    this.settingsUI(interaction);
+                    await this.settingsUI(interaction);
                     return;
                 }
                 name_set.add(column.name);
@@ -308,7 +307,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         if (interaction.isStringSelectMenu()) {
             await interaction.showModal(
                 new ModalBuilder()
-                    .setCustomId('settings:introduction:customizecolumns')
+                    .setCustomId('settings:introduction:customize_columns')
                     .setTitle('Customize Introduction Columns')
                     .addComponents(
                         new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
@@ -329,6 +328,7 @@ export default class IntroductionCommand extends CustomizableCommand {
 
     @CommandSetting({
         display_name: 'Target Channel',
+        database: Introduction,
         database_key: 'channel_id',
         pretty: 'Set Introduction Target Channel',
         description: 'Set the target channel where introductions will be posted.',
@@ -361,18 +361,6 @@ export default class IntroductionCommand extends CustomizableCommand {
                 ],
             });
         }
-    }
-
-    public async settingsUI(
-        interaction:
-            | ChatInputCommandInteraction
-            | ChannelSelectMenuInteraction
-            | StringSelectMenuInteraction
-            | ModalSubmitInteraction,
-    ): Promise<void> {
-        const guild = await this.db.getGuild(BigInt(interaction.guildId!));
-        const introduction = await this.db.findOne(Introduction, { where: { from_guild: guild! } });
-        await this.buildSettingsUI(interaction, introduction);
     }
     // ================================================================ //
 }

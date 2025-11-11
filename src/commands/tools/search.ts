@@ -1,6 +1,5 @@
 import {
     ActionRowBuilder,
-    ChannelSelectMenuInteraction,
     ChatInputCommandInteraction,
     Colors,
     EmbedBuilder,
@@ -129,6 +128,7 @@ export default class SearchCommand extends CustomizableCommand {
 
     @CommandSetting({
         display_name: 'Enabled',
+        database: Search,
         database_key: 'is_enabled',
         pretty: 'Toggle Search Command',
         description: 'Toggle the search command enabled/disabled.',
@@ -162,7 +162,7 @@ export default class SearchCommand extends CustomizableCommand {
             const url = interaction.fields.getTextInputValue('engine_url');
             if (engines.find((e) => e.engine_name.toLowerCase() === name.toLowerCase())) {
                 this.warning = `A search engine with the name \`${name}\` already exists.`;
-                this.settingsUI(interaction);
+                await this.settingsUI(interaction);
                 return;
             }
             const new_engine = new SearchEngines();
@@ -185,8 +185,13 @@ export default class SearchCommand extends CustomizableCommand {
     }
 
     @CommandSetting({
+        display_name: 'Engines',
+        database: SearchEngines,
+        database_key: 'engine_name',
         pretty: 'Edit Existing Search Engines',
         description: 'Edit an existing search engine from the list of available search engines.',
+        db_column_is_array: true,
+        format_specifier: '%s',
     })
     public async editEngine(
         interaction: StringSelectMenuInteraction | ModalSubmitInteraction,
@@ -195,8 +200,6 @@ export default class SearchCommand extends CustomizableCommand {
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
         const user = await this.db.getUser(BigInt(interaction.user.id));
         const engines = await this.db.find(SearchEngines, { where: { from_guild: guild! } });
-
-        console.log(interaction.customId, engine_name);
 
         if (interaction.isModalSubmit()) {
             const name = interaction.fields.getTextInputValue('engine_name');
@@ -290,19 +293,6 @@ export default class SearchCommand extends CustomizableCommand {
             await this.settingsUI(interaction);
             return;
         }
-    }
-
-    public async settingsUI(
-        interaction:
-            | ChatInputCommandInteraction
-            | ChannelSelectMenuInteraction
-            | StringSelectMenuInteraction
-            | ModalSubmitInteraction,
-    ): Promise<void> {
-        const guild = await this.db.getGuild(BigInt(interaction.guildId!));
-        const search = await this.db.findOne(Search, { where: { from_guild: guild! } });
-
-        await this.buildSettingsUI(interaction, search);
     }
     // ================================================================ //
 }
