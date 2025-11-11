@@ -2,6 +2,15 @@ import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 't
 import { Guilds } from './guilds';
 import { Users } from './users';
 
+export enum RestrictType {
+    IMAGE = 1,
+    LINK,
+    STICKER,
+    TEXT,
+    THREAD,
+    VIDEO,
+}
+
 @Entity()
 export class ChannelRestrictSystem {
     @PrimaryGeneratedColumn({ type: 'smallint' })
@@ -33,8 +42,8 @@ export class ChannelRestricts {
     @Column({ type: 'bigint', nullable: true, default: null })
     channel_id!: string;
 
-    @Column({ type: 'text', array: true, default: '{}' })
-    restricts!: string[];
+    @Column({ type: 'int', array: true, default: '{}' })
+    restricts!: RestrictType[];
 
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
