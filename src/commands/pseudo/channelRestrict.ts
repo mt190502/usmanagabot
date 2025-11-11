@@ -13,11 +13,11 @@ import {
     User,
 } from 'discord.js';
 import { ChannelRestricts, ChannelRestrictSystem, RestrictType } from '../../types/database/entities/channel_restrict';
-import { MessageLogger } from '../../types/database/entities/logger';
 import { Messages } from '../../types/database/entities/messages';
 import { ChainEvent } from '../../types/decorator/callEvent';
 import { CommandSetting } from '../../types/decorator/command';
 import { CustomizableCommand } from '../../types/structure/command';
+import { MessageLogger } from '../../types/database/entities/message_logger';
 
 export default class ChannelRestrictCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
