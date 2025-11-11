@@ -20,6 +20,7 @@
     },
     "homepage": "https://github.com/mt190502/usmanagabot#readme",
     "dependencies": {
+        "cron": "^4.3.4",
         "dayjs": "^1.11.18",
         "discord.js": "^14.22.1",
         "glob": "^11.0.3",
