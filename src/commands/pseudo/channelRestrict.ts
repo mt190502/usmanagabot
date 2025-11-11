@@ -12,12 +12,13 @@ import {
     ThreadChannel,
     User,
 } from 'discord.js';
+import timers from 'timers/promises';
 import { ChannelRestricts, ChannelRestrictSystem, RestrictType } from '../../types/database/entities/channel_restrict';
+import { MessageLogger } from '../../types/database/entities/message_logger';
 import { Messages } from '../../types/database/entities/messages';
 import { ChainEvent } from '../../types/decorator/callEvent';
 import { CommandSetting } from '../../types/decorator/command';
 import { CustomizableCommand } from '../../types/structure/command';
-import { MessageLogger } from '../../types/database/entities/message_logger';
 
 export default class ChannelRestrictCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
@@ -135,6 +136,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
             }
             await author.send({ embeds: [post] });
             if (msg_logger && restrict.mod_notifier_channel_id) {
+                await timers.setTimeout(500);
                 const logged = await this.db.findOne(Messages, {
                     where: {
                         from_guild: { gid: BigInt(guild_id) },
@@ -153,7 +155,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                 mod_post.setDescription(
                     `A message in <#${channel_id}> has been deleted due to channel restrictions.\n` +
                         (logged?.logged_message_id
-                            ? `Message URL: https://discord.com/channels/${guild_id}/${channel_id}/${logged.logged_message_id}`
+                            ? `Message URL: https://discord.com/channels/${guild_id}/${msg_logger.channel_id}/${logged.logged_message_id}`
                             : ''),
                 );
                 if (target && 'send' in target) await target.send({ embeds: [mod_post] });
