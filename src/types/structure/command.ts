@@ -120,7 +120,7 @@ export abstract class BaseCommand {
      * @param {Interaction | CommandInteraction} interaction - The interaction object from Discord.js.
      * @returns {Promise<void>} A promise that resolves when the command execution is complete.
      */
-    public abstract execute(interaction: Interaction | CommandInteraction | unknown): Promise<void>;
+    public abstract execute(interaction: Interaction | CommandInteraction | unknown, args?: unknown): Promise<unknown>;
 
     /**
      * Constructs a new instance of the BaseCommand.
@@ -242,6 +242,7 @@ export abstract class CustomizableCommand extends BaseCommand {
                         where: { from_guild: { gid: BigInt(interaction.guildId!) } },
                     });
                     row = rows.map((r) => r[setting.database_key as keyof unknown]);
+                    if (Array.isArray(row[0])) row = row[0];
                 } else {
                     row = (await this.db.findOne(setting.database, {
                         where: { from_guild: { gid: BigInt(interaction.guildId!) } },
@@ -255,9 +256,7 @@ export abstract class CustomizableCommand extends BaseCommand {
                         ? Array.isArray(row) && row.length > 0
                             ? row.length == 1 && row[0] === null
                                 ? ':orange_circle: Not Set'
-                                : Array.isArray(row[0])
-                                    ? (row[0] as unknown[]).map((val) => format(setting.format_specifier, val)).join(', ')
-                                    : row.map((val) => format(setting.format_specifier, val)).join(', ')
+                                : row.map((val) => format(setting.format_specifier, val)).join(', ')
                             : ':orange_circle: Not Set'
                         : '`View in Edit Mode`';
                 } else {
