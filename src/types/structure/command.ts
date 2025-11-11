@@ -253,7 +253,11 @@ export abstract class CustomizableCommand extends BaseCommand {
                 } else if (setting.db_column_is_array) {
                     value = setting.database_key
                         ? Array.isArray(row) && row.length > 0
-                            ? row.map((val: string | number) => format(setting.format_specifier, val)).join(', ')
+                            ? row.length == 1 && row[0] === null
+                                ? ':orange_circle: Not Set'
+                                : Array.isArray(row[0])
+                                    ? (row[0] as unknown[]).map((val) => format(setting.format_specifier, val)).join(', ')
+                                    : row.map((val) => format(setting.format_specifier, val)).join(', ')
                             : ':orange_circle: Not Set'
                         : '`View in Edit Mode`';
                 } else {
