@@ -49,7 +49,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
-    @Cron({ schedule: '*/5 * * * *' })
+    @Cron({ schedule: '* * * * *' })
     public async execute(): Promise<void> {
         const earthquake = await this.db.find(Earthquake, { where: { is_enabled: true } });
         if (!earthquake || !earthquake.length) return;
@@ -63,13 +63,14 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
                     properties: { time: Date; mag: number; lat: number; lon: number; auth: string };
                 }[];
             };
-            for (const eq of request.features.slice(0, 20)) {
-                const recent_earthquakes = request.features.filter((e) => e.properties.mag >= guild.magnitude_limit);
-                if (earthquakes.length) {
-                    recent_earthquakes.filter((e) => earthquakes.find((l) => l.source_id === e.id) === undefined);
-                }
-                if (recent_earthquakes.length === 0) continue;
 
+            let recent_earthquakes = request.features.filter((e) => e.properties.mag - guild.magnitude_limit >= 0);
+            if (recent_earthquakes.length === 0) continue;
+
+            if (earthquakes.length) {
+                recent_earthquakes = recent_earthquakes.filter((e) => earthquakes.find((l) => l.source_id === e.id));
+            }
+            for (const eq of recent_earthquakes.slice(0, 25)) {
                 const existing_log = await this.db.findOne(EarthquakeLogs, {
                     where: { source_id: eq.id, from_guild: guild.from_guild },
                 });
