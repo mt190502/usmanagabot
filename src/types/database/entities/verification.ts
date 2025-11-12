@@ -42,6 +42,9 @@ export class Verification {
     @Column({ type: 'timestamp', nullable: true })
     remaining_time!: Date;
 
+    @Column({ type: 'timestamp', nullable: true })
+    user_created_at!: Date;
+
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
     from_user!: Users;
