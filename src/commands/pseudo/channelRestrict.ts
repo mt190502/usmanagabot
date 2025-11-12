@@ -95,6 +95,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
             author = message.author;
             channel_id = message.channel.id;
             channel = restrict_list.find((c) => c.channel_id === channel_id)!;
+            if (!channel) return;
             is_image = message.attachments.some((att) => att.contentType?.startsWith('image'));
             is_video = message.attachments.some((att) => att.contentType?.startsWith('video'));
             is_sticker =
@@ -112,6 +113,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
             author = message.guild.members.cache.get(message.ownerId)!.user;
             channel_id = message.parentId!;
             channel = restrict_list.find((c) => c.channel_id === channel_id)!;
+            if (!channel) return;
             is_restricted = channel.restricts.includes(RestrictType.THREAD);
         }
 
