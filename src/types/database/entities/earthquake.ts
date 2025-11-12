@@ -17,13 +17,10 @@ export class Earthquake {
     magnitude_limit!: number;
 
     @Column({ type: 'text', nullable: true, default: null })
-    seismic_portal_api_url!: string;
-
-    @Column({ type: 'smallint', nullable: false, default: 5 })
-    check_interval!: number;
+    seismicportal_api_url!: string;
 
     @Column({ type: 'varchar', nullable: true, default: 'en', length: 8 })
-    language!: string;
+    region_code!: string;
 
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
@@ -41,6 +38,9 @@ export class Earthquake {
 export class EarthquakeLogs {
     @PrimaryGeneratedColumn({ type: 'smallint' })
     id!: number;
+
+    @Column({ type: 'boolean', nullable: false, default: false })
+    is_delivered!: boolean;
 
     @Column({ type: 'varchar', length: 64, nullable: false })
     source_id!: string;
