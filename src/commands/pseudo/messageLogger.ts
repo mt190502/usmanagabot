@@ -15,7 +15,7 @@ import {
 import { setTimeout } from 'timers/promises';
 import { MessageLogger } from '../../types/database/entities/message_logger';
 import { Messages } from '../../types/database/entities/messages';
-import { ChainEvent } from '../../types/decorator/callEvent';
+import { ChainEvent } from '../../types/decorator/chainevent';
 import { CommandSetting } from '../../types/decorator/command';
 import { CustomizableCommand } from '../../types/structure/command';
 

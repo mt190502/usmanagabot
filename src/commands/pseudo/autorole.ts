@@ -8,7 +8,7 @@ import {
 } from 'discord.js';
 import { BotClient } from '../../services/client';
 import { Autorole } from '../../types/database/entities/autorole';
-import { ChainEvent } from '../../types/decorator/callEvent';
+import { ChainEvent } from '../../types/decorator/chainevent';
 import { CommandSetting } from '../../types/decorator/command';
 import { CustomizableCommand } from '../../types/structure/command';
 

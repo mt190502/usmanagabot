@@ -12,11 +12,11 @@ export function HandleAction(name: string): MethodDecorator {
 
 export function CommandSetting(options: {
     display_name?: string;
-    database?: ObjectLiteral;
-    database_key?: string;
     pretty: string;
     description: string;
     format_specifier?: string;
+    database?: ObjectLiteral;
+    database_key?: string;
     db_column_is_array?: boolean;
 }): MethodDecorator {
     return (target_class, property_key, descriptor_func) => {
