@@ -44,7 +44,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         this.base_cmd_data = null;
     }
 
-    public async generateSlashCommandData(guild_id: bigint): Promise<void> {
+    public async prepareCommandData(guild_id: bigint): Promise<void> {
         const guild = await this.db.getGuild(guild_id);
         const system_user = await this.db.getUser(BigInt(0));
         let restrict = await this.db.findOne(ChannelRestrictSystem, { where: { from_guild: guild! } });

@@ -210,7 +210,7 @@ export class CommandLoader {
                     !(cmd.base_cmd_data instanceof ContextMenuCommandBuilder) &&
                     guild !== 'global'
                 ) {
-                    await cmd.generateSlashCommandData(BigInt(guild));
+                    await cmd.prepareCommandData(BigInt(guild));
                 }
                 CommandLoader.BotCommands.get(guild)!.set(cmd.name, cmd);
                 for (const c of cmd.all_cmd_data) {

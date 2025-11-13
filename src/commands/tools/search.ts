@@ -39,7 +39,7 @@ export default class SearchCommand extends CustomizableCommand {
         });
     }
 
-    public async generateSlashCommandData(guild_id: bigint): Promise<void> {
+    public async prepareCommandData(guild_id: bigint): Promise<void> {
         const guild = await this.db.getGuild(guild_id);
         let search = await this.db.findOne(Search, { where: { from_guild: guild! } });
         const system_user = await this.db.getUser(BigInt(0));

@@ -1,18 +1,14 @@
 import {
     ActionRowBuilder,
-    ChannelSelectMenuInteraction,
-    ChatInputCommandInteraction,
+    BaseInteraction,
     Colors,
     CommandInteraction,
     ContextMenuCommandBuilder,
     EmbedBuilder,
     Interaction,
     MessageFlags,
-    ModalSubmitInteraction,
-    RoleSelectMenuInteraction,
     SlashCommandBuilder,
     StringSelectMenuBuilder,
-    StringSelectMenuInteraction,
 } from 'discord.js';
 import 'reflect-metadata';
 import { format } from 'util';
@@ -157,6 +153,11 @@ export abstract class BaseCommand {
         return Logger.getInstance();
     }
 
+    /**
+     * Provides access to the database manager.
+     * @protected
+     * @returns {DatabaseManager} The database manager instance.
+     */
     protected get db(): DatabaseManager {
         return Database.dbManager;
     }
@@ -208,20 +209,32 @@ export abstract class CustomizableCommand extends BaseCommand {
     // ================================================================ //
 
     // ============== CUSTOMIZABLE COMMAND DATA SECTION =============== //
+    /**
+     * A warning message to be displayed in the settings UI, if any.
+     * @protected
+     * @type {string | null}
+     */
     protected warning: string | null = null;
     // ================================================================ //
 
     // ============== CUSTOMIZABLE COMMAND BASE SECTION =============== //
-    public abstract generateSlashCommandData(guild_id: bigint): Promise<void>;
+    /**
+     * Prepares the data for a specific guild. (database entries, loads defaults, etc.)
+     * This method should be implemented by subclasses to initialize or load settings as needed.
+     * @public
+     * @abstract
+     * @param {bigint} guild_id - The ID of the guild for which to prepare settings.
+     * @returns {Promise<void>} A promise that resolves when the settings are prepared.
+     */
+    public abstract prepareCommandData(guild_id: bigint): Promise<void>;
 
-    public async settingsUI(
-        interaction:
-            | ChatInputCommandInteraction
-            | ChannelSelectMenuInteraction
-            | StringSelectMenuInteraction
-            | ModalSubmitInteraction
-            | RoleSelectMenuInteraction,
-    ): Promise<void> {
+    /**
+     * Generates and sends the settings user interface for the command.
+     * @public
+     * @param {BaseInteraction | CommandInteraction} interaction - The interaction that triggered the settings UI.
+     * @returns {Promise<void>} A promise that resolves when the settings UI has been sent.
+     */
+    public async settingsUI(interaction: BaseInteraction | CommandInteraction): Promise<void> {
         const subsettings = Reflect.getMetadata('custom:settings', this.constructor);
         const ui = new EmbedBuilder().setTitle(`:gear: ${this.pretty_name} Settings`);
         const menu = new StringSelectMenuBuilder().setCustomId(`settings:${this.name}`);
@@ -298,7 +311,11 @@ export abstract class CustomizableCommand extends BaseCommand {
             if (interaction.isChatInputCommand()) {
                 if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
                 else await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
-            } else if (interaction.isStringSelectMenu() || interaction.isChannelSelectMenu()) {
+            } else if (
+                interaction.isStringSelectMenu() ||
+                interaction.isChannelSelectMenu() ||
+                interaction.isUserSelectMenu()
+            ) {
                 await interaction.update(payload);
             } else if ((interaction.isModalSubmit() && interaction.isFromMessage()) || interaction.isRoleSelectMenu()) {
                 if (interaction.deferred || interaction.replied) await interaction.editReply(payload);

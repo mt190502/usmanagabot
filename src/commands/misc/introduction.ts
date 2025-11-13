@@ -45,7 +45,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         });
     }
 
-    public async generateSlashCommandData(guild_id: bigint): Promise<void> {
+    public async prepareCommandData(guild_id: bigint): Promise<void> {
         const guild = await this.db.getGuild(guild_id);
         const system_user = await this.db.getUser(BigInt(0));
         let introduction = await this.db.findOne(Introduction, { where: { from_guild: guild! } });
