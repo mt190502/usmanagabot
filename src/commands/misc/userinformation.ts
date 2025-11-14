@@ -13,12 +13,12 @@ import {
 import { Introduction, IntroductionSubmit } from '../../types/database/entities/introduction';
 import { BaseCommand } from '../../types/structure/command';
 
-export default class UserInfoCommand extends BaseCommand {
+export default class UserInformationCommand extends BaseCommand {
     // ============================ HEADER ============================ //
     constructor() {
         super({
-            name: 'userinfo',
-            pretty_name: 'User Info',
+            name: 'user_information',
+            pretty_name: 'User Information',
             description: 'Get information about a user.',
             cooldown: 5,
             help: `
@@ -39,7 +39,10 @@ export default class UserInfoCommand extends BaseCommand {
         );
         this.push_cmd_data = new ContextMenuCommandBuilder()
             .setName(this.pretty_name)
-            .setType(ApplicationCommandType.User | ApplicationCommandType.Message);
+            .setType(ApplicationCommandType.Message);
+        this.push_cmd_data = new ContextMenuCommandBuilder()
+            .setName(this.pretty_name)
+            .setType(ApplicationCommandType.User);
     }
     // ================================================================ //
 
@@ -113,7 +116,7 @@ export default class UserInfoCommand extends BaseCommand {
             .setThumbnail(user.displayAvatarURL())
             .setTimestamp();
 
-        await interaction.reply({ embeds: [embed] });
+        await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
     }
     // ================================================================ //
 }
