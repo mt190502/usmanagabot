@@ -1,24 +1,19 @@
 import {
-    ActionRowBuilder,
     ApplicationCommandType,
-    ButtonBuilder,
     ButtonInteraction,
-    ButtonStyle,
     Colors,
     CommandInteraction,
     ContextMenuCommandBuilder,
     EmbedBuilder,
-    InteractionResponse,
     Message,
     MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder,
 } from 'discord.js';
-import { HandleAction } from '../../types/decorator/command';
+import { CommandQuestionPrompt } from '../../types/decorator/commandquestionprompt';
 import { BaseCommand } from '../../types/structure/command';
 
 export default class PurgeCommand extends BaseCommand {
-    private static question: InteractionResponse;
     private static target: Message<boolean>;
 
     constructor() {
@@ -58,124 +53,100 @@ export default class PurgeCommand extends BaseCommand {
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
     }
 
-    public async execute(interaction: CommandInteraction): Promise<void> {
+    @CommandQuestionPrompt({
+        title: 'Warning',
+        message: 'Are you sure you want to purge messages?',
+        ok_label: 'OK',
+        cancel_label: 'Cancel',
+        flags: MessageFlags.Ephemeral,
+    })
+    public async execute(interaction: ButtonInteraction | CommandInteraction): Promise<void> {
         const post = new EmbedBuilder();
-        const ok_btn = new ButtonBuilder()
-            .setCustomId('command:purge:ok')
-            .setEmoji('✅')
-            .setLabel('OK')
-            .setStyle(ButtonStyle.Success);
-        const cancel_btn = new ButtonBuilder()
-            .setCustomId('command:purge:cancel')
-            .setEmoji('❌')
-            .setLabel('Cancel')
-            .setStyle(ButtonStyle.Danger);
-        post.setTitle(':warning: Warning')
-            .setDescription('Are you sure you want to purge messages?')
-            .setColor(Colors.Yellow);
-        const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents([ok_btn, cancel_btn]);
+        if (interaction.isButton()) {
+            const selected_messages: Message<boolean>[] = [];
 
-        if (interaction.isMessageContextMenuCommand()) {
-            PurgeCommand.target = interaction.targetMessage;
-        } else if (interaction.isChatInputCommand()) {
-            const message_id = interaction.options
-                .getString('message_id')!
-                .split('/')
-                .at(-1)!
-                .replaceAll(/(\s|<|>|@|&|!)/g, '');
-            if (!message_id) {
-                post.setTitle(':warning: Warning').setDescription('Message ID is required').setColor(Colors.Yellow);
-                await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
-                return;
+            let target_is_found = false;
+            let selected_count = 0;
+            let messages = await interaction.channel!.messages.fetch({ limit: 100 });
+
+            while (!target_is_found) {
+                for (const [, message] of messages) {
+                    if (message.id === PurgeCommand.target.id) {
+                        target_is_found = true;
+                        break;
+                    }
+                    selected_count++;
+                    selected_messages.push(message);
+                }
+                if (!target_is_found) {
+                    messages = await interaction.channel!.messages.fetch({
+                        limit: 100,
+                        before: selected_messages.at(-1)!.id,
+                    });
+                }
             }
+
             try {
-                PurgeCommand.target = await interaction.channel!.messages.fetch(message_id);
+                if (!interaction.channel?.isTextBased() || interaction.channel.isDMBased()) return;
+                if (selected_count >= 100) {
+                    while (selected_messages.length > 0) {
+                        const chunk = selected_messages.splice(0, 100);
+                        await interaction.channel.bulkDelete(chunk);
+                    }
+                } else {
+                    await interaction.channel.bulkDelete(selected_messages);
+                }
             } catch (err) {
-                post.setTitle(':warning: Warning')
-                    .setDescription(
-                        'Message not found in this channel\nAre you sure the message ID is correct or the message is in this channel?',
-                    )
-                    .setColor(Colors.Yellow);
-                await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
-                this.log.send('warn', 'commands.admin.purge.message_not_found', [
-                    message_id,
+                post.setTitle(':octagonal_sign: Error')
+                    .setDescription(`Failed to delete some messages\n${(err as Error).message}`)
+                    .setColor(Colors.Red);
+                await interaction.update({ embeds: [post], components: [] });
+                this.log.send('error', 'commands.admin.purge.bulk_delete_failed', [
                     interaction.channelId,
                     (err as Error).message,
                 ]);
                 return;
             }
-        }
 
-        PurgeCommand.question = await interaction.reply({
-            embeds: [post],
-            components: [buttons],
-            flags: MessageFlags.Ephemeral,
-        });
-    }
+            PurgeCommand.target.delete();
+            selected_count++;
 
-    @HandleAction('ok')
-    private async ok(interaction: ButtonInteraction): Promise<void> {
-        const post = new EmbedBuilder();
-        const selected_messages: Message<boolean>[] = [];
-        post.setTitle(':hourglass_flowing_sand: Processing').setDescription('Please wait...').setColor(Colors.Blue);
-        PurgeCommand.question.edit({ embeds: [post], components: [] });
-
-        let target_is_found = false;
-        let selected_count = 0;
-        let messages = await interaction.channel!.messages.fetch({ limit: 100 });
-
-        while (!target_is_found) {
-            for (const [, message] of messages) {
-                if (message.id === PurgeCommand.target.id) {
-                    target_is_found = true;
-                    break;
+            post.setTitle(':white_check_mark: Success')
+                .setDescription(`Deleted **${selected_count}** messages`)
+                .setColor(Colors.Green);
+            await interaction.update({ embeds: [post], components: [] });
+        } else {
+            if (interaction.isMessageContextMenuCommand()) {
+                PurgeCommand.target = interaction.targetMessage;
+            }
+            if (interaction.isChatInputCommand()) {
+                const message_id = interaction.options
+                    .getString('message_id')!
+                    .split('/')
+                    .at(-1)!
+                    .replaceAll(/(\s|<|>|@|&|!)/g, '');
+                if (!message_id) {
+                    post.setTitle(':warning: Warning').setDescription('Message ID is required').setColor(Colors.Yellow);
+                    await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
+                    return;
                 }
-                selected_count++;
-                selected_messages.push(message);
-            }
-            if (!target_is_found) {
-                messages = await interaction.channel!.messages.fetch({
-                    limit: 100,
-                    before: selected_messages.at(-1)!.id,
-                });
-            }
-        }
-
-        try {
-            if (!interaction.channel?.isTextBased() || interaction.channel.isDMBased()) return;
-            if (selected_count >= 100) {
-                while (selected_messages.length > 0) {
-                    const chunk = selected_messages.splice(0, 100);
-                    await interaction.channel.bulkDelete(chunk);
+                try {
+                    PurgeCommand.target = await interaction.channel!.messages.fetch(message_id);
+                } catch (err) {
+                    post.setTitle(':warning: Warning')
+                        .setDescription(
+                            'Message not found in this channel\nAre you sure the message ID is correct or the message is in this channel?',
+                        )
+                        .setColor(Colors.Yellow);
+                    await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
+                    this.log.send('warn', 'commands.admin.purge.message_not_found', [
+                        message_id,
+                        interaction.channelId,
+                        (err as Error).message,
+                    ]);
+                    return;
                 }
-            } else {
-                await interaction.channel.bulkDelete(selected_messages);
             }
-        } catch (err) {
-            post.setTitle(':octagonal_sign: Error')
-                .setDescription(`Failed to delete some messages\n${(err as Error).message}`)
-                .setColor(Colors.Red);
-            PurgeCommand.question.edit({ embeds: [post], components: [] });
-            this.log.send('error', 'commands.admin.purge.bulk_delete_failed', [
-                interaction.channelId,
-                (err as Error).message,
-            ]);
-            return;
         }
-
-        PurgeCommand.target.delete();
-        selected_count++;
-
-        post.setTitle(':white_check_mark: Success')
-            .setDescription(`Deleted **${selected_count}** messages`)
-            .setColor(Colors.Green);
-        PurgeCommand.question.edit({ embeds: [post], components: [] });
-    }
-
-    @HandleAction('cancel')
-    private async cancel(): Promise<void> {
-        const post = new EmbedBuilder();
-        post.setTitle(':x: Cancelled').setDescription('Process cancelled').setColor(Colors.Red);
-        PurgeCommand.question.edit({ embeds: [post], components: [] });
     }
 }
