@@ -106,7 +106,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         if (
             diff_timestamp < 86400000 &&
             diff_timestamp >= 3600 &&
-            last_introduction_submit_from_user.hourly_submit_count === 3
+            last_introduction_submit_from_user.hourly_submit_count === introduction!.daily_submit_limit
         ) {
             const msg = `You have reached the maximum number of submissions for today.\nPlease try again on date: <t:${Math.floor(end_timestamp)}:F>`;
             post.setTitle(':warning: Warning').setDescription(msg).setColor(Colors.Red);
@@ -202,7 +202,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         post.setTitle(':white_check_mark: Success')
             .setColor(Colors.Green)
             .setDescription(
-                `Introduction submitted successfully.\nYou have **${3 - last_introduction_submit_from_user.hourly_submit_count}** submissions left for today.\nIntroduction URL: ${publish.url}`,
+                `Introduction submitted successfully.\nYou have **${introduction!.daily_submit_limit - last_introduction_submit_from_user.hourly_submit_count}** submissions left for today.\nIntroduction URL: ${publish.url}`,
             );
         await interaction.reply({
             embeds: [post],
@@ -323,6 +323,50 @@ export default class IntroductionCommand extends CustomizableCommand {
                                         '- name: key1\n  value: value1\n- name: key2\n  value: value2',
                                 )
                                 .setStyle(TextInputStyle.Paragraph),
+                        ),
+                    ),
+            );
+        }
+    }
+
+    @GenericSetting({
+        display_name: 'Daily Submission Limit',
+        database: Introduction,
+        database_key: 'daily_submit_limit',
+        pretty: 'Set Daily Submission Limit',
+        description: 'Set the daily submission limit for users.',
+        format_specifier: '`%s`',
+    })
+    public async setDailySubmissionLimit(
+        interaction: StringSelectMenuInteraction | ModalSubmitInteraction,
+    ): Promise<void> {
+        const introduction = await this.db.findOne(Introduction, {
+            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+        });
+
+        if (interaction.isModalSubmit()) {
+            const limit_value = interaction.fields.getTextInputValue('daily_limit');
+            const limit = parseInt(limit_value, 10);
+            if (isNaN(limit) || limit < 1 || limit > 100) {
+                this.warning = 'Please enter a valid number between 1 and 100.';
+                await this.settingsUI(interaction);
+                return;
+            }
+            introduction!.daily_submit_limit = limit;
+            await this.db.save(Introduction, introduction!);
+            await interaction.deferUpdate();
+        } else if (interaction.isStringSelectMenu()) {
+            await interaction.showModal(
+                new ModalBuilder()
+                    .setCustomId('settings:introduction:setdailysubmissionlimit')
+                    .setTitle('Set Daily Submission Limit')
+                    .addComponents(
+                        new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
+                            new TextInputBuilder()
+                                .setCustomId('daily_limit')
+                                .setLabel('Daily Submission Limit (1-100)')
+                                .setValue(introduction!.daily_submit_limit.toString())
+                                .setStyle(TextInputStyle.Short),
                         ),
                     ),
             );

@@ -19,6 +19,9 @@ export class Introduction {
     @Column({ type: 'bigint', nullable: true, default: null })
     channel_id!: string;
 
+    @Column({ type: 'smallint', nullable: false, default: 10 })
+    daily_submit_limit!: number;
+
     @Column({ type: 'text', array: true, nullable: true, default: '{}' })
     col1!: string[];
 
