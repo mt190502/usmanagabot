@@ -71,7 +71,7 @@ export default class ReportCommand extends CustomizableCommand {
         const user = interaction.options.getUser('user')!;
         const reporter = interaction.user;
         const reason = interaction.options.getString('reason');
-        const pattern = /(https:\/\/discord.com\/channels\/\d+\/\d+\/\d+)/;
+        const pattern = /^(https:\/\/discord\.com\/channels\/\d+\/\d+\/\d+)$/;
         const message_url = interaction.options.getString('message_url');
         const message_channel_id = interaction.guild!.channels.cache.get(report!.channel_id);
         const message_in_database = await this.db.findOne(Messages, {
