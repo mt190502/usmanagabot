@@ -1,6 +1,5 @@
 import {
     ActionRowBuilder,
-    ChannelSelectMenuBuilder,
     ChannelSelectMenuInteraction,
     ChannelType,
     Colors,
@@ -15,8 +14,12 @@ import {
 } from 'discord.js';
 import { BotClient } from '../../services/client';
 import { Earthquake, EarthquakeLogs } from '../../types/database/entities/earthquake';
-import { CommandSetting } from '../../types/decorator/command';
 import { Cron } from '../../types/decorator/cronjob';
+import {
+    GenericSetting,
+    SettingChannelMenuComponent,
+    SettingToggleButtonComponent,
+} from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class EarthquakeNotifierCommand extends CustomizableCommand {
@@ -160,7 +163,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @CommandSetting({
+    @SettingToggleButtonComponent({
         display_name: 'Enabled',
         database: Earthquake,
         database_key: 'is_enabled',
@@ -178,13 +181,17 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         await this.settingsUI(interaction);
     }
 
-    @CommandSetting({
+    @SettingChannelMenuComponent({
         display_name: 'Notification Channel',
         database: Earthquake,
         database_key: 'channel_id',
         pretty: 'Set Notification Channel',
         description: 'Set the channel where earthquake notifications will be sent.',
         format_specifier: '<#%s>',
+        options: {
+            channel_types: [ChannelType.GuildText],
+            placeholder: 'Select a channel for earthquake notifications',
+        },
     })
     public async setNotificationChannel(
         interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
@@ -192,30 +199,13 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         const earthquake = await this.db.findOne(Earthquake, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
-
-        if (interaction.isChannelSelectMenu()) {
-            const channel_id = interaction.values[0];
-            earthquake!.channel_id = channel_id;
-            await this.db.save(Earthquake, earthquake!);
-            await this.settingsUI(interaction);
-        }
-        if (interaction.isStringSelectMenu()) {
-            await interaction.update({
-                components: [
-                    new ActionRowBuilder<ChannelSelectMenuBuilder>()
-                        .addComponents(
-                            new ChannelSelectMenuBuilder()
-                                .setCustomId('settings:earthquake:setnotificationchannel')
-                                .setPlaceholder('Select a channel')
-                                .setChannelTypes(ChannelType.GuildText),
-                        )
-                        .toJSON(),
-                ],
-            });
-        }
+        const channel_id = interaction.values[0];
+        earthquake!.channel_id = channel_id;
+        await this.db.save(Earthquake, earthquake!);
+        await this.settingsUI(interaction);
     }
 
-    @CommandSetting({
+    @GenericSetting({
         display_name: 'Magnitude Limit',
         database: Earthquake,
         database_key: 'magnitude_limit',
@@ -254,7 +244,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         });
     }
 
-    @CommandSetting({
+    @GenericSetting({
         display_name: 'Seismicportal API URL',
         database: Earthquake,
         database_key: 'seismicportal_api_url',
@@ -293,7 +283,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         );
     }
 
-    @CommandSetting({
+    @GenericSetting({
         display_name: 'Region Code (api-bdc.net)',
         database: Earthquake,
         database_key: 'region_code',

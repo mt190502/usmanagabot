@@ -1,15 +1,8 @@
-import {
-    ActionRowBuilder,
-    Events,
-    GuildMember,
-    RoleSelectMenuBuilder,
-    RoleSelectMenuInteraction,
-    StringSelectMenuInteraction,
-} from 'discord.js';
+import { Events, GuildMember, RoleSelectMenuInteraction, StringSelectMenuInteraction } from 'discord.js';
 import { BotClient } from '../../services/client';
 import { Autorole } from '../../types/database/entities/autorole';
 import { ChainEvent } from '../../types/decorator/chainevent';
-import { CommandSetting } from '../../types/decorator/command';
+import { SettingRoleSelectMenuComponent, SettingToggleButtonComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class AutoroleCommand extends CustomizableCommand {
@@ -62,7 +55,7 @@ export default class AutoroleCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @CommandSetting({
+    @SettingToggleButtonComponent({
         display_name: 'Enabled',
         database: Autorole,
         database_key: 'is_enabled',
@@ -80,41 +73,33 @@ export default class AutoroleCommand extends CustomizableCommand {
         await this.settingsUI(interaction);
     }
 
-    @CommandSetting({
+    @SettingRoleSelectMenuComponent({
         display_name: 'Role to Assign',
         database: Autorole,
         database_key: 'role_id',
         pretty: 'Set Role to Assign',
         description: 'Set the role that will be automatically assigned to new members.',
         format_specifier: '<@&%s>',
+        options: {
+            placeholder: 'Select a role to assign to new members',
+        },
     })
     public async changeRole(interaction: StringSelectMenuInteraction | RoleSelectMenuInteraction): Promise<void> {
         const autorole = await this.db.findOne(Autorole, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
-        const role_select = new RoleSelectMenuBuilder()
-            .setCustomId('settings:autorole:changerole')
-            .setPlaceholder('Select a role to assign to new members');
+        const server_roles = interaction.guild!.roles.cache.sort((a, b) => b.position - a.position);
+        const bot_role = server_roles.find((r) => r.name === BotClient.client.user!.username)!;
+        const requested_role = server_roles.get(interaction.values[0])!;
 
-        if (interaction.isRoleSelectMenu()) {
-            const server_roles = interaction.guild!.roles.cache.sort((a, b) => b.position - a.position);
-            const bot_role = server_roles.find((r) => r.name === BotClient.client.user!.username)!;
-            const requested_role = server_roles.get(interaction.values[0])!;
-
-            if (requested_role.position >= bot_role.position) {
-                this.warning = 'The role is behind the bot role. Please select another role.';
-                await this.settingsUI(interaction);
-                return;
-            }
-            autorole!.role_id = requested_role.id;
-            await this.db.save(Autorole, autorole!);
+        if (requested_role.position >= bot_role.position) {
+            this.warning = 'The role is behind the bot role. Please select another role.';
             await this.settingsUI(interaction);
+            return;
         }
-        if (interaction.isStringSelectMenu()) {
-            await interaction.update({
-                components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(role_select).toJSON()],
-            });
-        }
+        autorole!.role_id = requested_role.id;
+        await this.db.save(Autorole, autorole!);
+        await this.settingsUI(interaction);
     }
     // ================================================================ //
 }

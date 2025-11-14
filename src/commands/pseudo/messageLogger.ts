@@ -1,6 +1,4 @@
 import {
-    ActionRowBuilder,
-    ChannelSelectMenuBuilder,
     ChannelSelectMenuInteraction,
     ChannelType,
     Colors,
@@ -16,7 +14,7 @@ import { setTimeout } from 'timers/promises';
 import { MessageLogger } from '../../types/database/entities/message_logger';
 import { Messages } from '../../types/database/entities/messages';
 import { ChainEvent } from '../../types/decorator/chainevent';
-import { CommandSetting } from '../../types/decorator/command';
+import { SettingChannelMenuComponent, SettingToggleButtonComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class MessageLoggerCommand extends CustomizableCommand {
@@ -171,7 +169,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @CommandSetting({
+    @SettingToggleButtonComponent({
         display_name: 'Enabled',
         database: MessageLogger,
         database_key: 'is_enabled',
@@ -189,54 +187,41 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         await this.settingsUI(interaction);
     }
 
-    @CommandSetting({
+    @SettingChannelMenuComponent({
         display_name: 'Log Channel',
         database: MessageLogger,
         database_key: 'channel_id',
         pretty: 'Set Log Channel',
         description: 'Set the channel where message logs will be sent.',
         format_specifier: '<#%s>',
+        options: {
+            channel_types: [ChannelType.GuildText],
+            placeholder: 'Select a channel for message logs',
+        },
     })
     public async setLogChannel(interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction): Promise<void> {
         const msg_logger = (await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         }))!;
-
-        if (interaction.isChannelSelectMenu()) {
-            const selected_channel = interaction.values[0];
-            msg_logger!.channel_id = selected_channel;
-            if (msg_logger.webhook_id !== null && msg_logger.webhook_token !== null) {
-                const webhook_client = new WebhookClient({
-                    id: msg_logger.webhook_id,
-                    token: msg_logger.webhook_token,
-                });
-                await webhook_client.delete();
-            }
-
-            const channel = (await interaction.guild!.channels.fetch(msg_logger.channel_id)) as TextChannel;
-            const webhook = await channel.createWebhook({ name: 'Message Logger' });
-            msg_logger.webhook_id = webhook.id;
-            msg_logger.webhook_token = webhook.token;
-            await this.db.save(MessageLogger, msg_logger!);
-            await this.settingsUI(interaction);
-        }
-        if (interaction.isStringSelectMenu()) {
-            await interaction.update({
-                components: [
-                    new ActionRowBuilder<ChannelSelectMenuBuilder>()
-                        .addComponents(
-                            new ChannelSelectMenuBuilder()
-                                .setCustomId('settings:messagelogger:setlogchannel')
-                                .setPlaceholder('Select a channel')
-                                .setChannelTypes(ChannelType.GuildText),
-                        )
-                        .toJSON(),
-                ],
+        const selected_channel = interaction.values[0];
+        msg_logger!.channel_id = selected_channel;
+        if (msg_logger.webhook_id !== null && msg_logger.webhook_token !== null) {
+            const webhook_client = new WebhookClient({
+                id: msg_logger.webhook_id,
+                token: msg_logger.webhook_token,
             });
+            await webhook_client.delete();
         }
+
+        const channel = (await interaction.guild!.channels.fetch(msg_logger.channel_id)) as TextChannel;
+        const webhook = await channel.createWebhook({ name: 'Message Logger' });
+        msg_logger.webhook_id = webhook.id;
+        msg_logger.webhook_token = webhook.token;
+        await this.db.save(MessageLogger, msg_logger!);
+        await this.settingsUI(interaction);
     }
 
-    @CommandSetting({
+    @SettingChannelMenuComponent({
         display_name: 'Ignored Channels',
         database: MessageLogger,
         database_key: 'ignored_channels',
@@ -244,6 +229,12 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         description: 'Manage channels that are ignored by the message logging system.',
         format_specifier: '<#%s>',
         db_column_is_array: true,
+        options: {
+            channel_types: [ChannelType.GuildText],
+            placeholder: 'Select channels to ignore from logging',
+            min_values: 0,
+            max_values: 25,
+        },
     })
     public async manageIgnoredChannels(
         interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
@@ -251,29 +242,9 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         const msg_logger = await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
-
-        if (interaction.isChannelSelectMenu()) {
-            msg_logger!.ignored_channels = interaction.values.map((id) => BigInt(id));
-            await this.db.save(MessageLogger, msg_logger!);
-            await this.settingsUI(interaction);
-        }
-        if (interaction.isStringSelectMenu()) {
-            await interaction.update({
-                components: [
-                    new ActionRowBuilder<ChannelSelectMenuBuilder>()
-                        .addComponents(
-                            new ChannelSelectMenuBuilder()
-                                .setCustomId('settings:messagelogger:manageignoredchannels')
-                                .setPlaceholder('Select a channel')
-                                .setChannelTypes(ChannelType.GuildText)
-                                .setMinValues(0)
-                                .setMaxValues(25)
-                                .setDefaultChannels((msg_logger!.ignored_channels || []).map((id) => id.toString())),
-                        )
-                        .toJSON(),
-                ],
-            });
-        }
+        msg_logger!.ignored_channels = interaction.values.map((id) => BigInt(id));
+        await this.db.save(MessageLogger, msg_logger!);
+        await this.settingsUI(interaction);
     }
     // ================================================================ //
 }

@@ -1,6 +1,5 @@
 import {
     ActionRowBuilder,
-    ChannelSelectMenuBuilder,
     ChannelSelectMenuInteraction,
     ChannelType,
     Events,
@@ -8,7 +7,6 @@ import {
     ModalActionRowComponentBuilder,
     ModalBuilder,
     ModalSubmitInteraction,
-    RoleSelectMenuBuilder,
     RoleSelectMenuInteraction,
     StringSelectMenuInteraction,
     TextInputBuilder,
@@ -18,8 +16,13 @@ import { BotClient } from '../../services/client';
 import { Guilds } from '../../types/database/entities/guilds';
 import { Verification, VerificationSystem } from '../../types/database/entities/verification';
 import { ChainEvent } from '../../types/decorator/chainevent';
-import { CommandSetting } from '../../types/decorator/command';
 import { Cron } from '../../types/decorator/cronjob';
+import {
+    GenericSetting,
+    SettingChannelMenuComponent,
+    SettingRoleSelectMenuComponent,
+    SettingToggleButtonComponent,
+} from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class VerificationCommand extends CustomizableCommand {
@@ -127,7 +130,7 @@ export default class VerificationCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @CommandSetting({
+    @SettingToggleButtonComponent({
         display_name: 'Enabled',
         database: VerificationSystem,
         database_key: 'is_enabled',
@@ -145,13 +148,17 @@ export default class VerificationCommand extends CustomizableCommand {
         await this.settingsUI(interaction);
     }
 
-    @CommandSetting({
+    @SettingChannelMenuComponent({
         display_name: 'Verification Target Channel',
         database: VerificationSystem,
         database_key: 'channel_id',
         pretty: 'Set Verification Target Channel',
         description: 'Set the channel where verification messages will be sent.',
         format_specifier: '<#%s>',
+        options: {
+            channel_types: [ChannelType.GuildText],
+            placeholder: 'Select a channel for verification messages',
+        },
     })
     public async setVerificationTargetChannel(
         interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
@@ -159,36 +166,22 @@ export default class VerificationCommand extends CustomizableCommand {
         const verification_system = (await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         }))!;
-
-        if (interaction.isChannelSelectMenu()) {
-            const selected_channel = interaction.values[0];
-            verification_system.channel_id = selected_channel;
-            await this.db.save(VerificationSystem, verification_system);
-            await this.settingsUI(interaction);
-        }
-        if (interaction.isStringSelectMenu()) {
-            await interaction.update({
-                components: [
-                    new ActionRowBuilder<ChannelSelectMenuBuilder>()
-                        .addComponents(
-                            new ChannelSelectMenuBuilder()
-                                .setCustomId('settings:verification:setverificationtargetchannel')
-                                .setPlaceholder('Select a channel')
-                                .setChannelTypes(ChannelType.GuildText),
-                        )
-                        .toJSON(),
-                ],
-            });
-        }
+        const selected_channel = interaction.values[0];
+        verification_system.channel_id = selected_channel;
+        await this.db.save(VerificationSystem, verification_system);
+        await this.settingsUI(interaction);
     }
 
-    @CommandSetting({
+    @SettingRoleSelectMenuComponent({
         display_name: 'Verification System Role',
         database: VerificationSystem,
         database_key: 'role_id',
         pretty: 'Set Verification System Role',
         description: 'Set the role that will be automatically assigned to new members requiring verification.',
         format_specifier: '<@&%s>',
+        options: {
+            placeholder: 'Select a role to assign for verification',
+        },
     })
     public async changeVerificationRole(
         interaction: StringSelectMenuInteraction | RoleSelectMenuInteraction,
@@ -196,32 +189,21 @@ export default class VerificationCommand extends CustomizableCommand {
         const verification_system = await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
-        const role_select = new RoleSelectMenuBuilder()
-            .setCustomId('settings:verification:changeverificationrole')
-            .setPlaceholder('Select a role to assign to new members');
+        const server_roles = interaction.guild!.roles.cache.sort((a, b) => b.position - a.position);
+        const bot_role = server_roles.find((r) => r.name === BotClient.client.user!.username)!;
+        const requested_role = server_roles.get(interaction.values[0])!;
 
-        if (interaction.isRoleSelectMenu()) {
-            const server_roles = interaction.guild!.roles.cache.sort((a, b) => b.position - a.position);
-            const bot_role = server_roles.find((r) => r.name === BotClient.client.user!.username)!;
-            const requested_role = server_roles.get(interaction.values[0])!;
-
-            if (requested_role.position >= bot_role.position) {
-                this.warning = 'The role is behind the bot role. Please select another role.';
-                await this.settingsUI(interaction);
-                return;
-            }
-            verification_system!.role_id = requested_role.id;
-            await this.db.save(VerificationSystem, verification_system!);
+        if (requested_role.position >= bot_role.position) {
+            this.warning = 'The role is behind the bot role. Please select another role.';
             await this.settingsUI(interaction);
+            return;
         }
-        if (interaction.isStringSelectMenu()) {
-            await interaction.update({
-                components: [new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(role_select).toJSON()],
-            });
-        }
+        verification_system!.role_id = requested_role.id;
+        await this.db.save(VerificationSystem, verification_system!);
+        await this.settingsUI(interaction);
     }
 
-    @CommandSetting({
+    @GenericSetting({
         display_name: 'Verification System Message',
         database: VerificationSystem,
         database_key: 'message',
@@ -261,7 +243,7 @@ export default class VerificationCommand extends CustomizableCommand {
         );
     }
 
-    @CommandSetting({
+    @GenericSetting({
         display_name: 'Verification Minimum Age (Days)',
         database: VerificationSystem,
         database_key: 'minimum_days',

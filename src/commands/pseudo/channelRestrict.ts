@@ -1,6 +1,5 @@
 import {
     ActionRowBuilder,
-    ChannelSelectMenuBuilder,
     ChannelSelectMenuInteraction,
     ChannelType,
     Colors,
@@ -17,7 +16,11 @@ import { ChannelRestricts, ChannelRestrictSystem, RestrictType } from '../../typ
 import { MessageLogger } from '../../types/database/entities/message_logger';
 import { Messages } from '../../types/database/entities/messages';
 import { ChainEvent } from '../../types/decorator/chainevent';
-import { CommandSetting } from '../../types/decorator/command';
+import {
+    GenericSetting,
+    SettingChannelMenuComponent,
+    SettingToggleButtonComponent,
+} from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class ChannelRestrictCommand extends CustomizableCommand {
@@ -168,7 +171,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @CommandSetting({
+    @SettingToggleButtonComponent({
         display_name: 'Enabled',
         database: ChannelRestrictSystem,
         database_key: 'is_enabled',
@@ -186,44 +189,33 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         await this.settingsUI(interaction);
     }
 
-    @CommandSetting({
+    @SettingChannelMenuComponent({
         pretty: 'Add Channel',
         description: 'Add a channel to the restrict system.',
+        options: {
+            channel_types: [ChannelType.GuildText],
+            placeholder: 'Select a channel to add to the restrict system',
+        },
     })
     public async addChannel(interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction): Promise<void> {
         const restricts = await this.db.find(ChannelRestricts, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
 
-        if (interaction.isChannelSelectMenu()) {
-            if (restricts.find((channel) => channel.channel_id === interaction.values[0])) {
-                this.warning = 'This channel is already added to the restrict system.';
-                await this.settingsUI(interaction);
-                return;
-            }
-            const channel = new ChannelRestricts();
-            channel.channel_id = interaction.values[0];
-            channel.from_user = (await this.db.getUser(BigInt(interaction.user.id)))!;
-            channel.from_guild = (await this.db.getGuild(BigInt(interaction.guildId!)))!;
-            await this.db.save(ChannelRestricts, channel);
+        if (restricts.find((channel) => channel.channel_id === interaction.values[0])) {
+            this.warning = 'This channel is already added to the restrict system.';
             await this.settingsUI(interaction);
+            return;
         }
-        if (interaction.isStringSelectMenu()) {
-            await interaction.update({
-                components: [
-                    new ActionRowBuilder()
-                        .addComponents(
-                            new ChannelSelectMenuBuilder()
-                                .setCustomId('settings:channelrestrict:addchannel')
-                                .addChannelTypes(ChannelType.GuildText),
-                        )
-                        .toJSON(),
-                ],
-            });
-        }
+        const channel = new ChannelRestricts();
+        channel.channel_id = interaction.values[0];
+        channel.from_user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+        channel.from_guild = (await this.db.getGuild(BigInt(interaction.guildId!)))!;
+        await this.db.save(ChannelRestricts, channel);
+        await this.settingsUI(interaction);
     }
 
-    @CommandSetting({
+    @GenericSetting({
         display_name: 'Restricted Channels',
         database: ChannelRestricts,
         database_key: 'channel_id',
@@ -249,6 +241,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                         .addComponents(
                             new StringSelectMenuBuilder()
                                 .setCustomId('settings:channelrestrict:definechannelrestrictions')
+                                .setPlaceholder('Select restrictions for the channel')
                                 .setMaxValues(Object.keys(RestrictType).filter((key) => !isNaN(Number(key))).length)
                                 .addOptions(
                                     ...Object.values(RestrictType)
@@ -273,6 +266,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                         .addComponents(
                             new StringSelectMenuBuilder()
                                 .setCustomId('settings:channelrestrict:definechannelrestrictions')
+                                .setPlaceholder('Select a channel to define or edit restrictions')
                                 .addOptions(
                                     ...restricts.map((channel) => ({
                                         label: interaction.guild!.channels.cache.get(channel.channel_id)!.name,
@@ -294,47 +288,40 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         }
     }
 
-    @CommandSetting({
+    @SettingChannelMenuComponent({
         pretty: 'Remove Channel from Restrict System',
         description: 'Remove a channel from the restrict system.',
+        options: {
+            channel_types: [ChannelType.GuildText],
+            placeholder: 'Select a channel to remove from the restrict system',
+        },
     })
     public async removeChannel(interaction: ChannelSelectMenuInteraction | StringSelectMenuInteraction): Promise<void> {
         const restricts = await this.db.find(ChannelRestricts, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
 
-        if (interaction.isChannelSelectMenu()) {
-            const selected = restricts.find((channel) => channel.channel_id === interaction.values[0]);
-            if (!selected) {
-                this.warning = 'This channel is not in the restrict system.';
-                await this.settingsUI(interaction);
-                return;
-            }
-            await this.db.remove(ChannelRestricts, selected);
+        const selected = restricts.find((channel) => channel.channel_id === interaction.values[0]);
+        if (!selected) {
+            this.warning = 'This channel is not in the restrict system.';
             await this.settingsUI(interaction);
+            return;
         }
-        if (interaction.isStringSelectMenu()) {
-            await interaction.update({
-                components: [
-                    new ActionRowBuilder()
-                        .addComponents(
-                            new ChannelSelectMenuBuilder()
-                                .setCustomId('settings:channelrestrict:removechannel')
-                                .addChannelTypes(ChannelType.GuildText),
-                        )
-                        .toJSON(),
-                ],
-            });
-        }
+        await this.db.remove(ChannelRestricts, selected);
+        await this.settingsUI(interaction);
     }
 
-    @CommandSetting({
+    @SettingChannelMenuComponent({
         display_name: 'Notifier Channel',
         database: ChannelRestrictSystem,
         database_key: 'mod_notifier_channel_id',
         pretty: 'Set Notifier Channel',
         description: 'Set the channel where moderation actions will be reported.',
         format_specifier: '<#%s>',
+        options: {
+            channel_types: [ChannelType.GuildText],
+            placeholder: 'Select a channel for moderation notifications',
+        },
     })
     public async changeModNotifierChannel(
         interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
@@ -342,26 +329,9 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         const restrict = await this.db.findOne(ChannelRestrictSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
-
-        if (interaction.isChannelSelectMenu()) {
-            restrict!.mod_notifier_channel_id = interaction.values[0];
-            await this.db.save(ChannelRestrictSystem, restrict!);
-            await this.settingsUI(interaction);
-        }
-        if (interaction.isStringSelectMenu()) {
-            await interaction.update({
-                components: [
-                    new ActionRowBuilder<ChannelSelectMenuBuilder>()
-                        .addComponents(
-                            new ChannelSelectMenuBuilder()
-                                .setCustomId('settings:channelrestrict:changemodnotifierchannel')
-                                .setPlaceholder('Select a channel')
-                                .setChannelTypes(ChannelType.GuildText),
-                        )
-                        .toJSON(),
-                ],
-            });
-        }
+        restrict!.mod_notifier_channel_id = interaction.values[0];
+        await this.db.save(ChannelRestrictSystem, restrict!);
+        await this.settingsUI(interaction);
     }
     // ================================================================ //
 }

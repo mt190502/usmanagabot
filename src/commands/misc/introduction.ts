@@ -1,6 +1,5 @@
 import {
     ActionRowBuilder,
-    ChannelSelectMenuBuilder,
     ChannelSelectMenuInteraction,
     ChannelType,
     ChatInputCommandInteraction,
@@ -21,7 +20,11 @@ import 'reflect-metadata';
 import yaml from 'yaml';
 import { CommandLoader } from '..';
 import { Introduction, IntroductionSubmit } from '../../types/database/entities/introduction';
-import { CommandSetting } from '../../types/decorator/command';
+import {
+    GenericSetting,
+    SettingChannelMenuComponent,
+    SettingToggleButtonComponent,
+} from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class IntroductionCommand extends CustomizableCommand {
@@ -209,7 +212,7 @@ export default class IntroductionCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @CommandSetting({
+    @SettingToggleButtonComponent({
         display_name: 'Enabled',
         database: Introduction,
         database_key: 'is_enabled',
@@ -228,7 +231,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         await this.settingsUI(interaction);
     }
 
-    @CommandSetting({
+    @GenericSetting({
         pretty: 'Customize Introduction Command Name and Description',
         description: 'Customize the name and description of the introduction command for this server.',
     })
@@ -271,7 +274,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         }
     }
 
-    @CommandSetting({
+    @GenericSetting({
         pretty: 'Customize Columns',
         description: 'Customize the names and descriptions of the introduction command columns.',
     })
@@ -326,13 +329,17 @@ export default class IntroductionCommand extends CustomizableCommand {
         }
     }
 
-    @CommandSetting({
+    @SettingChannelMenuComponent({
         display_name: 'Target Channel',
         database: Introduction,
         database_key: 'channel_id',
         pretty: 'Set Introduction Target Channel',
         description: 'Set the target channel where introductions will be posted.',
         format_specifier: '<#%s>',
+        options: {
+            channel_types: [ChannelType.GuildText],
+            placeholder: 'Select a channel for introductions',
+        },
     })
     public async changeTargetChannel(
         interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
@@ -340,27 +347,10 @@ export default class IntroductionCommand extends CustomizableCommand {
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
-
-        if (interaction.isChannelSelectMenu()) {
-            const selected_channel = interaction.values[0];
-            introduction!.channel_id = selected_channel;
-            await this.db.save(Introduction, introduction!);
-            await this.settingsUI(interaction);
-        }
-        if (interaction.isStringSelectMenu()) {
-            await interaction.update({
-                components: [
-                    new ActionRowBuilder<ChannelSelectMenuBuilder>()
-                        .addComponents(
-                            new ChannelSelectMenuBuilder()
-                                .setCustomId('settings:introduction:changetargetchannel')
-                                .setPlaceholder('Select a channel')
-                                .setChannelTypes(ChannelType.GuildText),
-                        )
-                        .toJSON(),
-                ],
-            });
-        }
+        const selected_channel = interaction.values[0];
+        introduction!.channel_id = selected_channel;
+        await this.db.save(Introduction, introduction!);
+        await this.settingsUI(interaction);
     }
     // ================================================================ //
 }

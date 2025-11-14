@@ -1,6 +1,4 @@
 import {
-    ActionRowBuilder,
-    ChannelSelectMenuBuilder,
     ChannelSelectMenuInteraction,
     ChannelType,
     ChatInputCommandInteraction,
@@ -14,7 +12,7 @@ import {
 import { CommandLoader } from '..';
 import { Messages } from '../../types/database/entities/messages';
 import { Reports } from '../../types/database/entities/reports';
-import { CommandSetting } from '../../types/decorator/command';
+import { SettingChannelMenuComponent, SettingToggleButtonComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class ReportCommand extends CustomizableCommand {
@@ -142,7 +140,7 @@ export default class ReportCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @CommandSetting({
+    @SettingToggleButtonComponent({
         display_name: 'Enabled',
         database: Reports,
         database_key: 'is_enabled',
@@ -161,41 +159,26 @@ export default class ReportCommand extends CustomizableCommand {
         await this.settingsUI(interaction);
     }
 
-    @CommandSetting({
+    @SettingChannelMenuComponent({
         display_name: 'Target Channel',
         database: Reports,
         database_key: 'channel_id',
         pretty: 'Set Report Target Channel',
         description: 'Set the target channel where reports will be posted.',
         format_specifier: '<#%s>',
+        options: {
+            channel_types: [ChannelType.GuildText],
+            placeholder: 'Select the target channel for reports',
+        },
     })
-    public async changeTargetChannel(
-        interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
-    ): Promise<void> {
+    public async changeTargetChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
-
-        if (interaction.isChannelSelectMenu()) {
-            const selected_channel = interaction.values[0];
-            report!.channel_id = selected_channel;
-            await this.db.save(Reports, report!);
-            await this.settingsUI(interaction);
-        }
-        if (interaction.isStringSelectMenu()) {
-            await interaction.update({
-                components: [
-                    new ActionRowBuilder<ChannelSelectMenuBuilder>()
-                        .addComponents(
-                            new ChannelSelectMenuBuilder()
-                                .setCustomId('settings:report:changetargetchannel')
-                                .setPlaceholder('Select a channel')
-                                .setChannelTypes(ChannelType.GuildText),
-                        )
-                        .toJSON(),
-                ],
-            });
-        }
+        const selected_channel = interaction.values[0];
+        report!.channel_id = selected_channel;
+        await this.db.save(Reports, report!);
+        await this.settingsUI(interaction);
     }
     // ================================================================ //
 }
