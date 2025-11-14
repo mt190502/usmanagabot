@@ -53,7 +53,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
 
     // =========================== EXECUTE ============================ //
     public async execute(message: Message): Promise<{ logger: MessageLogger; webhook: WebhookClient } | undefined> {
-        if (!message.guild || message?.author.bot) return;
+        if (!message.guild || message?.author?.bot) return;
         const logger = await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(message.guild.id) } },
         });
