@@ -13,6 +13,9 @@ export class Reports {
     @Column({ type: 'bigint', nullable: true, default: null })
     channel_id!: string;
 
+    @Column({ type: 'bigint', nullable: true, default: null })
+    moderator_role_id!: string | null;
+
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
     latest_action_from_user!: Users;

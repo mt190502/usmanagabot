@@ -12,7 +12,12 @@ import {
 import { CommandLoader } from '..';
 import { Messages } from '../../types/database/entities/messages';
 import { Reports } from '../../types/database/entities/reports';
-import { SettingChannelMenuComponent, SettingToggleButtonComponent } from '../../types/decorator/settingcomponents';
+import {
+    GenericSetting,
+    SettingChannelMenuComponent,
+    SettingRoleSelectMenuComponent,
+    SettingToggleButtonComponent,
+} from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class ReportCommand extends CustomizableCommand {
@@ -129,7 +134,10 @@ export default class ReportCommand extends CustomizableCommand {
             .setDescription(
                 `:mag: **Reported**: ${user.username} (ID ${user.id})\n:page_facing_up: **Reason**: ${reason}\n:envelope: **Messages**: ${message_urls.join(' ')}\n:triangular_flag_on_post: **Channel**: <#${interaction.channel!.id}>`,
             );
-        (message_channel_id as TextChannel).send({ embeds: [admin_post] });
+        (message_channel_id as TextChannel).send({
+            content: report.moderator_role_id ? `<@&${report.moderator_role_id}>` : undefined,
+            embeds: [admin_post],
+        });
 
         user_post
             .setTitle(':white_check_mark: Success')
@@ -177,6 +185,41 @@ export default class ReportCommand extends CustomizableCommand {
         });
         const selected_channel = interaction.values[0];
         report!.channel_id = selected_channel;
+        await this.db.save(Reports, report!);
+        await this.settingsUI(interaction);
+    }
+
+    @SettingRoleSelectMenuComponent({
+        display_name: 'Moderator Role',
+        database: Reports,
+        database_key: 'moderator_role_id',
+        pretty: 'Set Moderator Role',
+        description: 'Set the role that can manage reports.',
+        format_specifier: '<@&%s>',
+        options: {
+            placeholder: 'Select the moderator role',
+            min_values: 0,
+            max_values: 1,
+        },
+    })
+    public async changeModeratorRole(interaction: StringSelectMenuInteraction): Promise<void> {
+        const report = await this.db.findOne(Reports, {
+            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+        });
+        report!.moderator_role_id = interaction.values[0];
+        await this.db.save(Reports, report!);
+        await this.settingsUI(interaction);
+    }
+
+    @GenericSetting({
+        pretty: 'Remove Moderator Tagging',
+        description: 'Remove the moderator role tagging from reports.',
+    })
+    public async removeModeratorRole(interaction: StringSelectMenuInteraction): Promise<void> {
+        const report = await this.db.findOne(Reports, {
+            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+        });
+        report!.moderator_role_id = null;
         await this.db.save(Reports, report!);
         await this.settingsUI(interaction);
     }
