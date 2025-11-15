@@ -3,6 +3,7 @@ import { CommandLoader } from '../commands';
 import { BaseCommand, CustomizableCommand } from '../types/structure/command';
 import { BaseEvent } from '../types/structure/event';
 import { RegisterFact } from '../utils/common';
+import { Paginator } from '../utils/paginator';
 
 const handleCommand = async (action: string, interaction: Interaction | CommandInteraction) => {
     const [namespace, command_name, ...args] = action.split(':');
@@ -18,11 +19,33 @@ const handleCommand = async (action: string, interaction: Interaction | CommandI
                 command.execute(interaction);
                 break;
             }
-            if (target.get(args[0])) {
+            if (target!.get(args[0])) {
                 target.get(args[0])?.value.apply(command, [interaction, ...args.slice(1)]);
                 break;
             }
             target.get(args[0].replaceAll('_', ''))?.value.apply(command, [interaction, ...args.slice(1)]);
+            break;
+        }
+        case 'page': {
+            if (args.length >= 1) {
+                const paginator = Paginator.getInstance();
+                let payload;
+
+                if (args[0] === 'prev') {
+                    payload = await paginator.previousPage(interaction.guild!.id, interaction.user.id, command_name);
+                } else if (args[0] === 'next') {
+                    payload = await paginator.nextPage(interaction.guild!.id, interaction.user.id, command_name);
+                } else {
+                    payload = await paginator.backPage(interaction.guild!.id, interaction.user.id, command_name);
+                }
+
+                if (payload.embeds.length > 0 && interaction.isButton()) {
+                    await interaction.update({
+                        embeds: payload.embeds,
+                        components: payload.components,
+                    });
+                }
+            }
             break;
         }
         case 'settings': {

@@ -15,6 +15,7 @@ import { format } from 'util';
 import { Config } from '../../services/config';
 import { Database } from '../../services/database';
 import { Logger } from '../../services/logger';
+import { Paginator } from '../../utils/paginator';
 import { DatabaseManager } from './database';
 
 /**
@@ -160,6 +161,15 @@ export abstract class BaseCommand {
      */
     protected get db(): DatabaseManager {
         return Database.dbManager;
+    }
+
+    /**
+     * Provides access to the paginator instance.
+     * @protected
+     * @returns {Paginator} The paginator instance.
+     */
+    protected get paginator(): Paginator {
+        return Paginator.getInstance();
     }
 
     /**
