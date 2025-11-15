@@ -1,12 +1,9 @@
 import {
-    ActionRowBuilder,
     Colors,
     CommandInteraction,
-    EmbedBuilder,
     Interaction,
     MessageFlags,
     PermissionFlagsBits,
-    StringSelectMenuBuilder,
     StringSelectMenuInteraction,
 } from 'discord.js';
 import { CommandLoader } from '..';
@@ -27,38 +24,30 @@ export default class SettingsCommand extends BaseCommand {
     }
 
     public async execute(interaction: Interaction | CommandInteraction | StringSelectMenuInteraction): Promise<void> {
-        const guild_commands = Array.from(CommandLoader.BotCommands.get(interaction.guild!.id)!)
-            .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(([, cmd]) => ({
-                label: cmd.pretty_name,
-                description: cmd.description,
-                value: `settings:${cmd.name}`,
-            }));
-        const settings_embed = new EmbedBuilder()
-            .setTitle(':gear: Settings')
-            .setColor(Colors.Blurple)
-            .setDescription(
-                '**__Configurable Modules & Settings:__**\n' +
-                    Array.from(guild_commands)
-                        .map((cmd) => `\`${cmd.label}\``)
-                        .sort((a, b) => a.localeCompare(b))
-                        .join(' • '),
-            );
-        const settings_actionrow = new ActionRowBuilder()
-            .addComponents(new StringSelectMenuBuilder().addOptions(guild_commands).setCustomId('settings'))
-            .toJSON();
-
-        if (interaction.isStringSelectMenu()) {
+        const payload = await this.paginator.generatePage(interaction.guild!.id, interaction.user.id, this.name, {
+            title: ':gear: Settings - Configurable Modules & Settings',
+            color: Colors.Blurple,
+            items: Array.from(CommandLoader.BotCommands.get(interaction.guild!.id)!)
+                .sort((a, b) => a[0].localeCompare(b[0]))
+                .map(([, cmd]) => ({
+                    name: cmd.name,
+                    pretty_name: cmd.pretty_name,
+                    description: cmd.description,
+                    namespace: 'settings' as const,
+                })),
+            items_per_page: 5,
+        });
+        if (interaction.isButton() || interaction.isStringSelectMenu()) {
             await interaction.update({
-                embeds: [settings_embed],
-                components: [settings_actionrow],
+                embeds: payload.embeds,
+                components: payload.components,
             });
             return;
         } else if (interaction.isCommand()) {
             await interaction.reply({
                 flags: MessageFlags.Ephemeral,
-                embeds: [settings_embed],
-                components: [settings_actionrow],
+                embeds: payload.embeds,
+                components: payload.components,
             });
             return;
         }
