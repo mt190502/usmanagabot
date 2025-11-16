@@ -25,6 +25,7 @@ export default class AutoroleCommand extends CustomizableCommand {
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
+        this.log.send('debug', 'command.prepare.start', { name: this.name, guild: guild_id });
         const guild = await this.db.getGuild(guild_id);
         const system_user = await this.db.getUser(BigInt(0));
         let autorole = await this.db.findOne(Autorole, { where: { from_guild: guild! } });
@@ -34,14 +35,17 @@ export default class AutoroleCommand extends CustomizableCommand {
             autorole.from_guild = guild!;
             autorole.latest_action_from_user = system_user!;
             autorole = await this.db.save(Autorole, autorole);
+            this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
         }
         this.enabled = autorole.is_enabled;
+        this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
     }
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
     @ChainEvent({ type: Events.GuildMemberAdd })
     public async execute(member: GuildMember): Promise<void> {
+        this.log.send('debug', 'command.event.trigger.start', { name: 'autorole', event: 'GuildMemberAdd', guild: member.guild, user: member });
         const autorole = await this.db.findOne(Autorole, {
             where: { from_guild: { gid: BigInt(member.guild.id) } },
         });
@@ -51,6 +55,7 @@ export default class AutoroleCommand extends CustomizableCommand {
         if (!role) return;
 
         await member.roles.add(role);
+        this.log.send('debug', 'command.event.trigger.success', { name: 'autorole', event: 'GuildMemberAdd', guild: member.guild, user: member });
     }
     // ================================================================ //
 
@@ -64,6 +69,7 @@ export default class AutoroleCommand extends CustomizableCommand {
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const autorole = await this.db.findOne(Autorole, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -71,6 +77,7 @@ export default class AutoroleCommand extends CustomizableCommand {
         this.enabled = autorole!.is_enabled;
         await this.db.save(Autorole, autorole!);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.toggle.success', { name: this.name, guild: interaction.guild, toggle: this.enabled });
     }
 
     @SettingRoleSelectMenuComponent({
@@ -85,6 +92,7 @@ export default class AutoroleCommand extends CustomizableCommand {
         },
     })
     public async changeRole(interaction: StringSelectMenuInteraction | RoleSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.role.start', { name: this.name, guild: interaction.guild });
         const autorole = await this.db.findOne(Autorole, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -100,6 +108,7 @@ export default class AutoroleCommand extends CustomizableCommand {
         autorole!.role_id = requested_role.id;
         await this.db.save(Autorole, autorole!);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.role.success', { name: this.name, guild: interaction.guild, role: autorole!.role_id });
     }
     // ================================================================ //
 }

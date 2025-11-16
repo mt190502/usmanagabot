@@ -14,8 +14,8 @@ import { CommandQuestionPrompt } from '../../types/decorator/commandquestionprom
 import { BaseCommand } from '../../types/structure/command';
 
 export default class PurgeCommand extends BaseCommand {
+    // ============================ HEADER ============================ //
     private static target: Message<boolean>;
-
     constructor() {
         super({
             name: 'purge',
@@ -53,6 +53,9 @@ export default class PurgeCommand extends BaseCommand {
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
     }
 
+    // ================================================================ //
+
+    // =========================== EXECUTE ============================ //
     @CommandQuestionPrompt({
         title: 'Warning',
         message: 'Are you sure you want to purge messages?',
@@ -61,6 +64,11 @@ export default class PurgeCommand extends BaseCommand {
         flags: MessageFlags.Ephemeral,
     })
     public async execute(interaction: ButtonInteraction | CommandInteraction): Promise<void> {
+        this.log.send('debug', 'command.execute.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
         const post = new EmbedBuilder();
         if (interaction.isButton()) {
             const selected_messages: Message<boolean>[] = [];
@@ -96,15 +104,23 @@ export default class PurgeCommand extends BaseCommand {
                 } else {
                     await interaction.channel.bulkDelete(selected_messages);
                 }
+                this.log.send('debug', 'command.purge.execute.delete.success', {
+                    count: selected_count + 1,
+                    channel: interaction.channel,
+                    user: interaction.user,
+                    guild: interaction.guild,
+                });
             } catch (err) {
                 post.setTitle(':octagonal_sign: Error')
                     .setDescription(`Failed to delete some messages\n${(err as Error).message}`)
                     .setColor(Colors.Red);
                 await interaction.update({ embeds: [post], components: [] });
-                this.log.send('error', 'commands.admin.purge.bulk_delete_failed', [
-                    interaction.channelId,
-                    (err as Error).message,
-                ]);
+                this.log.send('warn', 'command.purge.execute.delete.failed', {
+                    channel: interaction.channel,
+                    user: interaction.user,
+                    guild: interaction.guild,
+                    message: (err as Error).message,
+                });
                 return;
             }
 
@@ -115,6 +131,11 @@ export default class PurgeCommand extends BaseCommand {
                 .setDescription(`Deleted **${selected_count}** messages`)
                 .setColor(Colors.Green);
             await interaction.update({ embeds: [post], components: [] });
+            this.log.send('debug', 'command.execute.success', {
+                name: this.name,
+                guild: interaction.guild,
+                user: interaction.user,
+            });
         } else {
             if (interaction.isMessageContextMenuCommand()) {
                 PurgeCommand.target = interaction.targetMessage;
@@ -139,14 +160,16 @@ export default class PurgeCommand extends BaseCommand {
                         )
                         .setColor(Colors.Yellow);
                     await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
-                    this.log.send('warn', 'commands.admin.purge.message_not_found', [
-                        message_id,
-                        interaction.channelId,
-                        (err as Error).message,
-                    ]);
+                    this.log.send('warn', 'command.purge.execute.delete.failed', {
+                        channel: interaction.channel,
+                        user: interaction.user,
+                        guild: interaction.guild,
+                        message: (err as Error).message,
+                    });
                     return;
                 }
             }
         }
     }
+    // ================================================================ //
 }

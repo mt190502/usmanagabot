@@ -49,6 +49,7 @@ export default class IntroductionCommand extends CustomizableCommand {
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
+        this.log.send('debug', 'command.prepare.start', { name: this.name, guild: guild_id });
         const guild = await this.db.getGuild(guild_id);
         const system_user = await this.db.getUser(BigInt(0));
         let introduction = await this.db.findOne(Introduction, { where: { from_guild: guild! } });
@@ -60,6 +61,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             new_settings.from_guild = guild!;
             new_settings.from_user = system_user!;
             introduction = await this.db.save(new_settings);
+            this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
         }
         this.enabled = introduction.is_enabled;
         const data: SlashCommandBuilder = new SlashCommandBuilder().setName(this.name);
@@ -76,11 +78,13 @@ export default class IntroductionCommand extends CustomizableCommand {
             );
         }
         this.base_cmd_data = data;
+        this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
     }
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
     public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+        this.log.send('debug', 'command.execute.start', { name: this.name, guild: interaction.guild, user: interaction.user });
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
         const user = await this.db.getUser(BigInt(interaction.user.id));
         const introduction = await this.db.findOne(Introduction, {
@@ -114,6 +118,7 @@ export default class IntroductionCommand extends CustomizableCommand {
                 embeds: [post],
                 flags: MessageFlags.Ephemeral,
             });
+            this.log.send('warn', 'command.introduction.execute.rate_limited', { guild: interaction.guild, user: interaction.user });
             return;
         }
 
@@ -130,6 +135,7 @@ export default class IntroductionCommand extends CustomizableCommand {
                 embeds: [post],
                 flags: MessageFlags.Ephemeral,
             });
+            this.log.send('warn', 'command.configuration.missing', { name: this.name, guild: interaction.guild });
             return;
         }
 
@@ -157,6 +163,10 @@ export default class IntroductionCommand extends CustomizableCommand {
         if (values === 0) {
             post.setTitle(':warning: Warning').setDescription('Please provide at least one value').setColor(Colors.Red);
             await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
+            this.log.send('debug', 'command.introduction.execute.validation.failed', {
+                guild: interaction.guild,
+                user: interaction.user,
+            });
             return;
         }
 
@@ -185,12 +195,23 @@ export default class IntroductionCommand extends CustomizableCommand {
 
         const target_channel = interaction.guild!.channels.cache.get(introduction!.channel_id) as TextChannel;
         const publish = await target_channel.send({ content: `<@${interaction.user.id}>`, embeds: [embed] });
-
+        this.log.send('debug', 'command.introduction.execute.published', {
+            messageId: publish.id,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
         if (last_introduction_submit_from_user.last_submit_id) {
             const old_message = await target_channel.messages
                 .fetch(last_introduction_submit_from_user.last_submit_id.toString())
                 .catch(() => null);
-            if (old_message) await old_message.delete();
+            if (old_message) {
+                await old_message.delete();
+                this.log.send('debug', 'command.introduction.execute.deleted', {
+                    messageId: old_message.id,
+                    guild: interaction.guild,
+                    user: interaction.user,
+                });
+            }
         }
 
         last_introduction_submit_from_user.last_submit_id = BigInt(publish.id);
@@ -208,6 +229,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             embeds: [post],
             flags: MessageFlags.Ephemeral,
         });
+        this.log.send('debug', 'command.execute.success', { name: this.name, guild: interaction.guild, user: interaction.user });
     }
     // ================================================================ //
 
@@ -221,6 +243,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -229,6 +252,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         await this.db.save(Introduction, introduction!);
         CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.toggle.success', { name: this.name, guild: interaction.guild, toggle: this.enabled });
     }
 
     @GenericSetting({
@@ -236,6 +260,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         description: 'Customize the name and description of the introduction command for this server.',
     })
     public async customizeCommand(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -263,6 +288,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             await this.db.save(Introduction, introduction!);
             CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await interaction.deferUpdate();
+            this.log.send('debug', 'command.setting.modalsubmit.success', { name: this.name, guild: interaction.guild });
             return;
         } else if (interaction.isStringSelectMenu()) {
             await interaction.showModal(
@@ -279,6 +305,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         description: 'Customize the names and descriptions of the introduction command columns.',
     })
     public async customizeColumns(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -293,6 +320,10 @@ export default class IntroductionCommand extends CustomizableCommand {
             for (const column of parsed) {
                 if (name_set.has(column.name)) {
                     this.warning = `Column name \`${column.name}\` is duplicated. Please ensure all column names are unique.`;
+                    this.log.send('warn', 'command.introduction.setting.validation.failed', {
+                        guild: interaction.guild,
+                        user: interaction.user,
+                    });
                     await this.settingsUI(interaction);
                     return;
                 }
@@ -306,6 +337,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             await this.db.save(Introduction, introduction!);
             CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await interaction.deferUpdate();
+            this.log.send('debug', 'command.setting.modalsubmit.success', { name: this.name, guild: interaction.guild });
         }
         if (interaction.isStringSelectMenu()) {
             await interaction.showModal(
@@ -340,6 +372,7 @@ export default class IntroductionCommand extends CustomizableCommand {
     public async setDailySubmissionLimit(
         interaction: StringSelectMenuInteraction | ModalSubmitInteraction,
     ): Promise<void> {
+        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -349,12 +382,17 @@ export default class IntroductionCommand extends CustomizableCommand {
             const limit = parseInt(limit_value, 10);
             if (isNaN(limit) || limit < 1 || limit > 100) {
                 this.warning = 'Please enter a valid number between 1 and 100.';
+                this.log.send('warn', 'command.introduction.setting.validation.failed', {
+                    guild: interaction.guild,
+                    user: interaction.user,
+                });
                 await this.settingsUI(interaction);
                 return;
             }
             introduction!.daily_submit_limit = limit;
             await this.db.save(Introduction, introduction!);
-            await interaction.deferUpdate();
+            await this.settingsUI(interaction);
+            this.log.send('debug', 'command.setting.modalsubmit.success', { name: this.name, guild: interaction.guild });
         } else if (interaction.isStringSelectMenu()) {
             await interaction.showModal(
                 new ModalBuilder()
@@ -365,8 +403,9 @@ export default class IntroductionCommand extends CustomizableCommand {
                             new TextInputBuilder()
                                 .setCustomId('daily_limit')
                                 .setLabel('Daily Submission Limit (1-100)')
-                                .setValue(introduction!.daily_submit_limit.toString())
-                                .setStyle(TextInputStyle.Short),
+                                .setMaxLength(3)
+                                .setStyle(TextInputStyle.Short)
+                                .setValue(introduction!.daily_submit_limit.toString()),
                         ),
                     ),
             );
@@ -388,6 +427,7 @@ export default class IntroductionCommand extends CustomizableCommand {
     public async changeTargetChannel(
         interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
     ): Promise<void> {
+        this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -395,6 +435,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         introduction!.channel_id = selected_channel;
         await this.db.save(Introduction, introduction!);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.channel.success', { name: this.name, guild: interaction.guild, channel: selected_channel });
     }
     // ================================================================ //
 }

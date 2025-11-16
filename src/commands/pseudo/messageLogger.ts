@@ -37,6 +37,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
+        this.log.send('debug', 'command.prepare.start', { name: this.name, guild: guild_id });
         const guild = await this.db.getGuild(guild_id);
         const system_user = await this.db.getUser(BigInt(0));
         let message_logger = await this.db.findOne(MessageLogger, { where: { from_guild: guild! } });
@@ -46,14 +47,23 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             message_logger.from_guild = guild!;
             message_logger.latest_action_from_user = system_user!;
             message_logger = await this.db.save(MessageLogger, message_logger);
+            this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
         }
         this.enabled = message_logger.is_enabled;
+        this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
     }
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
-    public async execute(message: Message): Promise<{ logger: MessageLogger; webhook: WebhookClient } | undefined> {
+    public async execute(
+        message: Message<true>,
+    ): Promise<{ logger: MessageLogger; webhook: WebhookClient } | undefined> {
         if (!message.guild || message?.author?.bot) return;
+        this.log.send('debug', 'command.execute.start', {
+            name: 'messagelogger',
+            guild: message.guild,
+            user: message.author,
+        });
         const logger = await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(message.guild.id) } },
         });
@@ -66,13 +76,20 @@ export default class MessageLoggerCommand extends CustomizableCommand {
 
         const webhook = new WebhookClient({ id: logger.webhook_id, token: logger.webhook_token });
         await setTimeout(500);
+        this.log.send('debug', 'command.execute.success', { name: 'messagelogger', guild: message.guild, user: message.author });
         return { logger, webhook };
     }
 
     @ChainEvent({ type: Events.MessageCreate })
-    public async onMessageCreate(message: Message): Promise<void> {
+    public async onMessageCreate(message: Message<true>): Promise<void> {
         const pre_check_result = await this.execute(message);
         if (!pre_check_result) return;
+        this.log.send('debug', 'command.event.trigger.start', {
+            name: 'messagelogger',
+            event: 'MessageCreate',
+            guild: message.guild,
+            author: message.author,
+        });
         const { logger, webhook } = pre_check_result;
 
         let content = message.url;
@@ -123,11 +140,23 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         }))!;
         db_message.logged_message_id = BigInt(webhook_msg_id!);
         await this.db.save(Messages, db_message);
+        this.log.send('debug', 'command.event.trigger.success', {
+            name: 'messagelogger',
+            event: 'MessageCreate',
+            guild: message.guild,
+            author: message.author,
+        });
         return;
     }
 
     @ChainEvent({ type: Events.MessageDelete })
-    public async onMessageDelete(message: Message): Promise<void> {
+    public async onMessageDelete(message: Message<true>): Promise<void> {
+        this.log.send('debug', 'command.event.trigger.start', {
+            name: 'messagelogger',
+            event: 'MessageDelete',
+            guild: message.guild,
+            user: message.author,
+        });
         const pre_check_result = await this.execute(message);
         if (!pre_check_result) return;
         const { webhook } = pre_check_result;
@@ -140,10 +169,23 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         if (db_message?.logged_message_id) {
             await webhook.editMessage(db_message.logged_message_id.toString(), { embeds: [embed] });
         }
+        this.log.send('debug', 'command.event.trigger.success', {
+            name: 'messagelogger',
+            event: 'MessageDelete',
+            guild: message.guild,
+            author: message.author,
+        });
     }
 
     @ChainEvent({ type: Events.MessageUpdate })
-    public async onMessageUpdate(old_message: Message, new_message: Message): Promise<void> {
+    public async onMessageUpdate(old_message: Message<true>, new_message: Message<true>): Promise<void> {
+        if (new_message.author?.bot) return;
+        this.log.send('debug', 'command.event.trigger.start', {
+            name: 'messagelogger',
+            event: 'MessageUpdate',
+            guild: old_message.guild,
+            author: old_message.author,
+        });
         const pre_check_result = await this.execute(old_message);
         if (!pre_check_result) return;
         const { webhook } = pre_check_result;
@@ -165,6 +207,12 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         if (db_message?.logged_message_id) {
             await webhook.editMessage(db_message.logged_message_id.toString(), { embeds: [embed] });
         }
+        this.log.send('debug', 'command.event.trigger.success', {
+            name: 'messagelogger',
+            event: 'MessageUpdate',
+            guild: old_message.guild,
+            author: old_message.author,
+        });
     }
     // ================================================================ //
 
@@ -178,6 +226,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const msg_logger = await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -185,6 +234,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         this.enabled = msg_logger!.is_enabled;
         await this.db.save(MessageLogger, msg_logger!);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.toggle.success', { name: this.name, guild: interaction.guild, toggle: this.enabled });
     }
 
     @SettingChannelMenuComponent({
@@ -200,6 +250,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         },
     })
     public async setLogChannel(interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const msg_logger = (await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         }))!;
@@ -219,6 +270,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         msg_logger.webhook_token = webhook.token;
         await this.db.save(MessageLogger, msg_logger!);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.channel.success', { name: this.name, guild: interaction.guild, channel: selected_channel });
     }
 
     @SettingChannelMenuComponent({
@@ -239,12 +291,14 @@ export default class MessageLoggerCommand extends CustomizableCommand {
     public async manageIgnoredChannels(
         interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
     ): Promise<void> {
+        this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const msg_logger = await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
         msg_logger!.ignored_channels = interaction.values.map((id) => BigInt(id));
         await this.db.save(MessageLogger, msg_logger!);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.channel.success', { name: this.name, guild: interaction.guild, channel: interaction.values.join(', ') });
     }
     // ================================================================ //
 }

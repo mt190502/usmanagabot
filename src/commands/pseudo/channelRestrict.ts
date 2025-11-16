@@ -48,6 +48,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
+        this.log.send('debug', 'command.prepare.start', { name: this.name, guild: guild_id });
         const guild = await this.db.getGuild(guild_id);
         const system_user = await this.db.getUser(BigInt(0));
         let restrict = await this.db.findOne(ChannelRestrictSystem, { where: { from_guild: guild! } });
@@ -57,16 +58,24 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
             new_settings.from_user = system_user!;
             new_settings.from_guild = guild!;
             restrict = await this.db.save(new_settings);
+            this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
         }
         this.enabled = restrict.is_enabled;
+        this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
     }
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
     @ChainEvent({ type: Events.MessageCreate })
     @ChainEvent({ type: Events.ThreadCreate })
-    public async execute(message: Message | ThreadChannel): Promise<void> {
-        if (!message.guild) return;
+    public async execute(message: Message<true> | ThreadChannel): Promise<void> {
+        if (!message.guild || (message instanceof Message && message.author.bot)) return;
+        this.log.send('debug', 'command.event.trigger.start', {
+            name: 'channelrestrict',
+            event: message instanceof Message ? 'MessageCreate' : 'ThreadCreate',
+            guild: message.guild,
+            user: message instanceof Message ? message.author : (await message.fetchOwner())!.user,
+        });
         const restrict = await this.db.findOne(ChannelRestrictSystem, {
             where: { from_guild: { gid: BigInt(message.guild!.id) } },
         });
@@ -76,7 +85,10 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         const msg_logger = await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(message.guild!.id) } },
         });
-        if (!restrict_list || !restrict || !restrict.is_enabled) return;
+        if (!restrict_list || !restrict || !restrict.is_enabled) {
+            this.log.send('debug', 'command.configuration.missing', { name: this.name, guild: message.guild });
+            return;
+        }
 
         const post = new EmbedBuilder().setTitle(':no_entry: Your message has been deleted').setColor(Colors.Red);
         const guild_id = message.guild!.id;
@@ -180,6 +192,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const restrict = await this.db.findOne(ChannelRestrictSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -187,6 +200,11 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         this.enabled = restrict!.is_enabled;
         await this.db.save(ChannelRestrictSystem, restrict!);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.toggle.success', {
+            name: this.name,
+            guild: interaction.guild,
+            toggle: this.enabled,
+        });
     }
 
     @SettingChannelMenuComponent({
@@ -198,12 +216,20 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         },
     })
     public async addChannel(interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.channelrestrict.addchannel.start', {
+            name: this.name,
+            guild: interaction.guild,
+        });
         const restricts = await this.db.find(ChannelRestricts, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
 
         if (restricts.find((channel) => channel.channel_id === interaction.values[0])) {
             this.warning = 'This channel is already added to the restrict system.';
+            this.log.send('warn', 'command.channelrestrict.addchannel.exists', {
+                guild: interaction.guild,
+                channel_id: interaction.values[0],
+            });
             await this.settingsUI(interaction);
             return;
         }
@@ -213,6 +239,10 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         channel.from_guild = (await this.db.getGuild(BigInt(interaction.guildId!)))!;
         await this.db.save(ChannelRestricts, channel);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.channelrestrict.addchannel.success', {
+            guild: interaction.guild,
+            channel: interaction.values[0],
+        });
     }
 
     @GenericSetting({
@@ -225,8 +255,9 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         db_column_is_array: true,
     })
     public async defineChannelRestrictions(interaction: StringSelectMenuInteraction, ...args: string[]): Promise<void> {
+        this.log.send('debug', 'command.channelrestrict.definechannelrestrictions.start', { guild: interaction.guild });
         const restricts = await this.db.find(ChannelRestricts, {
-            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+            where: { from_guild: { gid: BigInt(interaction.guild!.id) } },
         });
         if (args.length > 1) {
             const channel_id = args[0];
@@ -234,6 +265,13 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
             channel!.restricts = interaction.values.map((v) => v.split(':').pop()! as unknown as RestrictType);
             await this.db.save(ChannelRestricts, channel!);
             await this.settingsUI(interaction);
+            this.log.send('debug', 'command.channelrestrict.definechannelrestrictions.success', {
+                guild: interaction.guild,
+                restrictions: restricts
+                    .find((c) => BigInt(c.channel_id) === BigInt(channel_id))
+                    ?.restricts.map((r) => RestrictType[r])
+                    .join(', '),
+            });
         } else if (args.length == 1) {
             await interaction.update({
                 components: [
@@ -297,18 +335,27 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         },
     })
     public async removeChannel(interaction: ChannelSelectMenuInteraction | StringSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.channelrestrict.removechannel.start', { guild: interaction.guild });
         const restricts = await this.db.find(ChannelRestricts, {
-            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+            where: { from_guild: { gid: BigInt(interaction.guild!.id) } },
         });
 
         const selected = restricts.find((channel) => channel.channel_id === interaction.values[0]);
         if (!selected) {
             this.warning = 'This channel is not in the restrict system.';
+            this.log.send('warn', 'command.channelrestrict.removechannel.not_found', {
+                guild: interaction.guild,
+                channel_id: interaction.values[0],
+            });
             await this.settingsUI(interaction);
             return;
         }
         await this.db.remove(ChannelRestricts, selected);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.channelrestrict.removechannel.success', {
+            guild: interaction.guild,
+            channel_id: interaction.values[0],
+        });
     }
 
     @SettingChannelMenuComponent({
@@ -326,12 +373,17 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
     public async changeModNotifierChannel(
         interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
     ): Promise<void> {
+        this.log.send('debug', 'command.channelrestrict.changenotifierchannel.start', { guild: interaction.guild });
         const restrict = await this.db.findOne(ChannelRestrictSystem, {
-            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+            where: { from_guild: { gid: BigInt(interaction.guild!.id) } },
         });
         restrict!.mod_notifier_channel_id = interaction.values[0];
         await this.db.save(ChannelRestrictSystem, restrict!);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.channelrestrict.changenotifierchannel.success', {
+            guild: interaction.guild,
+            channel: restrict!.mod_notifier_channel_id,
+        });
     }
     // ================================================================ //
 }

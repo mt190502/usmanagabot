@@ -112,7 +112,7 @@ export class CommandLoader {
         await timers.setTimeout(1000);
 
         if (!client.guilds.cache.size) {
-            CommandLoader.logger.send('error', 'commandloader.register_guilds.no_guild_error');
+            CommandLoader.logger.send('error', 'commandloader.registerGuilds.no_guilds_found');
             return;
         }
 
@@ -129,9 +129,7 @@ export class CommandLoader {
             system_user.name = 'root';
             await Database.dbManager.save(system_user);
         } catch (error) {
-            CommandLoader.logger.send('error', 'commandloader.register_guilds.database.guild_save_error', [
-                (error as Error).message,
-            ]);
+            CommandLoader.logger.send('error', 'commandloader.registerGuilds.database_save_failed', { message: (error as Error).message });
         }
         await client.destroy();
         return await Database.dbManager.find(Guilds);
@@ -154,7 +152,7 @@ export class CommandLoader {
             guilds = await Database.dbManager.find(Guilds);
         } catch (error) {
             if (error instanceof TypeORMError && error.message.includes('No metadata for')) {
-                CommandLoader.logger.send('error', 'commandloader.read_command_files.database.no_metadata');
+                CommandLoader.logger.send('error', 'commandloader.readCommandFiles.database_metadata_missing');
             }
         }
 
@@ -178,15 +176,15 @@ export class CommandLoader {
             }
 
             if (!cmd.name) {
-                CommandLoader.logger.send('error', 'commandloader.read_command_files.noname', [filename]);
+                CommandLoader.logger.send('info', 'commandloader.readCommandFiles.invalid_name', { name: filename });
                 continue;
             }
 
             if (!cmd.enabled && !custom_command) {
-                CommandLoader.logger.send('info', 'commandloader.read_command_files.disabled', [cmd.name]);
+                CommandLoader.logger.send('info', 'commandloader.readCommandFiles.command_disabled', { name: cmd.name });
                 continue;
             }
-            CommandLoader.logger.send('info', 'commandloader.read_command_files.loading', [cmd.name, filename]);
+            CommandLoader.logger.send('log', 'commandloader.readCommandFiles.command_loading', { name: cmd.name, filename: filename });
 
             const targets =
                 cmd instanceof CustomizableCommand && guilds?.length ? guilds.map((g) => g.gid.toString()) : ['global'];
@@ -215,10 +213,10 @@ export class CommandLoader {
                 CommandLoader.BotCommands.get(guild)!.set(cmd.name, cmd);
                 for (const c of cmd.all_cmd_data) {
                     if (!cmd.enabled) {
-                        CommandLoader.logger.send('info', 'commandloader.read_command_files.custom_disabled', [
-                            cmd.name,
-                            guild,
-                        ]);
+                        CommandLoader.logger.send('info', 'commandloader.readCommandFiles.custom_disabled', {
+                            name: cmd.name,
+                            guild: guild,
+                        });
                         continue;
                     }
                     if (c) this.rest_commands.get(guild)!.push(c.toJSON());
@@ -266,10 +264,7 @@ export class CommandLoader {
                     });
                 }
             } catch (error) {
-                CommandLoader.logger.send('error', 'commandloader.rest_command_loader.rest_error', [
-                    guild_id,
-                    (error as Error).message,
-                ]);
+                CommandLoader.logger.send('error', 'commandloader.RESTCommandLoader.failed', { guild: guild_id, message: (error as Error).message });
             }
         }
     }

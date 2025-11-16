@@ -68,10 +68,10 @@ export class EventLoader {
             for (const event_class of events) {
                 const event = new event_class() as BaseEvent<keyof ClientEvents>;
                 if (!event.enabled) {
-                    EventLoader.logger.send('info', 'eventloader.init.disabled', [event.type, file_name_with_path]);
+                    EventLoader.logger.send('info', 'event.disabled', { event: event.type, filename: file_name_with_path });
                     continue;
                 }
-                EventLoader.logger.send('info', 'eventloader.init.loading', [event.type, file_name_with_path]);
+                EventLoader.logger.send('log', 'event.loading', { event: event.type, filename: file_name_with_path });
                 EventLoader.BotEvents[event.type] = event;
                 client[event.once ? 'once' : 'on'](event.type, (...args) => event.execute(...args));
             }

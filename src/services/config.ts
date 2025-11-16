@@ -123,9 +123,9 @@ export class Config {
             const parsed = schema.parse(raw_data);
             return parsed;
         } catch (error) {
-            Config.logger.send('error', 'services.config.parse.parsing_error', [
-                error instanceof Error ? error.message : 'Unknown error',
-            ]);
+            Config.logger.send('error', 'services.config.parse.failed', {
+                message: error instanceof Error ? error.message : 'Unknown error',
+            });
             return {} as T;
         }
     }

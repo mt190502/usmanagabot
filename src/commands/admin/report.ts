@@ -52,6 +52,7 @@ export default class ReportCommand extends CustomizableCommand {
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
+        this.log.send('debug', 'command.prepare.start', { name: this.name, guild: guild_id });
         const guild = await this.db.getGuild(guild_id);
         const system_user = await this.db.getUser(BigInt(0));
         let report = await this.db.findOne(Reports, { where: { from_guild: guild! } });
@@ -61,13 +62,20 @@ export default class ReportCommand extends CustomizableCommand {
             new_settings.latest_action_from_user = system_user!;
             new_settings.from_guild = guild!;
             report = await this.db.save(new_settings);
+            this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
         }
         this.enabled = report.is_enabled;
+        this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
     }
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
     public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+        this.log.send('debug', 'command.execute.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
         const user_post = new EmbedBuilder();
         const admin_post = new EmbedBuilder();
         const report = await this.db.findOne(Reports, {
@@ -93,6 +101,7 @@ export default class ReportCommand extends CustomizableCommand {
                 .setDescription('Report command is not configured properly. Please contact an administrator.')
                 .setColor(Colors.Red);
             await interaction.reply({ embeds: [user_post], flags: MessageFlags.Ephemeral });
+            this.log.send('warn', 'command.configuration.missing', { name: this.name, guild: interaction.guild });
             return;
         }
 
@@ -106,6 +115,11 @@ export default class ReportCommand extends CustomizableCommand {
                         .setDescription(`Invalid message URL: ${url}`)
                         .setColor(Colors.Red);
                     await interaction.reply({ content: `Invalid message URL: ${url}`, flags: MessageFlags.Ephemeral });
+                    this.log.send('warn', 'command.report.execute.invalid_url', {
+                        guild: interaction.guild,
+                        user: interaction.user,
+                        url: url,
+                    });
                     return;
                 }
             }
@@ -118,6 +132,10 @@ export default class ReportCommand extends CustomizableCommand {
                 await interaction.reply({
                     embeds: [user_post],
                     flags: MessageFlags.Ephemeral,
+                });
+                this.log.send('warn', 'command.report.execute.message_not_found', {
+                    guild: interaction.guild,
+                    user: interaction.user,
                 });
                 return;
             }
@@ -144,6 +162,11 @@ export default class ReportCommand extends CustomizableCommand {
             .setColor(Colors.Green)
             .setDescription(`**User**: ${user} reported successfully.\n**Reason**: ${reason}`);
         await interaction.reply({ embeds: [user_post], flags: MessageFlags.Ephemeral });
+        this.log.send('debug', 'command.execute.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
     }
     // ================================================================ //
 
@@ -157,6 +180,7 @@ export default class ReportCommand extends CustomizableCommand {
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -165,6 +189,7 @@ export default class ReportCommand extends CustomizableCommand {
         await this.db.save(Reports, report!);
         CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.toggle.success', { name: this.name, guild: interaction.guild, toggle: this.enabled });
     }
 
     @SettingChannelMenuComponent({
@@ -180,6 +205,7 @@ export default class ReportCommand extends CustomizableCommand {
         },
     })
     public async changeTargetChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -187,6 +213,7 @@ export default class ReportCommand extends CustomizableCommand {
         report!.channel_id = selected_channel;
         await this.db.save(Reports, report!);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.channel.success', { name: this.name, guild: interaction.guild, channel: selected_channel });
     }
 
     @SettingRoleSelectMenuComponent({
@@ -203,12 +230,14 @@ export default class ReportCommand extends CustomizableCommand {
         },
     })
     public async changeModeratorRole(interaction: StringSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.role.start', { name: this.name, guild: interaction.guild });
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
         report!.moderator_role_id = interaction.values[0];
         await this.db.save(Reports, report!);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.role.success', { name: this.name, guild: interaction.guild, role: interaction.values[0] });
     }
 
     @GenericSetting({
@@ -216,12 +245,14 @@ export default class ReportCommand extends CustomizableCommand {
         description: 'Remove the moderator role tagging from reports.',
     })
     public async removeModeratorRole(interaction: StringSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.report.removemoderatorrole.start', { guild: interaction.guild });
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
         report!.moderator_role_id = null;
         await this.db.save(Reports, report!);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.report.removemoderatorrole.success', { guild: interaction.guild });
     }
     // ================================================================ //
 }

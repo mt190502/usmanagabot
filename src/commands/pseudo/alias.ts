@@ -35,6 +35,7 @@ export default class AliasCommand extends CustomizableCommand {
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
+        this.log.send('debug', 'command.prepare.start', { name: this.name, guild: guild_id });
         const guild = await this.db.getGuild(guild_id);
         const system_user = await this.db.getUser(BigInt(0));
         const aliases = await this.db.find(Aliases, { where: { from_guild: { gid: guild!.gid } } });
@@ -47,8 +48,10 @@ export default class AliasCommand extends CustomizableCommand {
             alias_system.latest_action_from_user = system_user!;
             alias_system.from_guild = guild!;
             alias_system = await this.db.save(AliasSystem, alias_system);
+            this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
         }
         this.enabled = alias_system.is_enabled;
+        this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
 
         const choices: { name: string; value: string }[] = [];
         for (const alias of aliases) {
@@ -152,10 +155,26 @@ export default class AliasCommand extends CustomizableCommand {
 
     // =========================== EXECUTE ============================ //
     public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+        this.log.send('debug', 'command.execute.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
         this[interaction.options.getSubcommand() as 'add' | 'remove' | 'modify' | 'list'](interaction);
+        this.log.send('debug', 'command.execute.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
     }
 
     private async add(interaction: ChatInputCommandInteraction): Promise<void> {
+        this.log.send('debug', 'command.execute.subcommand.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+            subcommand: 'add',
+        });
         const aliases = await this.db.find(Aliases, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -171,6 +190,11 @@ export default class AliasCommand extends CustomizableCommand {
             await interaction.reply({
                 content: `An alias with the name \`${alias_name}\` already exists.`,
                 flags: MessageFlags.Ephemeral,
+            });
+            this.log.send('warn', 'command.alias.add.alias_exists', {
+                guild: interaction.guild,
+                user: interaction.user,
+                alias_name: alias_name!,
             });
             return;
         }
@@ -192,10 +216,27 @@ export default class AliasCommand extends CustomizableCommand {
             content: `Alias \`${alias_name}\` has been added.`,
             flags: MessageFlags.Ephemeral,
         });
+        this.log.send('debug', 'command.alias.add.alias_created', {
+            guild: interaction.guild,
+            user: interaction.user,
+            alias: alias_name!,
+        });
+        this.log.send('debug', 'command.execute.subcommand.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+            subcommand: 'add',
+        });
     }
 
     private async remove(interaction: ChatInputCommandInteraction): Promise<void> {
         const alias_name = interaction.options.getString('alias_name')!;
+        this.log.send('debug', 'command.execute.subcommand.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+            subcommand: 'remove',
+        });
         const alias = await this.db.findOne(Aliases, {
             where: { name: alias_name, from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -203,6 +244,11 @@ export default class AliasCommand extends CustomizableCommand {
             await interaction.reply({
                 content: `No alias found with the name \`${alias_name}\`.`,
                 flags: MessageFlags.Ephemeral,
+            });
+            this.log.send('warn', 'command.alias.remove.alias_not_found', {
+                guild: interaction.guild,
+                user: interaction.user,
+                alias_name: alias_name,
             });
             return;
         }
@@ -213,16 +259,32 @@ export default class AliasCommand extends CustomizableCommand {
             content: `Alias \`${alias_name}\` has been removed.`,
             flags: MessageFlags.Ephemeral,
         });
+        this.log.send('debug', 'command.execute.subcommand.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+            subcommand: 'remove',
+        });
     }
 
     private async list(interaction: ChatInputCommandInteraction): Promise<void> {
+        this.log.send('debug', 'command.execute.subcommand.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+            subcommand: 'list',
+        });
         const aliases = await this.db.find(Aliases, {
-            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+            where: { from_guild: { gid: BigInt(interaction.guild!.id) } },
         });
         if (aliases.length === 0) {
             await interaction.reply({
                 content: 'No aliases found for this server.',
                 flags: MessageFlags.Ephemeral,
+            });
+            this.log.send('warn', 'command.alias.list.no_aliases', {
+                guild: interaction.guild,
+                user: interaction.user,
             });
             return;
         }
@@ -236,9 +298,21 @@ export default class AliasCommand extends CustomizableCommand {
             content: reply_content,
             flags: MessageFlags.Ephemeral,
         });
+        this.log.send('debug', 'command.execute.subcommand.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+            subcommand: 'list',
+        });
     }
 
     private async modify(interaction: ChatInputCommandInteraction): Promise<void> {
+        this.log.send('debug', 'command.execute.subcommand.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+            subcommand: 'modify',
+        });
         const alias_name = interaction.options.getString('alias_name')!;
         const alias_content = interaction.options.getString('alias_content');
         const case_sensitive = interaction.options.getBoolean('case_sensitive');
@@ -253,6 +327,11 @@ export default class AliasCommand extends CustomizableCommand {
                 content: `No alias found with the name \`${alias_name}\`.`,
                 flags: MessageFlags.Ephemeral,
             });
+            this.log.send('warn', 'command.alias.modify.alias_not_found', {
+                guild: interaction.guild,
+                user: interaction.user,
+                alias_name: alias_name,
+            });
             return;
         }
 
@@ -266,11 +345,23 @@ export default class AliasCommand extends CustomizableCommand {
             content: `Alias \`${alias_name}\` has been modified.`,
             flags: MessageFlags.Ephemeral,
         });
+        this.log.send('debug', 'command.execute.subcommand.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+            subcommand: 'modify',
+        });
     }
 
     @ChainEvent({ type: Events.MessageCreate })
     public async onMessageCreate(message: Message<true>): Promise<void> {
         if (message.author.bot) return;
+        this.log.send('debug', 'command.event.trigger.start', {
+            name: 'alias',
+            event: 'onMessageCreate',
+            guild: message.guild!,
+            user: message.author,
+        });
 
         const replace_table = [
             { key: '{{user}}', value: `<@${message.author.id}>` },
@@ -327,6 +418,12 @@ export default class AliasCommand extends CustomizableCommand {
                 }
 
                 await message.channel.send(reply_content);
+                this.log.send('debug', 'command.event.trigger.success', {
+                    name: 'alias',
+                    event: 'onMessageCreate',
+                    guild: message.guild!,
+                    user: message.author,
+                });
             }
         }
     }
@@ -342,14 +439,16 @@ export default class AliasCommand extends CustomizableCommand {
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const alias_system = await this.db.findOne(AliasSystem, {
-            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+            where: { from_guild: { gid: BigInt(interaction.guild!.id) } },
         });
         alias_system!.is_enabled = !alias_system!.is_enabled;
         this.enabled = alias_system!.is_enabled;
         await this.db.save(AliasSystem, alias_system!);
-        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guild!.id);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.toggle.success', { name: this.name, guild: interaction.guild, toggle: this.enabled });
     }
     // ================================================================ //
 }

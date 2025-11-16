@@ -40,6 +40,7 @@ export default class SearchCommand extends CustomizableCommand {
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
+        this.log.send('debug', 'command.prepare.start', { name: this.name, guild: guild_id });
         const guild = await this.db.getGuild(guild_id);
         let search = await this.db.findOne(Search, { where: { from_guild: guild! } });
         const system_user = await this.db.getUser(BigInt(0));
@@ -65,6 +66,7 @@ export default class SearchCommand extends CustomizableCommand {
             await this.db.save(engine_google);
             await this.db.save(engine_duckduckgo);
             search = await this.db.save(new_settings);
+            this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
         }
         this.enabled = search.is_enabled;
         const data: SlashCommandBuilder = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
@@ -88,11 +90,17 @@ export default class SearchCommand extends CustomizableCommand {
         }
         data.addStringOption((option) => option.setName('query').setDescription('Search query').setRequired(true));
         this.base_cmd_data = data;
+        this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
     }
     // ================================================================ //
 
     // ============================ EXECUTE =========================== //
     public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+        this.log.send('debug', 'command.execute.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
         const engine = interaction.options.data.find((option) => option.name === 'engine')?.value || null;
         const query = interaction.options.data.find((option) => option.name === 'query')?.value || null;
 
@@ -105,10 +113,12 @@ export default class SearchCommand extends CustomizableCommand {
                 embeds: [post],
                 flags: MessageFlags.Ephemeral,
             });
+            this.log.send('error', 'command.configuration.missing', { name: this.name, guild: interaction.guild });
             return;
         }
 
         await interaction.reply(`${engine}${query.toString().replace(/\s+/g, '+')}`);
+        this.log.send('debug', 'command.execute.success', { name: this.name, guild: interaction.guild, user: interaction.user });
     }
     // ================================================================ //
 
@@ -135,6 +145,7 @@ export default class SearchCommand extends CustomizableCommand {
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const search = await this.db.findOne(Search, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -143,6 +154,7 @@ export default class SearchCommand extends CustomizableCommand {
         await this.db.save(Search, search!);
         CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.toggle.success', { name: this.name, guild: interaction.guild, toggle: this.enabled });
     }
 
     @GenericSetting({
@@ -150,6 +162,7 @@ export default class SearchCommand extends CustomizableCommand {
         description: 'Add a new search engine to the list of available search engines.',
     })
     public async addEngine(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
         const user = await this.db.getUser(BigInt(interaction.user.id));
         const engines = await this.db.find(SearchEngines, { where: { from_guild: guild! } });
@@ -162,6 +175,11 @@ export default class SearchCommand extends CustomizableCommand {
             const url = interaction.fields.getTextInputValue('engine_url');
             if (engines.find((e) => e.engine_name.toLowerCase() === name.toLowerCase())) {
                 this.warning = `A search engine with the name \`${name}\` already exists.`;
+                this.log.send('warn', 'command.search.addengine.duplicate_engine', { name: this.name,
+                    guild: interaction.guild,
+                    user: interaction.user,
+                    engine_name: name,
+                });
                 await this.settingsUI(interaction);
                 return;
             }
@@ -173,6 +191,7 @@ export default class SearchCommand extends CustomizableCommand {
             await this.db.save(new_engine);
             CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await this.settingsUI(interaction);
+            this.log.send('debug', 'command.setting.modalsubmit.success', { name: this.name, guild: interaction.guild, engine_name: name });
             return;
         } else if (interaction.isStringSelectMenu()) {
             await interaction.showModal(
@@ -197,6 +216,7 @@ export default class SearchCommand extends CustomizableCommand {
         interaction: StringSelectMenuInteraction | ModalSubmitInteraction,
         engine_name: string,
     ): Promise<void> {
+        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
         const user = await this.db.getUser(BigInt(interaction.user.id));
         const engines = await this.db.find(SearchEngines, { where: { from_guild: guild! } });
@@ -212,6 +232,7 @@ export default class SearchCommand extends CustomizableCommand {
             await this.db.save(engine);
             CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await this.settingsUI(interaction);
+            this.log.send('debug', 'command.setting.modalsubmit.success', { name: this.name, guild: interaction.guild, engine_name: name });
             return;
         } else if (interaction.isStringSelectMenu()) {
             if (interaction.customId === 'settings:search') {
@@ -261,6 +282,7 @@ export default class SearchCommand extends CustomizableCommand {
         description: 'Remove a search engine from the list of available search engines.',
     })
     public async removeEngine(interaction: StringSelectMenuInteraction, engine_name: string): Promise<void> {
+        this.log.send('debug', 'command.setting.selectmenu.start', { name: this.name, guild: interaction.guild });
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
         const engines = await this.db.find(SearchEngines, { where: { from_guild: guild! } });
 
@@ -291,6 +313,7 @@ export default class SearchCommand extends CustomizableCommand {
             await this.db.remove(engines.find((e) => e.engine_name === engine_name)!);
             CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await this.settingsUI(interaction);
+            this.log.send('debug', 'command.setting.selectmenu.success', { name: this.name, guild: interaction.guild });
             return;
         }
     }

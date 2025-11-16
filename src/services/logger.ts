@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { BaseChannel, Guild, User } from 'discord.js';
 import fs from 'fs';
 import jsonc from 'jsonc-parser';
 import path from 'path';
@@ -104,19 +105,43 @@ export class Logger {
     }
 
     /**
+     * Format a Discord entity as "name (id)".
+     * @param {unknown} entity - Discord entity (Guild, User, or Channel) or plain object with name/id properties.
+     * @returns {string} Formatted string in "name (id)" format.
+     */
+    private formatDiscordEntity(entity: BaseChannel | Guild | User): string {
+        if (!entity) return 'Unknown';
+
+        if (typeof entity === 'object' && entity !== null) {
+            if (entity instanceof BaseChannel) {
+                return `Channel (<#${entity.id}>)`;
+            } else if (entity instanceof Guild) {
+                return `${entity.name} (<@${entity.id}>)`;
+            } else if (entity instanceof User) {
+                return `${entity.username} (<@${entity.id}>)`;
+            }
+        }
+        return String(entity);
+    }
+
+    /**
      * Resolve a localization key and optionally apply numbered replacements.
      * @param {string} key Localization key (e.g., 'events.index.loading').
      * @param {(string | number | unknown)[]} [replacements] Optional values to replace {0}, {1}, ... in the template.
      * @returns {string} Localized and formatted message.
      */
-    public querySync(mode: keyof typeof LogLevels, key: string, replacements?: (string | number | unknown)[]): string {
+    public querySync(mode: keyof typeof LogLevels, key: string, replacements?: { [key: string]: unknown }): string {
         const file = jsonc.parse(
-            fs.readFileSync(path.join(__dirname, `../localization/${Logger.current_language}.jsonc`), 'utf-8')
+            fs.readFileSync(path.join(__dirname, `../localization/${Logger.current_language}.jsonc`), 'utf-8'),
         );
-        let translation = file[mode === 'debug' ? 'debug' : 'log'][key] || ('<missing translation> ' + key);
-        if (replacements && replacements.length > 0) {
-            for (const [index, value] of replacements.entries()) {
-                translation = translation.replace(`{${index}}`, String(value));
+        let translation = file[mode][key] || '<missing translation> ' + key;
+        if (replacements && Object.keys(replacements).length > 0) {
+            for (const [k, v] of Object.entries(replacements)) {
+                const formatted_value =
+                    typeof v === 'object' && v !== null
+                        ? this.formatDiscordEntity(v as BaseChannel | Guild | User)
+                        : String(v);
+                translation = translation.replace(`{${k}}`, formatted_value);
             }
         }
         return translation;
@@ -129,7 +154,7 @@ export class Logger {
      * @param {string} formatted_message Already formatted message string.
      */
     private sendNotificationToDiscord(level: keyof typeof LogLevels, formatted_message: string): void {
-        if (LogLevels[level] >= 4) {
+        if (LogLevels[level] >= 4 && LogLevels[level] !== LogLevels.debug) {
             console.log(`[Discord Notification Placeholder][${level.toUpperCase()}] ${formatted_message}`);
         }
     }
@@ -146,7 +171,7 @@ export class Logger {
      * @param {(string | number | unknown)[]} [replacements] Optional template replacement values.
      * @returns {void}
      */
-    public send(type: keyof typeof LogLevels, key: string, replacements?: (string | number | unknown)[]): void {
+    public send(type: keyof typeof LogLevels, key: string, replacements?: { [key: string]: unknown }): void {
         if (LogLevels[type] > Logger.selected_log_level) return;
         const msg = this.querySync(type, key, replacements);
 

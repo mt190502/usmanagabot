@@ -10,6 +10,7 @@ import { CommandLoader } from '..';
 import { BaseCommand } from '../../types/structure/command';
 
 export default class SettingsCommand extends BaseCommand {
+    // ============================ HEADER ============================ //
     constructor() {
         super({
             name: 'settings',
@@ -22,12 +23,24 @@ export default class SettingsCommand extends BaseCommand {
             PermissionFlagsBits.BanMembers | PermissionFlagsBits.KickMembers,
         );
     }
+    // ================================================================ //
 
+    // =========================== EXECUTE ============================ //
     public async execute(interaction: Interaction | CommandInteraction | StringSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.execute.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
+        this.log.send('debug', 'command.settings.execute.generating_page', {
+            guild: interaction.guild,
+            user: interaction.user,
+        });
+        const commands = Array.from(CommandLoader.BotCommands.get(interaction.guild!.id)!);
         const payload = await this.paginator.generatePage(interaction.guild!.id, interaction.user.id, this.name, {
             title: ':gear: Settings - Configurable Modules & Settings',
             color: Colors.Blurple,
-            items: Array.from(CommandLoader.BotCommands.get(interaction.guild!.id)!)
+            items: commands
                 .sort((a, b) => a[0].localeCompare(b[0]))
                 .map(([, cmd]) => ({
                     name: cmd.name,
@@ -49,7 +62,13 @@ export default class SettingsCommand extends BaseCommand {
                 embeds: payload.embeds,
                 components: payload.components,
             });
+            this.log.send('debug', 'command.execute.success', {
+                name: this.name,
+                guild: interaction.guild,
+                user: interaction.user,
+            });
             return;
         }
     }
+    // ================================================================ //
 }

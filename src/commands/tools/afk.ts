@@ -12,6 +12,7 @@ import { ChainEvent } from '../../types/decorator/chainevent';
 import { BaseCommand } from '../../types/structure/command';
 
 export default class AFKCommand extends BaseCommand {
+    // ============================ HEADER ============================ //
     constructor() {
         super({
             name: 'afk',
@@ -32,8 +33,15 @@ export default class AFKCommand extends BaseCommand {
             option.setName('reason').setDescription('The reason for going AFK.').setRequired(true),
         );
     }
+    // ================================================================ //
 
+    // =========================== EXECUTE ============================ //
     public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+        this.log.send('debug', 'command.execute.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
         const member = interaction.guild!.members.cache.get(interaction.user.id)!;
         const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
         const guild = (await this.db.getGuild(BigInt(interaction.guild!.id)))!;
@@ -56,18 +64,27 @@ export default class AFKCommand extends BaseCommand {
         post.setTitle(':white_check_mark: You are now AFK').setColor(Colors.Green);
         if (!member.manageable) {
             post.setDescription('**Warning:** I am unable to change your nickname (Probably due to role hierarchy)');
+            this.log.send('warn', 'command.afk.execute.nickname_change_failed', {
+                guild: interaction.guild,
+                user: interaction.user,
+            });
         } else {
             await member.setNickname(
                 member.nickname ? '[AFK] ' + member.nickname : '[AFK] ' + interaction.user.displayName,
             );
         }
-
         await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
     }
 
     @ChainEvent({ type: Events.MessageCreate })
     public async onMessageCreate(message: Message<true>): Promise<void> {
         if (message?.author?.bot || !message.guild) return;
+        this.log.send('debug', 'command.event.trigger.start', {
+            name: 'afk',
+            event: 'MessageCreate',
+            guild: message.guild,
+            user: message.author,
+        });
 
         const member = message.guild.members.cache.get(message.author.id)!;
         const user = (await this.db.getUser(BigInt(message.author.id)))!;
@@ -108,5 +125,12 @@ export default class AFKCommand extends BaseCommand {
                 await this.db.save(mentioned_user_afk);
             }
         }
+        this.log.send('debug', 'command.event.trigger.success', {
+            name: 'afk',
+            event: 'MessageCreate',
+            guild: message.guild,
+            user: message.author,
+        });
     }
+    // ================================================================ //
 }

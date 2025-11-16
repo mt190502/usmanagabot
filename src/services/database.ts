@@ -122,9 +122,9 @@ export class Database {
             await Database.dataSource.initialize();
             Database.logger.send('info', 'services.database.init.success');
         } catch (error) {
-            Database.logger.send('error', 'services.database.init.initialization_error', [
-                error instanceof Error ? error.message : 'Unknown error',
-            ]);
+            Database.logger.send('error', 'services.database.init.failed', {
+                message: error instanceof Error ? error.message : 'Unknown error',
+            });
         }
     }
 

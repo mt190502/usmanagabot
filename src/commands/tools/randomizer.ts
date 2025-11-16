@@ -2,6 +2,7 @@ import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { BaseCommand } from '../../types/structure/command';
 
 export default class RandomizerCommand extends BaseCommand {
+    // =========================== HEADER ============================ //
     constructor() {
         super({
             name: 'randomizer',
@@ -19,16 +20,26 @@ export default class RandomizerCommand extends BaseCommand {
                 - \`/randomizer dog cat mouse\`
             `,
         });
-        (this.base_cmd_data as SlashCommandBuilder).addStringOption(option =>
-            option.setName('item_1').setDescription('The first item to choose from.').setRequired(true)
-        ).addStringOption(option =>
-            option.setName('item_2').setDescription('The second item to choose from.').setRequired(true)
-        ).addStringOption(option =>
-            option.setName('extra_items').setDescription('Additional items to choose from, separated by commas.')
-        );
+        (this.base_cmd_data as SlashCommandBuilder)
+            .addStringOption((option) =>
+                option.setName('item_1').setDescription('The first item to choose from.').setRequired(true),
+            )
+            .addStringOption((option) =>
+                option.setName('item_2').setDescription('The second item to choose from.').setRequired(true),
+            )
+            .addStringOption((option) =>
+                option.setName('extra_items').setDescription('Additional items to choose from, separated by commas.'),
+            );
     }
+    // ================================================================ //
 
+    // =========================== EXECUTE ============================ //
     public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+        this.log.send('debug', 'command.execute.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
         const item_1 = interaction.options.getString('item_1')!;
         const item_2 = interaction.options.getString('item_2')!;
         const extra_items = interaction.options.getString('extra_items');
@@ -39,5 +50,11 @@ export default class RandomizerCommand extends BaseCommand {
 
         const random = choices[Math.floor(Math.random() * choices.length)];
         await interaction.reply({ content: `I choose: **${random}**`, allowedMentions: { parse: [] } });
+        this.log.send('debug', 'command.execute.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
     }
+    // ================================================================ //
 }

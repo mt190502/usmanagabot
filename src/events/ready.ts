@@ -8,7 +8,7 @@ export default class ReadyEvent extends BaseEvent<Events.ClientReady> {
     }
 
     public async execute(client: Client<true>): Promise<void> {
-        this.log.send('info', 'main.ready', [pkg.name, pkg.version]);
-        this.log.send('info', 'events.base.ready', [client.user.tag ?? 'Unknown#0000']);
+        this.log.send('info', 'system.startup.complete', { name: pkg.name, version: pkg.version });
+        this.log.send('log', 'event.ready.success', { name: client.user.tag ?? 'Unknown#0000' });
     }
 }
