@@ -45,7 +45,12 @@ export default class AutoroleCommand extends CustomizableCommand {
     // =========================== EXECUTE ============================ //
     @ChainEvent({ type: Events.GuildMemberAdd })
     public async execute(member: GuildMember): Promise<void> {
-        this.log.send('debug', 'command.event.trigger.start', { name: 'autorole', event: 'GuildMemberAdd', guild: member.guild, user: member });
+        this.log.send('debug', 'command.event.trigger.start', {
+            name: 'autorole',
+            event: 'GuildMemberAdd',
+            guild: member.guild,
+            user: member,
+        });
         const autorole = await this.db.findOne(Autorole, {
             where: { from_guild: { gid: BigInt(member.guild.id) } },
         });
@@ -55,7 +60,12 @@ export default class AutoroleCommand extends CustomizableCommand {
         if (!role) return;
 
         await member.roles.add(role);
-        this.log.send('debug', 'command.event.trigger.success', { name: 'autorole', event: 'GuildMemberAdd', guild: member.guild, user: member });
+        this.log.send('debug', 'command.event.trigger.success', {
+            name: 'autorole',
+            event: 'GuildMemberAdd',
+            guild: member.guild,
+            user: member,
+        });
     }
     // ================================================================ //
 
@@ -77,7 +87,11 @@ export default class AutoroleCommand extends CustomizableCommand {
         this.enabled = autorole!.is_enabled;
         await this.db.save(Autorole, autorole!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.toggle.success', { name: this.name, guild: interaction.guild, toggle: this.enabled });
+        this.log.send('debug', 'command.setting.toggle.success', {
+            name: this.name,
+            guild: interaction.guild,
+            toggle: this.enabled,
+        });
     }
 
     @SettingRoleSelectMenuComponent({
@@ -108,7 +122,11 @@ export default class AutoroleCommand extends CustomizableCommand {
         autorole!.role_id = requested_role.id;
         await this.db.save(Autorole, autorole!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.role.success', { name: this.name, guild: interaction.guild, role: autorole!.role_id });
+        this.log.send('debug', 'command.setting.role.success', {
+            name: this.name,
+            guild: interaction.guild,
+            role: autorole!.role_id,
+        });
     }
     // ================================================================ //
 }

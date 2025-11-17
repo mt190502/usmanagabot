@@ -76,7 +76,11 @@ export default class MessageLoggerCommand extends CustomizableCommand {
 
         const webhook = new WebhookClient({ id: logger.webhook_id, token: logger.webhook_token });
         await setTimeout(500);
-        this.log.send('debug', 'command.execute.success', { name: 'messagelogger', guild: message.guild, user: message.author });
+        this.log.send('debug', 'command.execute.success', {
+            name: 'messagelogger',
+            guild: message.guild,
+            user: message.author,
+        });
         return { logger, webhook };
     }
 
@@ -234,7 +238,11 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         this.enabled = msg_logger!.is_enabled;
         await this.db.save(MessageLogger, msg_logger!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.toggle.success', { name: this.name, guild: interaction.guild, toggle: this.enabled });
+        this.log.send('debug', 'command.setting.toggle.success', {
+            name: this.name,
+            guild: interaction.guild,
+            toggle: this.enabled,
+        });
     }
 
     @SettingChannelMenuComponent({
@@ -270,7 +278,11 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         msg_logger.webhook_token = webhook.token;
         await this.db.save(MessageLogger, msg_logger!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.channel.success', { name: this.name, guild: interaction.guild, channel: selected_channel });
+        this.log.send('debug', 'command.setting.channel.success', {
+            name: this.name,
+            guild: interaction.guild,
+            channel: selected_channel,
+        });
     }
 
     @SettingChannelMenuComponent({
@@ -298,7 +310,11 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         msg_logger!.ignored_channels = interaction.values.map((id) => BigInt(id));
         await this.db.save(MessageLogger, msg_logger!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.channel.success', { name: this.name, guild: interaction.guild, channel: interaction.values.join(', ') });
+        this.log.send('debug', 'command.setting.channel.success', {
+            name: this.name,
+            guild: interaction.guild,
+            channel: interaction.values.join(', '),
+        });
     }
     // ================================================================ //
 }

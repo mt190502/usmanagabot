@@ -189,7 +189,11 @@ export default class ReportCommand extends CustomizableCommand {
         await this.db.save(Reports, report!);
         CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.toggle.success', { name: this.name, guild: interaction.guild, toggle: this.enabled });
+        this.log.send('debug', 'command.setting.toggle.success', {
+            name: this.name,
+            guild: interaction.guild,
+            toggle: this.enabled,
+        });
     }
 
     @SettingChannelMenuComponent({
@@ -213,7 +217,11 @@ export default class ReportCommand extends CustomizableCommand {
         report!.channel_id = selected_channel;
         await this.db.save(Reports, report!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.channel.success', { name: this.name, guild: interaction.guild, channel: selected_channel });
+        this.log.send('debug', 'command.setting.channel.success', {
+            name: this.name,
+            guild: interaction.guild,
+            channel: selected_channel,
+        });
     }
 
     @SettingRoleSelectMenuComponent({
@@ -237,7 +245,11 @@ export default class ReportCommand extends CustomizableCommand {
         report!.moderator_role_id = interaction.values[0];
         await this.db.save(Reports, report!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.role.success', { name: this.name, guild: interaction.guild, role: interaction.values[0] });
+        this.log.send('debug', 'command.setting.role.success', {
+            name: this.name,
+            guild: interaction.guild,
+            role: interaction.values[0],
+        });
     }
 
     @GenericSetting({

@@ -448,7 +448,11 @@ export default class AliasCommand extends CustomizableCommand {
         await this.db.save(AliasSystem, alias_system!);
         CommandLoader.getInstance().RESTCommandLoader(this, interaction.guild!.id);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.toggle.success', { name: this.name, guild: interaction.guild, toggle: this.enabled });
+        this.log.send('debug', 'command.setting.toggle.success', {
+            name: this.name,
+            guild: interaction.guild,
+            toggle: this.enabled,
+        });
     }
     // ================================================================ //
 }

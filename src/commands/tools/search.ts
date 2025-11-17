@@ -118,7 +118,11 @@ export default class SearchCommand extends CustomizableCommand {
         }
 
         await interaction.reply(`${engine}${query.toString().replace(/\s+/g, '+')}`);
-        this.log.send('debug', 'command.execute.success', { name: this.name, guild: interaction.guild, user: interaction.user });
+        this.log.send('debug', 'command.execute.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
     }
     // ================================================================ //
 
@@ -154,7 +158,11 @@ export default class SearchCommand extends CustomizableCommand {
         await this.db.save(Search, search!);
         CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.toggle.success', { name: this.name, guild: interaction.guild, toggle: this.enabled });
+        this.log.send('debug', 'command.setting.toggle.success', {
+            name: this.name,
+            guild: interaction.guild,
+            toggle: this.enabled,
+        });
     }
 
     @GenericSetting({
@@ -175,7 +183,8 @@ export default class SearchCommand extends CustomizableCommand {
             const url = interaction.fields.getTextInputValue('engine_url');
             if (engines.find((e) => e.engine_name.toLowerCase() === name.toLowerCase())) {
                 this.warning = `A search engine with the name \`${name}\` already exists.`;
-                this.log.send('warn', 'command.search.addengine.duplicate_engine', { name: this.name,
+                this.log.send('warn', 'command.search.addengine.duplicate_engine', {
+                    name: this.name,
                     guild: interaction.guild,
                     user: interaction.user,
                     engine_name: name,
@@ -191,7 +200,11 @@ export default class SearchCommand extends CustomizableCommand {
             await this.db.save(new_engine);
             CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await this.settingsUI(interaction);
-            this.log.send('debug', 'command.setting.modalsubmit.success', { name: this.name, guild: interaction.guild, engine_name: name });
+            this.log.send('debug', 'command.setting.modalsubmit.success', {
+                name: this.name,
+                guild: interaction.guild,
+                engine_name: name,
+            });
             return;
         } else if (interaction.isStringSelectMenu()) {
             await interaction.showModal(
@@ -232,7 +245,11 @@ export default class SearchCommand extends CustomizableCommand {
             await this.db.save(engine);
             CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await this.settingsUI(interaction);
-            this.log.send('debug', 'command.setting.modalsubmit.success', { name: this.name, guild: interaction.guild, engine_name: name });
+            this.log.send('debug', 'command.setting.modalsubmit.success', {
+                name: this.name,
+                guild: interaction.guild,
+                engine_name: name,
+            });
             return;
         } else if (interaction.isStringSelectMenu()) {
             if (interaction.customId === 'settings:search') {

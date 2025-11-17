@@ -50,7 +50,11 @@ export default class UserInformationCommand extends BaseCommand {
     public async execute(
         interaction: ChatInputCommandInteraction | MessageContextMenuCommandInteraction,
     ): Promise<void> {
-        this.log.send('debug', 'command.execute.start', { name: this.name, guild: interaction.guild, user: interaction.user });
+        this.log.send('debug', 'command.execute.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
         let user: User;
         if (interaction.isMessageContextMenuCommand()) {
             user = interaction.targetMessage.author;
@@ -64,7 +68,11 @@ export default class UserInformationCommand extends BaseCommand {
                 .setDescription('User not found.')
                 .setColor(Colors.Yellow);
             await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
-            this.log.send('warn', 'command.user_information.execute.user_not_found', { guild: interaction.guild, user: interaction.user, id: user.id });
+            this.log.send('warn', 'command.user_information.execute.user_not_found', {
+                guild: interaction.guild,
+                user: interaction.user,
+                id: user.id,
+            });
             return;
         }
 
@@ -77,7 +85,11 @@ export default class UserInformationCommand extends BaseCommand {
         const data: string[] = [];
 
         if (introduction) {
-            this.log.send('debug', 'command.user_information.execute.fetching_introduction', { guild: interaction.guild, user: interaction.user, id: user.id });
+            this.log.send('debug', 'command.user_information.execute.fetching_introduction', {
+                guild: interaction.guild,
+                user: interaction.user,
+                id: user.id,
+            });
             const last_introduction_submit = await this.db.findOne(IntroductionSubmit, {
                 where: { from_user: { uid: BigInt(user.id) }, from_guild: { gid: BigInt(interaction.guild!.id) } },
             });
@@ -120,7 +132,11 @@ export default class UserInformationCommand extends BaseCommand {
             .setTimestamp();
 
         await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-        this.log.send('debug', 'command.execute.success', { name: this.name, guild: interaction.guild, user: interaction.user });
+        this.log.send('debug', 'command.execute.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
     }
     // ================================================================ //
 }

@@ -84,7 +84,11 @@ export default class IntroductionCommand extends CustomizableCommand {
 
     // =========================== EXECUTE ============================ //
     public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-        this.log.send('debug', 'command.execute.start', { name: this.name, guild: interaction.guild, user: interaction.user });
+        this.log.send('debug', 'command.execute.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
         const user = await this.db.getUser(BigInt(interaction.user.id));
         const introduction = await this.db.findOne(Introduction, {
@@ -118,7 +122,10 @@ export default class IntroductionCommand extends CustomizableCommand {
                 embeds: [post],
                 flags: MessageFlags.Ephemeral,
             });
-            this.log.send('warn', 'command.introduction.execute.rate_limited', { guild: interaction.guild, user: interaction.user });
+            this.log.send('warn', 'command.introduction.execute.rate_limited', {
+                guild: interaction.guild,
+                user: interaction.user,
+            });
             return;
         }
 
@@ -229,7 +236,11 @@ export default class IntroductionCommand extends CustomizableCommand {
             embeds: [post],
             flags: MessageFlags.Ephemeral,
         });
-        this.log.send('debug', 'command.execute.success', { name: this.name, guild: interaction.guild, user: interaction.user });
+        this.log.send('debug', 'command.execute.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
     }
     // ================================================================ //
 
@@ -252,7 +263,11 @@ export default class IntroductionCommand extends CustomizableCommand {
         await this.db.save(Introduction, introduction!);
         CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.toggle.success', { name: this.name, guild: interaction.guild, toggle: this.enabled });
+        this.log.send('debug', 'command.setting.toggle.success', {
+            name: this.name,
+            guild: interaction.guild,
+            toggle: this.enabled,
+        });
     }
 
     @GenericSetting({
@@ -288,7 +303,10 @@ export default class IntroductionCommand extends CustomizableCommand {
             await this.db.save(Introduction, introduction!);
             CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await interaction.deferUpdate();
-            this.log.send('debug', 'command.setting.modalsubmit.success', { name: this.name, guild: interaction.guild });
+            this.log.send('debug', 'command.setting.modalsubmit.success', {
+                name: this.name,
+                guild: interaction.guild,
+            });
             return;
         } else if (interaction.isStringSelectMenu()) {
             await interaction.showModal(
@@ -337,7 +355,10 @@ export default class IntroductionCommand extends CustomizableCommand {
             await this.db.save(Introduction, introduction!);
             CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await interaction.deferUpdate();
-            this.log.send('debug', 'command.setting.modalsubmit.success', { name: this.name, guild: interaction.guild });
+            this.log.send('debug', 'command.setting.modalsubmit.success', {
+                name: this.name,
+                guild: interaction.guild,
+            });
         }
         if (interaction.isStringSelectMenu()) {
             await interaction.showModal(
@@ -392,7 +413,10 @@ export default class IntroductionCommand extends CustomizableCommand {
             introduction!.daily_submit_limit = limit;
             await this.db.save(Introduction, introduction!);
             await this.settingsUI(interaction);
-            this.log.send('debug', 'command.setting.modalsubmit.success', { name: this.name, guild: interaction.guild });
+            this.log.send('debug', 'command.setting.modalsubmit.success', {
+                name: this.name,
+                guild: interaction.guild,
+            });
         } else if (interaction.isStringSelectMenu()) {
             await interaction.showModal(
                 new ModalBuilder()
@@ -435,7 +459,11 @@ export default class IntroductionCommand extends CustomizableCommand {
         introduction!.channel_id = selected_channel;
         await this.db.save(Introduction, introduction!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.channel.success', { name: this.name, guild: interaction.guild, channel: selected_channel });
+        this.log.send('debug', 'command.setting.channel.success', {
+            name: this.name,
+            guild: interaction.guild,
+            channel: selected_channel,
+        });
     }
     // ================================================================ //
 }

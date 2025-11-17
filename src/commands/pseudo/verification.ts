@@ -16,6 +16,7 @@ import { BotClient } from '../../services/client';
 import { Guilds } from '../../types/database/entities/guilds';
 import { Verification, VerificationSystem } from '../../types/database/entities/verification';
 import { ChainEvent } from '../../types/decorator/chainevent';
+import { Cron } from '../../types/decorator/cronjob';
 import {
     GenericSetting,
     SettingChannelMenuComponent,
@@ -23,7 +24,6 @@ import {
     SettingToggleButtonComponent,
 } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
-import { Cron } from '../../types/decorator/cronjob';
 
 export default class VerificationCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
