@@ -35,9 +35,9 @@ const bot_config_schema = z.object({
         })
         .default(process.env.NODE_ENV === 'production' ? LogLevels.error : LogLevels.debug),
     management: z.object({
-        enabled: z.boolean().default(false),
-        main_guild_id: z.string().optional(),
-        channel_id: z.string().optional(),
+        channel_id: z.string().min(1, 'Management channel_id cannot be empty'),
+        guild_id: z.string().min(1, 'Management guild_id cannot be empty'),
+        user_id: z.string().min(1, 'Management user_id cannot be empty'),
     }),
     token: z.string().min(1, 'Bot token cannot be empty'),
 });

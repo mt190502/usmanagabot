@@ -42,6 +42,12 @@ export default class SettingsCommand extends BaseCommand {
             color: Colors.Blurple,
             items: commands
                 .sort((a, b) => a[0].localeCompare(b[0]))
+                .filter(([, cmd]) =>
+                    cmd.is_bot_owner_command
+                        ? interaction.guildId === this.cfg.current_botcfg.management.guild_id &&
+                          interaction.user.id === this.cfg.current_botcfg.management.user_id
+                        : true,
+                )
                 .map(([, cmd]) => ({
                     name: cmd.name,
                     pretty_name: cmd.pretty_name,

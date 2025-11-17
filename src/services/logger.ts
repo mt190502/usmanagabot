@@ -1,8 +1,10 @@
 import dayjs from 'dayjs';
-import { BaseChannel, Guild, User } from 'discord.js';
+import { BaseChannel, Colors, EmbedBuilder, Guild, User } from 'discord.js';
 import fs from 'fs';
 import jsonc from 'jsonc-parser';
 import path from 'path';
+import { BotClient } from './client';
+import { Config } from './config';
 
 /**
  * Log levels used by the Logger.
@@ -148,14 +150,42 @@ export class Logger {
     }
 
     /**
-     * Placeholder hook to send logs to Discord for higher-severity levels.
-     * Currently prints to console to indicate where an integration could be added.
-     * @param {keyof typeof LogLevels} level Log severity of the message.
-     * @param {string} formatted_message Already formatted message string.
+     * Send logs to Discord for higher-severity levels.
+     * Uses management config if enabled, otherwise falls back to LogNotifier database entries.
+     * @param {string} type Log type: 'error' | 'warn'.
+     * @param {string} message The log message.
+     * @param {string} filename Source filename where the log originated.
+     * @param {string} linenumber Source line number where the log originated.
+     * @param {string} formatted_message Fully formatted log message.
+     * @returns {Promise<void>} Resolves when the notification is sent or fails
      */
-    private sendNotificationToDiscord(level: keyof typeof LogLevels, formatted_message: string): void {
-        if (LogLevels[level] >= 4 && LogLevels[level] !== LogLevels.debug) {
-            console.log(`[Discord Notification Placeholder][${level.toUpperCase()}] ${formatted_message}`);
+    private async sendNotificationToDiscord(
+        type: string,
+        message: string,
+        filename: string,
+        linenumber: string,
+        formatted_message: string
+    ): Promise<void> {
+        const management = Config.getInstance().current_botcfg.management;
+        const client = BotClient.client;
+        if (!client || !client.isReady()) return;
+
+        const channel = await (await client.guilds.fetch(management.guild_id)).channels.fetch(management.channel_id);
+        if (channel && channel.isTextBased()) {
+            const post = new EmbedBuilder();
+            let desc = '';
+            if (type === 'error') {
+                post.setTitle(':octagonal_sign: Error').setColor(Colors.Red);
+                desc += `:octagonal_sign: **Message**: ${message}\n`;
+            } else if (type === 'warn') {
+                post.setTitle(':warning: Warning').setColor(Colors.Yellow);
+                desc += `:warning: **Message**: ${message}\n`;
+            }
+            desc += `:page_facing_up: **File**: ${filename}\n`;
+            desc += `:1234: **Line**: ${linenumber}\n\n`;
+            post.setDescription(desc + `\`\`\`\n${formatted_message}\n\`\`\``);
+            await channel.send({ embeds: [post] });
+            return;
         }
     }
 
@@ -180,12 +210,12 @@ export class Logger {
         switch (type) {
             case 'error':
                 console.log(formatted_message);
-                this.sendNotificationToDiscord(type, formatted_message);
+                this.sendNotificationToDiscord('error', key, filename, linenumber, formatted_message);
                 process.exit(1);
                 break;
             case 'warn':
                 console.warn(formatted_message);
-                this.sendNotificationToDiscord(type, formatted_message);
+                this.sendNotificationToDiscord('warn', key, filename, linenumber, formatted_message);
                 break;
             default:
                 console.log(formatted_message);

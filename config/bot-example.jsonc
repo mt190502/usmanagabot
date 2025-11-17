@@ -16,8 +16,8 @@
 
     //* Management (for bot-specific operations like update status, send error logs and etc.)
     "management": {
-        "enabled": false,
-        "main_guild_id": "",
-        "channel_id": ""
+        "channel_id": "",
+        "guild_id": "",
+        "user_id": "",
     }
 }

@@ -31,6 +31,7 @@ type componentOptions = {
     database?: ObjectLiteral;
     database_key?: string;
     db_column_is_array?: boolean;
+    is_bot_owner_only?: boolean;
 };
 
 /**
@@ -82,6 +83,7 @@ function generateSettingComponent(
             description: o.description,
             format_specifier: o.format_specifier ?? '`View in Edit Mode`',
             db_column_is_array: o.db_column_is_array ?? false,
+            is_bot_owner_only: o.is_bot_owner_only ?? false,
             func: descriptor,
         });
 
@@ -92,25 +94,10 @@ function generateSettingComponent(
 
 /**
  * Generic setting decorator
- * @param {object} o - The options for the setting
- * @param {string} [o.display_name] - The display name of the setting
- * @param {string} o.pretty - A human-readable name for the setting
- * @param {string} o.description - A description of the setting
- * @param {string} [o.format_specifier] - A format specifier for displaying the setting value
- * @param {ObjectLiteral} [o.database] - The database entity associated with the setting
- * @param {string} [o.database_key] - The key in the database entity for the setting
- * @param {boolean} [o.db_column_is_array=false] - Whether the database column is an array
+ * @param {componentOptions} o - The options for the generic setting
  * @returns {MethodDecorator} A method decorator for the generic setting
  */
-export function GenericSetting(o: {
-    display_name?: string;
-    pretty: string;
-    description: string;
-    format_specifier?: string;
-    database?: ObjectLiteral;
-    database_key?: string;
-    db_column_is_array?: boolean;
-}): MethodDecorator {
+export function GenericSetting(o: componentOptions): MethodDecorator {
     return (target_class, property_key, descriptor_func) => {
         const settings: Map<string, typeof o & { func: typeof descriptor_func }> =
             Reflect.getMetadata('custom:settings', target_class.constructor) ?? new Map();
@@ -122,6 +109,7 @@ export function GenericSetting(o: {
             description: o.description,
             format_specifier: o.format_specifier ?? '`View in Edit Mode`',
             db_column_is_array: o.db_column_is_array ?? false,
+            is_bot_owner_only: o.is_bot_owner_only ?? false,
             func: descriptor_func,
         });
         Reflect.defineMetadata('custom:settings', settings, target_class.constructor);

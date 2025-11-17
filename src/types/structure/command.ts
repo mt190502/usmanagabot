@@ -66,6 +66,14 @@ export abstract class BaseCommand {
     public readonly is_admin_command: boolean = false;
 
     /**
+     * Indicates whether the command is restricted to bot owners only.
+     * @public
+     * @readonly
+     * @type {boolean}
+     */
+    public readonly is_bot_owner_command: boolean = false;
+
+    /**
      * Detailed help text for the command, intended for display in a help command.
      * @public
      * @readonly
@@ -129,6 +137,7 @@ export abstract class BaseCommand {
         this.pretty_name = options.pretty_name ?? 'No pretty name provided.';
         this.description = options.description ?? 'No description provided.';
         this.is_admin_command = options.is_admin_command ?? false;
+        this.is_bot_owner_command = options.is_bot_owner_command ?? false;
         this.help = options.help ?? 'No help provided.';
         this.cooldown = options.cooldown ?? 0;
         this.main_command_data = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
@@ -260,16 +269,30 @@ export abstract class CustomizableCommand extends BaseCommand {
         for (const [name, setting] of subsettings) {
             if (setting.display_name) {
                 let row;
-                if (setting.db_column_is_array) {
-                    const rows = await this.db.find(setting.database, {
-                        where: { from_guild: { gid: BigInt(interaction.guildId!) } },
-                    });
-                    row = rows.map((r) => r[setting.database_key as keyof unknown]);
-                    if (Array.isArray(row[0])) row = row[0];
+                if (setting.is_bot_owner_only) {
+                    if (setting.db_column_is_array) {
+                        const rows = await this.db.find(setting.database, {
+                            where: { id: 1 },
+                        });
+                        row = rows.map((r) => r[setting.database_key as keyof unknown]);
+                        if (Array.isArray(row[0])) row = row[0];
+                    } else {
+                        row = (await this.db.findOne(setting.database, {
+                            where: { id: 1 },
+                        }))![setting.database_key as keyof unknown];
+                    }
                 } else {
-                    row = (await this.db.findOne(setting.database, {
-                        where: { from_guild: { gid: BigInt(interaction.guildId!) } },
-                    }))![setting.database_key as keyof unknown];
+                    if (setting.db_column_is_array) {
+                        const rows = await this.db.find(setting.database, {
+                            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+                        });
+                        row = rows.map((r) => r[setting.database_key as keyof unknown]);
+                        if (Array.isArray(row[0])) row = row[0];
+                    } else {
+                        row = (await this.db.findOne(setting.database, {
+                            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+                        }))![setting.database_key as keyof unknown];
+                    }
                 }
                 let value;
                 if (typeof row === 'boolean') {
