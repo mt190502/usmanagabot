@@ -1,19 +1,37 @@
 services:
+  app:
+    build: .
+    environment:
+      DB__HOST: db
+      DB__PORT: "${DB__PORT:-5432}"
+    #   DB__USER: "${DB__USER:-usmanagabot}"
+    #   DB__PASSWORD: "${DB__PASSWORD:-usmanagabot}"
+    #   DB__NAME: "${DB__NAME:-usmanagabot}"
+    #   BOT__APP_ID: "${BOT__APP_ID:-0}"
+    #   BOT__TOKEN: "${BOT__TOKEN:-0}"
+    #   BOT__LANGUAGE: "${BOT__LANGUAGE:-en}"
+    #   BOT__CLEAR_OLD_COMMANDS_ON_STARTUP: "${BOT__CLEAR_OLD_COMMANDS_ON_STARTUP:-false}"
+    #   BOT__MANAGEMENT__CHANNEL_ID: "${BOT__MANAGEMENT__CHANNEL_ID:-0}"
+    #   BOT__MANAGEMENT__GUILD_ID: "${BOT__MANAGEMENT__GUILD_ID:-0}"
+    #   BOT__MANAGEMENT__USER_ID: "${BOT__MANAGEMENT__USER_ID:-0}"
+    env_file:
+      - path: ./.envrc
+    depends_on:
+      - db
+    restart: always
   db:
-    image: postgres:latest
+    image: postgres:18
     volumes:
-      - usmanagabot_db:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - usmanagabot_db:/var/lib/postgresql/18/docker
     expose:
       - "5432"
     environment:
-      POSTGRES_USER: usmanagabot
-      POSTGRES_PASSWORD: usmanagabot
-      POSTGRES_ROOT_PASSWORD: usmanagabot
-      POSTGRES_DB: usmanagabot
-    security_opt:
-      - label:disable
+      POSTGRES_USER: "${DB__USER:-usmanagabot}"
+      POSTGRES_PASSWORD: "${DB__PASSWORD:-usmanagabot}"
+      POSTGRES_ROOT_PASSWORD: "${DB__PASSWORD:-usmanagabot}"
+      POSTGRES_DB: "${DB__NAME:-usmanagabot}"
+    env_file:
+      - path: ./.envrc
     restart: always
 
 volumes:
