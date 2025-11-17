@@ -1,1 +1,28 @@
-export NODE_ENV=development
+#################################################
+#
+## App Environment
+#
+#################################################
+#~ These environment variables take priority over config/bot.jsonc values
+export BOT__APP_ID="bot_app_id_here"
+export BOT__CLEAR_OLD_COMMANDS_ON_STARTUP="false"
+export BOT__LANGUAGE="en"
+export BOT__MANAGEMENT__CHANNEL_ID="management_channel_id_here"
+export BOT__MANAGEMENT__GUILD_ID="management_guild_id_here"
+export BOT__MANAGEMENT__USER_ID="management_user_id_here"
+export BOT__TOKEN="bot_token_here"
+export NODE_ENV="development"
+
+#################################################
+#
+## Database Configuration
+#
+#################################################
+#~ These environment variables take priority over config/database.jsonc values
+# export DB__HOST="1.2.3.4"                                               #~ use if you have a external db server
+# export DB__PORT="5432"                                                  #~ use if you have a external db server
+export DB__USERNAME="usmanagabot"
+export DB__PASSWORD="usmanagabot"
+export DB__DATABASE="usmanagabot"
+export DB__SYNCHRONIZE="true"
+export DB__LOGGING="false"

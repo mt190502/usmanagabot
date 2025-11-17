@@ -2,6 +2,7 @@ import botcfg from '@config/bot.jsonc';
 import dbcfg from '@config/database.jsonc';
 import { Logger, LogLevels, SupportedLanguages } from '@services/logger';
 import fs from 'fs';
+import { env } from 'process';
 import { z } from 'zod';
 
 /**
@@ -11,35 +12,65 @@ import { z } from 'zod';
  */
 
 /**
+ * Helper function to parse environment variables for Zod schema parsing.
+ *
+ * @param {string} key The environment variable key to read.
+ * @param {T} schema A Zod schema instance to validate the environment variable against.
+ * @param {(v: z.infer<T>) => z.infer<T>} [parser] Optional parser function to transform the raw env var.
+ */
+const parseEnv = <T extends z.ZodType>(key: string, schema: T, parser?: (v: z.infer<T>) => z.infer<T>) => {
+    return z.preprocess((val) => {
+        const raw = env[key];
+        if (raw === undefined) return val;
+        return parser ? parser(raw as z.infer<T>) : raw;
+    }, schema);
+};
+
+/**
  * Zod schema for the bot configuration.
  *
  * Validated properties:
- * - app_id: Discord application ID (string, required)
- * - clear_old_commands_on_startup: whether to clear commands on startup (boolean)
- * - language: localization language (enum of SupportedLanguages)
- * - log_level: minimum log level (enum of LogLevels)
- * - management: nested object with management feature flags and IDs
- * - token: bot token used for login (string, required)
+ * - app_id: Discord application ID (string) - uses BOT__APP_ID env var if set, fallback to JSONC
+ * - clear_old_commands_on_startup: whether to clear old commands on startup (boolean) - uses BOT__CLEAR_OLD_COMMANDS_ON_STARTUP env var if set, fallback to JSONC or false
+ * - language: localization language (enum of SupportedLanguages) - uses BOT__LANGUAGE env var if set, fallback to JSONC or SupportedLanguages.EN
+ * - log_level: logging level (enum of LogLevels) - uses BOT__LOG_LEVEL env var if set, fallback to JSONC or debug/error based on NODE_ENV
+ * - management: object containing management channel_id, guild_id, user_id (all strings) - uses BOT__MANAGEMENT__* env vars if set, fallback to JSONC
+ * - token: Discord bot token (string) - uses BOT__TOKEN env var if set, fallback to JSONC
  */
 const bot_config_schema = z.object({
-    app_id: z.string().min(1, 'Application ID cannot be empty'),
-    clear_old_commands_on_startup: z.boolean().default(false),
-    language: z
-        .enum(SupportedLanguages, {
-            message: 'Invalid language',
-        })
-        .default(SupportedLanguages.EN),
-    log_level: z
-        .enum(LogLevels, {
-            message: 'Invalid log level',
-        })
-        .default(process.env.NODE_ENV === 'production' ? LogLevels.error : LogLevels.debug),
-    management: z.object({
-        channel_id: z.string().min(1, 'Management channel_id cannot be empty'),
-        guild_id: z.string().min(1, 'Management guild_id cannot be empty'),
-        user_id: z.string().min(1, 'Management user_id cannot be empty'),
+    app_id: parseEnv('BOT__APP_ID', z.string().min(1, 'Application ID cannot be empty')),
+    clear_old_commands_on_startup: parseEnv('BOT__CLEAR_OLD_COMMANDS_ON_STARTUP', z.boolean().default(false), (v) => {
+        if (typeof v === 'string') {
+            return (v as string).toLowerCase() === 'true';
+        }
+        return v;
     }),
-    token: z.string().min(1, 'Bot token cannot be empty'),
+    language: parseEnv(
+        'BOT__LANGUAGE',
+        z
+            .enum(SupportedLanguages, {
+                message: 'Invalid language',
+            })
+            .default(SupportedLanguages.EN),
+    ),
+    log_level: parseEnv(
+        'BOT__LOG_LEVEL',
+        z
+            .enum(LogLevels, {
+                message: 'Invalid log level',
+            })
+            .default(process.env.NODE_ENV === 'production' ? LogLevels.error : LogLevels.debug),
+        (v) => {
+            if (isNaN(Number(v))) return v;
+            return Number(v);
+        },
+    ),
+    management: z.object({
+        channel_id: parseEnv('BOT__MANAGEMENT__CHANNEL_ID', z.string().min(1, 'Management channel_id cannot be empty')),
+        guild_id: parseEnv('BOT__MANAGEMENT__GUILD_ID', z.string().min(1, 'Management guild_id cannot be empty')),
+        user_id: parseEnv('BOT__MANAGEMENT__USER_ID', z.string().min(1, 'Management user_id cannot be empty')),
+    }),
+    token: parseEnv('BOT__TOKEN', z.string().min(1, 'Bot token cannot be empty')),
 });
 export type BotConfig_t = z.infer<typeof bot_config_schema>;
 
@@ -47,22 +78,37 @@ export type BotConfig_t = z.infer<typeof bot_config_schema>;
  * Zod schema for the database configuration.
  *
  * Validated properties:
- * - host: database host (string)
- * - port: database port (number)
- * - username: database user (string)
- * - password: database password (string|undefined)
- * - database: database name (string)
- * - synchronize: whether to synchronize schema (boolean)
- * - logging: enable TypeORM logging (boolean)
+ * - host: database host (string) - uses DB_HOST env var if set, fallback to JSONC or 'localhost'
+ * - port: database port (number) - uses DB_PORT env var if set, fallback to JSONC or 5432
+ * - username: database user (string) - uses DB_USERNAME env var if set, fallback to JSONC or 'usmanagabot'
+ * - password: database password (string|undefined) - uses DB_PASSWORD env var if set, fallback to JSONC
+ * - database: database name (string) - uses DB_DATABASE env var if set, fallback to JSONC or 'usmanagabot'
+ * - synchronize: whether to synchronize schema (boolean) - uses DB_SYNCHRONIZE env var if set, fallback to JSONC or false
+ * - logging: enable TypeORM logging (boolean) - uses DB_LOGGING env var if set, fallback to JSONC or false
  */
 const database_config_schema = z.object({
-    host: z.string().min(1, 'Database host cannot be empty').default('localhost'),
-    port: z.number().int().positive('Database port must be a positive integer').default(5432),
-    username: z.string().min(1, 'Database username cannot be empty').default('usmanagabot'),
-    password: z.string().optional(),
-    database: z.string().min(1, 'Database name cannot be empty').default('usmanagabot'),
-    synchronize: z.boolean().default(false),
-    logging: z.boolean().default(false),
+    host: parseEnv('DB__HOST', z.string().min(1, 'Database host cannot be empty').default('localhost')),
+    port: parseEnv('DB__PORT', z.number().min(1, 'Database port must be a positive integer').default(5432), (v) => {
+        if (typeof v === 'string') {
+            return parseInt(v, 10);
+        }
+        return v;
+    }),
+    username: parseEnv('DB__USERNAME', z.string().min(1, 'Database username cannot be empty').default('usmanagabot')),
+    password: parseEnv('DB__PASSWORD', z.string().optional()),
+    database: parseEnv('DB__DATABASE', z.string().min(1, 'Database name cannot be empty').default('usmanagabot')),
+    synchronize: parseEnv('DB__SYNCHRONIZE', z.boolean().default(false), (v) => {
+        if (typeof v === 'string') {
+            return (v as string).toLowerCase() === 'true';
+        }
+        return v;
+    }),
+    logging: parseEnv('DB__LOGGING', z.boolean().default(false), (v) => {
+        if (typeof v === 'string') {
+            return (v as string).toLowerCase() === 'true';
+        }
+        return v;
+    }),
 });
 export type DatabaseConfig_t = z.infer<typeof database_config_schema>;
 
