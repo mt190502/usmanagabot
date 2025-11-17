@@ -9,13 +9,17 @@ import {
     MessageFlags,
     SlashCommandBuilder,
     StringSelectMenuBuilder,
+    User,
 } from 'discord.js';
+import moment from 'moment';
 import 'reflect-metadata';
 import { format } from 'util';
+import { BotClient } from '../../services/client';
 import { Config } from '../../services/config';
 import { Database } from '../../services/database';
 import { Logger } from '../../services/logger';
 import { Paginator } from '../../utils/paginator';
+import { Users } from '../database/entities/users';
 import { DatabaseManager } from './database';
 
 /**
@@ -266,6 +270,7 @@ export abstract class CustomizableCommand extends BaseCommand {
             ui.setColor(Colors.Blurple);
         }
 
+        let latest_action_from_user: [Users | string | null, Date | null] = [null, null];
         for (const [name, setting] of subsettings) {
             if (setting.display_name) {
                 let row;
@@ -277,9 +282,14 @@ export abstract class CustomizableCommand extends BaseCommand {
                         row = rows.map((r) => r[setting.database_key as keyof unknown]);
                         if (Array.isArray(row[0])) row = row[0];
                     } else {
-                        row = (await this.db.findOne(setting.database, {
+                        const db = (await this.db.findOne(setting.database, {
                             where: { id: 1 },
-                        }))![setting.database_key as keyof unknown];
+                        }))!;
+                        latest_action_from_user = [
+                            this.cfg.current_botcfg.management.user_id,
+                            db['timestamp' as keyof unknown],
+                        ];
+                        row = db[setting.database_key as keyof unknown];
                     }
                 } else {
                     if (setting.db_column_is_array) {
@@ -289,9 +299,14 @@ export abstract class CustomizableCommand extends BaseCommand {
                         row = rows.map((r) => r[setting.database_key as keyof unknown]);
                         if (Array.isArray(row[0])) row = row[0];
                     } else {
-                        row = (await this.db.findOne(setting.database, {
+                        const db = (await this.db.findOne(setting.database, {
                             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
-                        }))![setting.database_key as keyof unknown];
+                        }))!;
+                        latest_action_from_user = [
+                            db['latest_action_from_user' as keyof unknown],
+                            db['timestamp' as keyof unknown],
+                        ];
+                        row = db[setting.database_key as keyof unknown];
                     }
                 }
                 let value;
@@ -329,13 +344,35 @@ export abstract class CustomizableCommand extends BaseCommand {
             value: 'command:settings',
         });
 
-        if (
-            interaction.isChannelSelectMenu() ||
-            interaction.isStringSelectMenu() ||
-            interaction.isChatInputCommand() ||
-            interaction.isRoleSelectMenu() ||
-            interaction.isModalSubmit()
-        ) {
+        if (latest_action_from_user[0]) {
+            let user: User | undefined;
+            let date: string | null;
+            if (typeof latest_action_from_user[0] === 'object') {
+                const uid = BigInt((latest_action_from_user[0] as Users).uid);
+                if (uid == 0n) {
+                    user = BotClient.client.users.cache.get(BotClient.client.user!.id);
+                    date = moment(latest_action_from_user[1]).format('YYYY/MM/DD HH:mm:ss Z');
+                } else {
+                    user = BotClient.client.users.cache.get(uid.toString());
+                    date = moment(latest_action_from_user[1]).format('YYYY/MM/DD HH:mm:ss Z');
+                }
+            } else if (typeof latest_action_from_user[0] === 'string') {
+                user = BotClient.client.users.cache.get(latest_action_from_user[0]);
+                date = moment(latest_action_from_user[1]).format('YYYY/MM/DD HH:mm:ss Z');
+            } else {
+                user = undefined;
+                date = null;
+            }
+            if (user) {
+                ui.addFields({ name: '\u00A0', value: '' });
+                ui.setFooter({
+                    iconURL: user ? user.displayAvatarURL() : undefined,
+                    text: `Last modified by ${user ? user.tag : 'Unknown User'} on ${date ? date : 'Unknown Date'}`,
+                });
+            }
+        }
+
+        if (interaction instanceof BaseInteraction) {
             const payload = {
                 embeds: [ui],
                 components: [new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu).toJSON()],

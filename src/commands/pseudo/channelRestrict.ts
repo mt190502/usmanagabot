@@ -55,7 +55,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         if (!restrict) {
             const new_settings = new ChannelRestrictSystem();
             new_settings.is_enabled = false;
-            new_settings.from_user = system_user!;
+            new_settings.latest_action_from_user = system_user!;
             new_settings.from_guild = guild!;
             restrict = await this.db.save(new_settings);
             this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
@@ -196,7 +196,11 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         const restrict = await this.db.findOne(ChannelRestrictSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         restrict!.is_enabled = !restrict!.is_enabled;
+        restrict!.latest_action_from_user = user;
+        restrict!.timestamp = new Date();
         this.enabled = restrict!.is_enabled;
         await this.db.save(ChannelRestrictSystem, restrict!);
         await this.settingsUI(interaction);
@@ -223,6 +227,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         const restricts = await this.db.find(ChannelRestricts, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
         if (restricts.find((channel) => channel.channel_id === interaction.values[0])) {
             this.warning = 'This channel is already added to the restrict system.';
@@ -235,7 +240,8 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         }
         const channel = new ChannelRestricts();
         channel.channel_id = interaction.values[0];
-        channel.from_user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+        channel.latest_action_from_user = user;
+        channel.timestamp = new Date();
         channel.from_guild = (await this.db.getGuild(BigInt(interaction.guildId!)))!;
         await this.db.save(ChannelRestricts, channel);
         await this.settingsUI(interaction);
@@ -259,10 +265,14 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         const restricts = await this.db.find(ChannelRestricts, {
             where: { from_guild: { gid: BigInt(interaction.guild!.id) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         if (args.length > 1) {
             const channel_id = args[0];
             const channel = restricts.find((c) => BigInt(c.channel_id) === BigInt(channel_id));
             channel!.restricts = interaction.values.map((v) => v.split(':').pop()! as unknown as RestrictType);
+            channel!.latest_action_from_user = user;
+            channel!.timestamp = new Date();
             await this.db.save(ChannelRestricts, channel!);
             await this.settingsUI(interaction);
             this.log.send('debug', 'command.channelrestrict.definechannelrestrictions.success', {
@@ -339,6 +349,10 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         const restricts = await this.db.find(ChannelRestricts, {
             where: { from_guild: { gid: BigInt(interaction.guild!.id) } },
         });
+        const restrict = await this.db.findOne(ChannelRestrictSystem, {
+            where: { from_guild: { gid: BigInt(interaction.guild!.id) } },
+        });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
         const selected = restricts.find((channel) => channel.channel_id === interaction.values[0]);
         if (!selected) {
@@ -351,6 +365,9 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
             return;
         }
         await this.db.remove(ChannelRestricts, selected);
+        restrict!.latest_action_from_user = user;
+        restrict!.timestamp = new Date();
+        await this.db.save(ChannelRestrictSystem, restrict!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.channelrestrict.removechannel.success', {
             guild: interaction.guild,
@@ -377,7 +394,11 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         const restrict = await this.db.findOne(ChannelRestrictSystem, {
             where: { from_guild: { gid: BigInt(interaction.guild!.id) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         restrict!.mod_notifier_channel_id = interaction.values[0];
+        restrict!.latest_action_from_user = user;
+        restrict!.timestamp = new Date();
         await this.db.save(ChannelRestrictSystem, restrict!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.channelrestrict.changenotifierchannel.success', {

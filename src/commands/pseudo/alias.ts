@@ -443,7 +443,11 @@ export default class AliasCommand extends CustomizableCommand {
         const alias_system = await this.db.findOne(AliasSystem, {
             where: { from_guild: { gid: BigInt(interaction.guild!.id) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         alias_system!.is_enabled = !alias_system!.is_enabled;
+        alias_system!.latest_action_from_user = user;
+        alias_system!.timestamp = new Date();
         this.enabled = alias_system!.is_enabled;
         await this.db.save(AliasSystem, alias_system!);
         CommandLoader.getInstance().RESTCommandLoader(this, interaction.guild!.id);

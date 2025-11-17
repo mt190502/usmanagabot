@@ -24,7 +24,7 @@ export class ChannelRestrictSystem {
 
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
-    from_user!: Users;
+    latest_action_from_user!: Users;
 
     @ManyToOne(() => Guilds, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_guild', referencedColumnName: 'id' })
@@ -47,7 +47,7 @@ export class ChannelRestricts {
 
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })
-    from_user!: Users;
+    latest_action_from_user!: Users;
 
     @ManyToOne(() => Guilds, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_guild', referencedColumnName: 'id' })

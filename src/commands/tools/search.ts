@@ -48,19 +48,19 @@ export default class SearchCommand extends CustomizableCommand {
         if (!search) {
             const new_settings = new Search();
             new_settings.is_enabled = true;
-            new_settings.from_user = system_user!;
+            new_settings.latest_action_from_user = system_user!;
             new_settings.from_guild = guild!;
 
             const engine_google = new SearchEngines();
             engine_google.engine_name = 'Google';
             engine_google.engine_url = 'https://google.com/search?q=';
-            engine_google.from_user = system_user!;
+            engine_google.latest_action_from_user = system_user!;
             engine_google.from_guild = guild!;
 
             const engine_duckduckgo = new SearchEngines();
             engine_duckduckgo.engine_name = 'DuckDuckGo';
             engine_duckduckgo.engine_url = 'https://duckduckgo.com/?q=';
-            engine_duckduckgo.from_user = system_user!;
+            engine_duckduckgo.latest_action_from_user = system_user!;
             engine_duckduckgo.from_guild = guild!;
 
             await this.db.save(engine_google);
@@ -153,7 +153,11 @@ export default class SearchCommand extends CustomizableCommand {
         const search = await this.db.findOne(Search, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         search!.is_enabled = !search!.is_enabled;
+        search!.latest_action_from_user = user;
+        search!.timestamp = new Date();
         this.enabled = search!.is_enabled;
         await this.db.save(Search, search!);
         CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
@@ -195,8 +199,9 @@ export default class SearchCommand extends CustomizableCommand {
             const new_engine = new SearchEngines();
             new_engine.engine_name = name;
             new_engine.engine_url = url;
-            new_engine.from_user = user!;
+            new_engine.latest_action_from_user = user!;
             new_engine.from_guild = guild!;
+            new_engine.timestamp = new Date();
             await this.db.save(new_engine);
             CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await this.settingsUI(interaction);
@@ -240,8 +245,9 @@ export default class SearchCommand extends CustomizableCommand {
             const engine = engines.find((e) => e.engine_name === engine_name)!;
             engine.engine_name = name;
             engine.engine_url = url;
-            engine.from_user = user!;
+            engine.latest_action_from_user = user!;
             engine.from_guild = guild!;
+            engine.timestamp = new Date();
             await this.db.save(engine);
             CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await this.settingsUI(interaction);
@@ -301,6 +307,8 @@ export default class SearchCommand extends CustomizableCommand {
     public async removeEngine(interaction: StringSelectMenuInteraction, engine_name: string): Promise<void> {
         this.log.send('debug', 'command.setting.selectmenu.start', { name: this.name, guild: interaction.guild });
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+        const search = await this.db.findOne(Search, { where: { from_guild: guild! } });
         const engines = await this.db.find(SearchEngines, { where: { from_guild: guild! } });
 
         if (interaction.customId === 'settings:search') {
@@ -329,6 +337,9 @@ export default class SearchCommand extends CustomizableCommand {
         } else if (interaction.customId.startsWith('settings:search:removeengine')) {
             await this.db.remove(engines.find((e) => e.engine_name === engine_name)!);
             CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+            search!.latest_action_from_user = user;
+            search!.timestamp = new Date();
+            await this.db.save(Search, search!);
             await this.settingsUI(interaction);
             this.log.send('debug', 'command.setting.selectmenu.success', { name: this.name, guild: interaction.guild });
             return;

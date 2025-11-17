@@ -184,7 +184,11 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         const earthquake = await this.db.findOne(Earthquake, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         earthquake!.is_enabled = !earthquake!.is_enabled;
+        earthquake!.latest_action_from_user = user;
+        earthquake!.timestamp = new Date();
         this.enabled = earthquake!.is_enabled;
         await this.db.save(Earthquake, earthquake!);
         await this.settingsUI(interaction);
@@ -214,8 +218,11 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         const earthquake = await this.db.findOne(Earthquake, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
-        const channel_id = interaction.values[0];
-        earthquake!.channel_id = channel_id;
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
+        earthquake!.channel_id = interaction.values[0];
+        earthquake!.latest_action_from_user = user;
+        earthquake!.timestamp = new Date();
         await this.db.save(Earthquake, earthquake!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.channel.success', {
@@ -238,9 +245,12 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         const earthquake = (await this.db.findOne(Earthquake, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         }))!;
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
         if (args) {
             earthquake.magnitude_limit = parseFloat(args);
+            earthquake!.latest_action_from_user = user;
+            earthquake!.timestamp = new Date();
             await this.db.save(Earthquake, earthquake!);
             await this.settingsUI(interaction);
             this.log.send('debug', 'command.setting.selectmenu.success', { name: this.name, guild: interaction.guild });
@@ -281,6 +291,8 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         const earthquake = await this.db.findOne(Earthquake, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         const url_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             new TextInputBuilder()
                 .setCustomId('seismicportal_api_url_input')
@@ -294,6 +306,8 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         if (interaction.isModalSubmit()) {
             const api_url = interaction.fields.getTextInputValue('seismicportal_api_url_input');
             earthquake!.seismicportal_api_url = api_url;
+            earthquake!.latest_action_from_user = user;
+            earthquake!.timestamp = new Date();
             await this.db.save(Earthquake, earthquake!);
             await this.settingsUI(interaction);
             this.log.send('debug', 'command.setting.modalsubmit.success', {
@@ -323,6 +337,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         const earthquake = await this.db.findOne(Earthquake, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
         const region_code_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             new TextInputBuilder()
@@ -337,6 +352,8 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         if (interaction.isModalSubmit()) {
             const region_code = interaction.fields.getTextInputValue('region_code_input');
             earthquake!.region_code = region_code;
+            earthquake!.latest_action_from_user = user;
+            earthquake!.timestamp = new Date();
             await this.db.save(Earthquake, earthquake!);
             await this.settingsUI(interaction);
             this.log.send('debug', 'command.setting.modalsubmit.success', {

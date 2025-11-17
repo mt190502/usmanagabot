@@ -184,7 +184,10 @@ export default class ReportCommand extends CustomizableCommand {
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
         report!.is_enabled = !report!.is_enabled;
+        report!.latest_action_from_user = user;
+        report!.timestamp = new Date();
         this.enabled = report!.is_enabled;
         await this.db.save(Reports, report!);
         CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
@@ -213,8 +216,12 @@ export default class ReportCommand extends CustomizableCommand {
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         const selected_channel = interaction.values[0];
         report!.channel_id = selected_channel;
+        report!.latest_action_from_user = user;
+        report!.timestamp = new Date();
         await this.db.save(Reports, report!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.channel.success', {
@@ -242,7 +249,11 @@ export default class ReportCommand extends CustomizableCommand {
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         report!.moderator_role_id = interaction.values[0];
+        report!.latest_action_from_user = user;
+        report!.timestamp = new Date();
         await this.db.save(Reports, report!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.role.success', {
@@ -261,7 +272,11 @@ export default class ReportCommand extends CustomizableCommand {
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         report!.moderator_role_id = null;
+        report!.latest_action_from_user = user;
+        report!.timestamp = new Date();
         await this.db.save(Reports, report!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.report.removemoderatorrole.success', { guild: interaction.guild });

@@ -174,7 +174,11 @@ export default class VerificationCommand extends CustomizableCommand {
         const verification_system = await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         verification_system!.is_enabled = !verification_system!.is_enabled;
+        verification_system!.latest_action_from_user = user;
+        verification_system!.timestamp = new Date();
         this.enabled = verification_system!.is_enabled;
         await this.db.save(VerificationSystem, verification_system!);
         await this.settingsUI(interaction);
@@ -204,8 +208,12 @@ export default class VerificationCommand extends CustomizableCommand {
         const verification_system = (await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         }))!;
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         const selected_channel = interaction.values[0];
         verification_system.channel_id = selected_channel;
+        verification_system!.latest_action_from_user = user;
+        verification_system!.timestamp = new Date();
         await this.db.save(VerificationSystem, verification_system);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.channel.success', {
@@ -233,6 +241,7 @@ export default class VerificationCommand extends CustomizableCommand {
         const verification_system = await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
         const server_roles = interaction.guild!.roles.cache.sort((a, b) => b.position - a.position);
         const bot_role = server_roles.find((r) => r.name === BotClient.client.user!.username)!;
         const requested_role = server_roles.get(interaction.values[0])!;
@@ -243,6 +252,8 @@ export default class VerificationCommand extends CustomizableCommand {
             return;
         }
         verification_system!.role_id = requested_role.id;
+        verification_system!.latest_action_from_user = user;
+        verification_system!.timestamp = new Date();
         await this.db.save(VerificationSystem, verification_system!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.role.success', {
@@ -267,6 +278,7 @@ export default class VerificationCommand extends CustomizableCommand {
         const verification_system = await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
         const message_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             new TextInputBuilder()
                 .setCustomId('verification_system_message_input')
@@ -281,6 +293,8 @@ export default class VerificationCommand extends CustomizableCommand {
         if (interaction.isModalSubmit()) {
             const message = interaction.fields.getTextInputValue('verification_system_message_input');
             verification_system!.message = message;
+            verification_system!.latest_action_from_user = user;
+            verification_system!.timestamp = new Date();
             await this.db.save(VerificationSystem, verification_system!);
             await this.settingsUI(interaction);
             this.log.send('debug', 'command.setting.modalsubmit.success', {
@@ -315,6 +329,7 @@ export default class VerificationCommand extends CustomizableCommand {
         const verifications = await this.db.find(Verification, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
         const minimum_age_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             new TextInputBuilder()
@@ -341,6 +356,8 @@ export default class VerificationCommand extends CustomizableCommand {
                 await this.db.save(Verification, verification);
             }
             verification_system!.minimum_days = new_age;
+            verification_system!.latest_action_from_user = user;
+            verification_system!.timestamp = new Date();
             await this.db.save(VerificationSystem, verification_system!);
             await this.settingsUI(interaction);
             this.log.send('debug', 'command.setting.modalsubmit.success', {

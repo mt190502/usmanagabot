@@ -83,7 +83,11 @@ export default class AutoroleCommand extends CustomizableCommand {
         const autorole = await this.db.findOne(Autorole, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         autorole!.is_enabled = !autorole!.is_enabled;
+        autorole!.latest_action_from_user = user;
+        autorole!.timestamp = new Date();
         this.enabled = autorole!.is_enabled;
         await this.db.save(Autorole, autorole!);
         await this.settingsUI(interaction);
@@ -110,6 +114,7 @@ export default class AutoroleCommand extends CustomizableCommand {
         const autorole = await this.db.findOne(Autorole, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
         const server_roles = interaction.guild!.roles.cache.sort((a, b) => b.position - a.position);
         const bot_role = server_roles.find((r) => r.name === BotClient.client.user!.username)!;
         const requested_role = server_roles.get(interaction.values[0])!;
@@ -120,6 +125,8 @@ export default class AutoroleCommand extends CustomizableCommand {
             return;
         }
         autorole!.role_id = requested_role.id;
+        autorole!.latest_action_from_user = user;
+        autorole!.timestamp = new Date();
         await this.db.save(Autorole, autorole!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.role.success', {

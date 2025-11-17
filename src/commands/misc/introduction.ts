@@ -59,7 +59,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             new_settings.cmd_name = this.name;
             new_settings.cmd_desc = this.description;
             new_settings.from_guild = guild!;
-            new_settings.from_user = system_user!;
+            new_settings.latest_action_from_user = system_user!;
             introduction = await this.db.save(new_settings);
             this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
         }
@@ -258,7 +258,11 @@ export default class IntroductionCommand extends CustomizableCommand {
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         introduction!.is_enabled = !introduction!.is_enabled;
+        introduction!.latest_action_from_user = user;
+        introduction!.timestamp = new Date();
         this.enabled = introduction!.is_enabled;
         await this.db.save(Introduction, introduction!);
         CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
@@ -279,6 +283,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
         const cmd_name = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             new TextInputBuilder()
                 .setCustomId('cmd_name')
@@ -300,6 +305,8 @@ export default class IntroductionCommand extends CustomizableCommand {
             const new_cmd_desc = interaction.fields.getTextInputValue('cmd_desc');
             if (new_cmd_name) introduction!.cmd_name = new_cmd_name;
             if (new_cmd_desc) introduction!.cmd_desc = new_cmd_desc;
+            introduction!.latest_action_from_user = user;
+            introduction!.timestamp = new Date();
             await this.db.save(Introduction, introduction!);
             CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await interaction.deferUpdate();
@@ -327,6 +334,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
         if (interaction.isModalSubmit()) {
             const name_set = new Set<string>();
@@ -352,6 +360,8 @@ export default class IntroductionCommand extends CustomizableCommand {
                 (introduction![`col${i + 1}` as keyof Introduction] as string[]) = [parsed[i].name, parsed[i].value];
             }
             introduction!.yaml_data = columns;
+            introduction!.latest_action_from_user = user;
+            introduction!.timestamp = new Date();
             await this.db.save(Introduction, introduction!);
             CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
             await interaction.deferUpdate();
@@ -397,6 +407,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
         if (interaction.isModalSubmit()) {
             const limit_value = interaction.fields.getTextInputValue('daily_limit');
@@ -411,6 +422,8 @@ export default class IntroductionCommand extends CustomizableCommand {
                 return;
             }
             introduction!.daily_submit_limit = limit;
+            introduction!.latest_action_from_user = user;
+            introduction!.timestamp = new Date();
             await this.db.save(Introduction, introduction!);
             await this.settingsUI(interaction);
             this.log.send('debug', 'command.setting.modalsubmit.success', {
@@ -455,8 +468,11 @@ export default class IntroductionCommand extends CustomizableCommand {
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
         const selected_channel = interaction.values[0];
         introduction!.channel_id = selected_channel;
+        introduction!.latest_action_from_user = user;
+        introduction!.timestamp = new Date();
         await this.db.save(Introduction, introduction!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.channel.success', {

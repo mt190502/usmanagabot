@@ -234,7 +234,11 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         const msg_logger = await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         msg_logger!.is_enabled = !msg_logger!.is_enabled;
+        msg_logger!.latest_action_from_user = user;
+        msg_logger!.timestamp = new Date();
         this.enabled = msg_logger!.is_enabled;
         await this.db.save(MessageLogger, msg_logger!);
         await this.settingsUI(interaction);
@@ -262,8 +266,12 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         const msg_logger = (await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         }))!;
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         const selected_channel = interaction.values[0];
         msg_logger!.channel_id = selected_channel;
+        msg_logger!.latest_action_from_user = user;
+        msg_logger!.timestamp = new Date();
         if (msg_logger.webhook_id !== null && msg_logger.webhook_token !== null) {
             const webhook_client = new WebhookClient({
                 id: msg_logger.webhook_id,
@@ -307,7 +315,11 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         const msg_logger = await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
         msg_logger!.ignored_channels = interaction.values.map((id) => BigInt(id));
+        msg_logger!.latest_action_from_user = user;
+        msg_logger!.timestamp = new Date();
         await this.db.save(MessageLogger, msg_logger!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.channel.success', {
