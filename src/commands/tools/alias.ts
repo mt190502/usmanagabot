@@ -125,7 +125,7 @@ export default class AliasCommand extends CustomizableCommand {
                         .setDescription(
                             'Content (Variables: {{user}},{{user_id}},{{channel}},{{channel_id}},{{guild}},{{mentioned_users}})',
                         )
-                        .setRequired(true),
+                        .setRequired(false),
                 )
                 .addBooleanOption((option) =>
                     option
@@ -335,7 +335,7 @@ export default class AliasCommand extends CustomizableCommand {
             return;
         }
 
-        alias.content = alias_content!;
+        if (alias_content !== null && alias_content.length > 0) alias.content = alias_content;
         if (case_sensitive !== null) alias.case_sensitive = case_sensitive;
         if (consists_only_of_word !== null) alias.consists_only_of_word = consists_only_of_word;
         if (use_regex !== null) alias.use_regex = use_regex;
