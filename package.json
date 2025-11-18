@@ -55,6 +55,11 @@
         "eslint:fix": "eslint . --fix",
         "prettier": "prettier --config .prettierrc.json 'src/**/*.ts'",
         "prettier:fix": "prettier --config .pretterrc.json 'src/**/*.ts' --write",
-        "start": "bun run src/main.ts"
+        "start": "bun run src/main.ts",
+        "typeorm:migration:create": "bunx tsx node_modules/typeorm/cli.js migration:create ./src/types/database/migrations/",
+        "typeorm:migration:generate": "bunx tsx node_modules/typeorm/cli.js migration:generate -d typeorm.config.ts ./src/types/database/migrations/",
+        "typeorm:migration:show": "bunx tsx node_modules/typeorm/cli.js migration:show -d typeorm.config.ts",
+        "typeorm:migration:run": "bunx tsx node_modules/typeorm/cli.js migration:run -d typeorm.config.ts",
+        "typeorm:migration:revert": "bunx tsx node_modules/typeorm/cli.js migration:revert -d typeorm.config.ts"
     }
 }
