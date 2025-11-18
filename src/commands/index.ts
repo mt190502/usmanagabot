@@ -129,7 +129,9 @@ export class CommandLoader {
             system_user.name = 'root';
             await Database.dbManager.save(system_user);
         } catch (error) {
-            CommandLoader.logger.send('error', 'commandloader.registerGuilds.database_save_failed', { message: (error as Error).message });
+            CommandLoader.logger.send('error', 'commandloader.registerGuilds.database_save_failed', {
+                message: (error as Error).message,
+            });
         }
         await client.destroy();
         return await Database.dbManager.find(Guilds);
@@ -158,33 +160,45 @@ export class CommandLoader {
 
         if (guilds?.length === 0) guilds = await this.registerGuilds();
 
-        const commands = custom_command
+        const command_files = custom_command
             ? [custom_command]
             : globSync(path.join(__dirname, './**/*.ts'), { ignore: ['**/index.ts'] });
+        const commands: { name: string; data: BaseCommand | CustomizableCommand }[] = [];
 
-        for (const file of commands.sort()) {
-            let cmd: BaseCommand | CustomizableCommand;
-            let filename: string;
-            if (custom_command) {
-                cmd = custom_command;
-                filename = 'inline';
+        for (const file of command_files) {
+            let file_name_with_path = '';
+            if (typeof file === 'string') {
+                file_name_with_path = file.match(/([^/]+\/[^/]+\/[^/]+)$/)![0];
+                const content = ((await import(file)).default);
+                if (Array.isArray(content)) {
+                    for (const cmd_class of content) {
+                        commands.push({ name: file_name_with_path, data: new cmd_class() });
+                    }
+                } else {
+                    commands.push({ name: file_name_with_path, data: new content() });
+                }
             } else {
-                const content = await import(file as string);
-                if (!content || !content.default) continue;
-                cmd = new content.default() as BaseCommand | CustomizableCommand;
-                filename = (file as string).match(/([^/]+\/[^/]+\/[^/]+)$/)![1];
+                file_name_with_path = 'inline';
+                commands.push({ name: file_name_with_path, data: file });
             }
+        }
 
+        for (const { name: filename, data: cmd } of commands) {
             if (!cmd.name) {
                 CommandLoader.logger.send('info', 'commandloader.readCommandFiles.invalid_name', { name: filename });
                 continue;
             }
 
             if (!cmd.enabled && !custom_command) {
-                CommandLoader.logger.send('info', 'commandloader.readCommandFiles.command_disabled', { name: cmd.name });
+                CommandLoader.logger.send('info', 'commandloader.readCommandFiles.command_disabled', {
+                    name: cmd.name,
+                });
                 continue;
             }
-            CommandLoader.logger.send('log', 'commandloader.readCommandFiles.command_loading', { name: cmd.name, filename: filename });
+            CommandLoader.logger.send('log', 'commandloader.readCommandFiles.command_loading', {
+                name: cmd.name,
+                filename: filename,
+            });
 
             const targets =
                 cmd instanceof CustomizableCommand && guilds?.length ? guilds.map((g) => g.gid.toString()) : ['global'];
@@ -264,7 +278,10 @@ export class CommandLoader {
                     });
                 }
             } catch (error) {
-                CommandLoader.logger.send('error', 'commandloader.RESTCommandLoader.failed', { guild: guild_id, message: (error as Error).message });
+                CommandLoader.logger.send('error', 'commandloader.RESTCommandLoader.failed', {
+                    guild: guild_id,
+                    message: (error as Error).message,
+                });
             }
         }
     }
