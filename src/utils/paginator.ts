@@ -128,7 +128,7 @@ export class Paginator {
             description += `**${item.pretty_name}**\n${item.description}\n\n`;
             string_select_menu.addOptions({
                 label: item.pretty_name,
-                description: item.description,
+                description: item.description?.substring(0, 50) || 'No description provided.',
                 value:
                     item.namespace === 'settings'
                         ? `settings:${item.name}`

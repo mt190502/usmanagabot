@@ -1,4 +1,5 @@
 import {
+    ButtonInteraction,
     ChatInputCommandInteraction,
     Events,
     Message,
@@ -11,6 +12,7 @@ import { CommandLoader } from '..';
 import { Aliases, AliasSystem } from '../../types/database/entities/alias';
 import { Channels } from '../../types/database/entities/channels';
 import { ChainEvent } from '../../types/decorator/chainevent';
+import { HandleAction } from '../../types/decorator/command';
 import { SettingToggleButtonComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
@@ -104,7 +106,7 @@ export default class AliasCommand extends CustomizableCommand {
                         .setName('alias_name')
                         .setDescription('Name')
                         .setRequired(true)
-                        .setChoices(...choices),
+                        .setChoices(...choices.sort((a, b) => a.name.localeCompare(b.name))),
                 ),
         );
 
@@ -117,7 +119,7 @@ export default class AliasCommand extends CustomizableCommand {
                         .setName('alias_name')
                         .setDescription('Name')
                         .setRequired(true)
-                        .setChoices(...choices),
+                        .setChoices(...choices.sort((a, b) => a.name.localeCompare(b.name))),
                 )
                 .addStringOption((option) =>
                     option
@@ -267,7 +269,7 @@ export default class AliasCommand extends CustomizableCommand {
         });
     }
 
-    private async list(interaction: ChatInputCommandInteraction): Promise<void> {
+    private async list(interaction: ChatInputCommandInteraction | ButtonInteraction): Promise<void> {
         this.log.send('debug', 'command.execute.subcommand.start', {
             name: this.name,
             guild: interaction.guild,
@@ -289,13 +291,32 @@ export default class AliasCommand extends CustomizableCommand {
             return;
         }
 
-        let reply_content = '**Aliases for this server:**\n';
-        for (const alias of aliases) {
-            reply_content += `- \`${alias.name}\`: ${alias.content}\n`;
-        }
+        const payload = await this.paginator.generatePage(interaction.guild!.id, interaction.user.id, this.name, {
+            title: ':notepad_spiral: Alias List',
+            color: 0x00ffff,
+            items: aliases
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((alias) => ({
+                    name: alias.name,
+                    pretty_name: alias.name,
+                    description: alias.content.match(/^https?:\/\/.+$/)
+                        ? `[Link](${alias.content})`
+                        : `\`\`\`${alias.content.substring(0, 97) + (alias.content.length > 100 ? '...' : '')}\`\`\``,
+                    namespace: 'command' as const,
+                })),
+            items_per_page: 5,
+        });
 
+        if (interaction.isButton()) {
+            await interaction.update({
+                embeds: payload.embeds,
+                components: payload.components,
+            });
+            return;
+        }
         await interaction.reply({
-            content: reply_content,
+            embeds: payload.embeds,
+            components: payload.components,
             flags: MessageFlags.Ephemeral,
         });
         this.log.send('debug', 'command.execute.subcommand.success', {
@@ -303,6 +324,38 @@ export default class AliasCommand extends CustomizableCommand {
             guild: interaction.guild,
             user: interaction.user,
             subcommand: 'list',
+        });
+    }
+
+    @HandleAction('pageitem')
+    public async handlePageItem(interaction: ButtonInteraction, item_name: string): Promise<void> {
+        this.log.send('debug', 'command.handlePageItem.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
+        const alias = await this.db.findOne(Aliases, {
+            where: { name: item_name, from_guild: { gid: BigInt(interaction.guild!.id) } },
+        });
+        const payload = await this.paginator.viewPage(interaction.guild!.id, interaction.user.id, this.name, {
+            title: `:notepad_spiral: About Alias: ${alias!.name}`,
+            color: 0x00ffff,
+            description: `
+                **Name:** \`${alias!.name}\`
+                **Content:**\n\`\`\`${alias!.content}\`\`\`
+                **Case Sensitive:** ${alias!.case_sensitive ? ':green_circle: Yes' : ' :red_circle: No'}
+                **Message Consists Only Of Word:** ${alias!.consists_only_of_word ? ':green_circle: Yes' : ' :red_circle: No'}
+                **Uses Regex:** ${alias!.use_regex ? ':green_circle: Yes' : ' :red_circle: No'}
+            `,
+        });
+        await interaction.update({
+            embeds: payload.embeds,
+            components: payload.components,
+        });
+        this.log.send('debug', 'command.handlePageItem.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
         });
     }
 
@@ -416,7 +469,7 @@ export default class AliasCommand extends CustomizableCommand {
                     const regex = new RegExp(item.key, 'g');
                     reply_content = reply_content.replace(regex, item.value);
                 }
-
+                reply_content = reply_content.replace(/\\n/g, '\n');
                 await message.channel.send(reply_content);
                 this.log.send('debug', 'command.event.trigger.success', {
                     name: 'alias',
