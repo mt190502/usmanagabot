@@ -1,16 +1,24 @@
 import {
+    ApplicationCommandType,
     ChannelSelectMenuInteraction,
     ChannelType,
+    ChatInputCommandInteraction,
     Colors,
+    ContextMenuCommandBuilder,
+    ContextMenuCommandInteraction,
     EmbedBuilder,
     Events,
     Message,
+    MessageFlags,
     MessageType,
+    PermissionFlagsBits,
+    SlashCommandBuilder,
     StringSelectMenuInteraction,
     TextChannel,
     WebhookClient,
 } from 'discord.js';
 import { setTimeout } from 'timers/promises';
+import { CommandLoader } from '..';
 import { MessageLogger } from '../../types/database/entities/message_logger';
 import { Messages } from '../../types/database/entities/messages';
 import { ChainEvent } from '../../types/decorator/chainevent';
@@ -21,19 +29,32 @@ export default class MessageLoggerCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
         super({
-            name: 'messagelogger',
+            name: 'message_logger',
             pretty_name: 'Message Logger',
             description: 'Manage message logging settings for the server',
-            cooldown: 10,
             is_admin_command: true,
             help: `
-                Use this command to manage message logging settings for the server.
+                Manage the message logging system for this server.
 
                 **Usage:**
-                - \`No Usage\`
+                - \`/message_logger <id|url>\` - Find a message in the message logger by its ID or URL.
+                - Right-click a message and select **Apps > Message Logger** to find it in the logger.
             `,
         });
-        this.base_cmd_data = null;
+        this.base_cmd_data = new SlashCommandBuilder()
+            .setName(this.name)
+            .setDescription('Find a message in the message logger by its ID')
+            .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
+            .addStringOption((option) =>
+                option
+                    .setName('message_id')
+                    .setDescription('The ID or URL of the message to find in the logger')
+                    .setRequired(true),
+            ) as SlashCommandBuilder;
+        this.push_cmd_data = new ContextMenuCommandBuilder()
+            .setName(this.pretty_name)
+            .setType(ApplicationCommandType.Message)
+            .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
@@ -55,7 +76,87 @@ export default class MessageLoggerCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
-    public async execute(
+    public async execute(interaction: ContextMenuCommandInteraction | ChatInputCommandInteraction): Promise<void> {
+        this.log.send('debug', 'command.execute.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
+        const logger = (await this.db.findOne(MessageLogger, {
+            where: { from_guild: { gid: BigInt(interaction.guild!.id) } },
+        }))!;
+
+        const post = new EmbedBuilder();
+
+        let message_id = '';
+        if (interaction.isContextMenuCommand()) {
+            message_id = interaction.targetId;
+        } else if (interaction.isChatInputCommand()) {
+            const input = interaction.options.getString('message_id')!;
+            if (input.match(/^https?:\/\/(canary\.|ptb\.)?discord(app)?\.com\/channels\/\d+\/\d+\/\d+$/)) {
+                message_id = input.split('/').pop()!;
+            } else if (input.match(/^\d+$/)) {
+                message_id = input;
+            } else {
+                post.setColor(Colors.Yellow)
+                    .setTitle(':warning: Invalid Input')
+                    .setDescription('The provided message ID or URL is invalid: `' + input + '`');
+                await interaction.reply({
+                    embeds: [post],
+                    flags: MessageFlags.Ephemeral,
+                });
+                this.log.send('warn', 'command.messagelogger.execute.invalid_input', {
+                    guild: interaction.guild,
+                    user: interaction.user,
+                    input: input,
+                });
+                return;
+            }
+        }
+
+        const message_in_logger = (await this.db.findOne(Messages, { where: { message_id: BigInt(message_id) } }))
+            ?.logged_message_id;
+
+        if (!message_in_logger) {
+            post.setColor(Colors.Yellow)
+                .setTitle(':warning: Message Not Found')
+                .setDescription('The message with ID `' + message_id + '` was not found in the logger.');
+            await interaction.reply({
+                embeds: [post],
+                flags: MessageFlags.Ephemeral,
+            });
+            this.log.send('warn', 'command.messagelogger.execute.message_not_found', {
+                guild: interaction.guild,
+                user: interaction.user,
+                message_id: message_id,
+            });
+            return;
+        }
+
+        post.setColor(Colors.Green)
+            .setTitle(':mag: Message Found')
+            .setDescription(
+                'The message with ID `' +
+                    message_id +
+                    '` can be found in the logger: https://discord.com/channels/' +
+                    logger.from_guild.gid +
+                    '/' +
+                    logger.channel_id +
+                    '/' +
+                    message_in_logger,
+            );
+        await interaction.reply({
+            embeds: [post],
+            flags: MessageFlags.Ephemeral,
+        });
+        this.log.send('debug', 'command.execute.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
+    }
+
+    public async preCheck(
         message: Message<true>,
     ): Promise<{ logger: MessageLogger; webhook: WebhookClient } | undefined> {
         if (!message.guild || message?.author?.bot) return;
@@ -86,7 +187,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
 
     @ChainEvent({ type: Events.MessageCreate })
     public async onMessageCreate(message: Message<true>): Promise<void> {
-        const pre_check_result = await this.execute(message);
+        const pre_check_result = await this.preCheck(message);
         if (!pre_check_result) return;
         this.log.send('debug', 'command.event.trigger.start', {
             name: 'messagelogger',
@@ -161,7 +262,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             guild: message.guild,
             user: message.author,
         });
-        const pre_check_result = await this.execute(message);
+        const pre_check_result = await this.preCheck(message);
         if (!pre_check_result) return;
         const { webhook } = pre_check_result;
         await setTimeout(500);
@@ -190,7 +291,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             guild: old_message.guild,
             author: old_message.author,
         });
-        const pre_check_result = await this.execute(old_message);
+        const pre_check_result = await this.preCheck(old_message);
         if (!pre_check_result) return;
         const { webhook } = pre_check_result;
         await setTimeout(500);
@@ -241,6 +342,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         msg_logger!.timestamp = new Date();
         this.enabled = msg_logger!.is_enabled;
         await this.db.save(MessageLogger, msg_logger!);
+        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.toggle.success', {
             name: this.name,

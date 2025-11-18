@@ -83,5 +83,7 @@
         "command.report.execute.message_not_found": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için rapor edilecek mesaj bulunamadı.",
         "command.search.addengine.duplicate_engine": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından eklenmeye çalışılan \"{name}\" arama motoru zaten mevcut.",
         "command.user_information.execute.user_not_found": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından istenen \"{id}\" ID'li kullanıcı bulunamadı.",
+        "command.messagelogger.execute.invalid_input": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından geçersiz mesaj ID'si veya URL'si sağlandı: \"{input}\".",
+        "command.messagelogger.execute.message_not_found": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için loglayıcıda mesaj bulunamadı: \"{message_id}\".",
     },
 }

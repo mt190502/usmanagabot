@@ -83,5 +83,7 @@
         "command.report.execute.message_not_found": "Message to be reported was not found for user \"{user}\" in server \"{guild}\".",
         "command.search.addengine.duplicate_engine": "Search engine \"{name}\" that user \"{user}\" tried to add in server \"{guild}\" already exists.",
         "command.user_information.execute.user_not_found": "User with ID \"{id}\" requested by user \"{user}\" in server \"{guild}\" was not found.",
+        "command.messagelogger.execute.invalid_input": "Invalid message ID or URL provided by user \"{user}\" in server \"{guild}\": \"{input}\".",
+        "command.messagelogger.execute.message_not_found": "Message not found in logger for user \"{user}\" in server \"{guild}\": \"{message_id}\".",
     },
 }
