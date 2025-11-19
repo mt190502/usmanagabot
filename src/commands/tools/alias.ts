@@ -408,7 +408,7 @@ export default class AliasCommand extends CustomizableCommand {
 
     @ChainEvent({ type: Events.MessageCreate })
     public async onMessageCreate(message: Message<true>): Promise<void> {
-        if (message.author.bot) return;
+        if (message.author.bot || !message.guild) return;
         this.log.send('debug', 'command.event.trigger.start', {
             name: 'alias',
             event: 'onMessageCreate',
