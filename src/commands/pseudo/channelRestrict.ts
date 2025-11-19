@@ -6,6 +6,7 @@ import {
     EmbedBuilder,
     Events,
     Message,
+    MessageType,
     StringSelectMenuBuilder,
     StringSelectMenuInteraction,
     ThreadChannel,
@@ -96,7 +97,8 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         let author: User;
         let channel_id: string;
         let channel: ChannelRestricts;
-        let [is_image, is_video, is_sticker, is_text, is_link, is_restricted] = [
+        let [is_image, is_video, is_sticker, is_text, is_link, is_thread] = [
+            false,
             false,
             false,
             false,
@@ -106,7 +108,6 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         ];
 
         if (message instanceof Message) {
-            if (message.author.bot) return;
             author = message.author;
             channel_id = message.channel.id;
             channel = restrict_list.find((c) => c.channel_id === channel_id)!;
@@ -117,40 +118,38 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                 !!message.content.match(/https?:\/\/\w+\.discordapp\.net\/stickers\/\w+/) || message.stickers.size > 0;
             is_text = message.content.length > 0 && !message.content.match(/https?:\/\/\S+/) && !message.reference;
             is_link = !!message.content.match(/https?:\/\/\S+/);
-            is_restricted = !(
-                (is_image && channel.restricts.includes(RestrictType.IMAGE)) ||
-                (is_link && channel.restricts.includes(RestrictType.LINK) && !is_sticker) ||
-                (is_sticker && channel.restricts.includes(RestrictType.STICKER)) ||
-                (is_text && channel.restricts.includes(RestrictType.TEXT)) ||
-                (is_video && channel.restricts.includes(RestrictType.VIDEO))
-            );
+            if (message.type === MessageType.ThreadCreated) is_thread = true;
         } else {
-            author = message.guild.members.cache.get(message.ownerId)!.user;
-            channel_id = message.parentId!;
+            author = (await message.fetchOwner())!.user!;
+            channel_id = message.id;
             channel = restrict_list.find((c) => c.channel_id === channel_id)!;
             if (!channel) return;
-            is_restricted = channel.restricts.includes(RestrictType.THREAD);
+            is_thread = true;
         }
+
+        const is_restricted = !(
+            (is_image && channel.restricts.includes(RestrictType.IMAGE)) ||
+            (is_link && channel.restricts.includes(RestrictType.LINK) && !is_sticker) ||
+            (is_sticker && channel.restricts.includes(RestrictType.STICKER)) ||
+            (is_text && channel.restricts.includes(RestrictType.TEXT)) ||
+            (is_thread && channel.restricts.includes(RestrictType.THREAD)) ||
+            (is_video && channel.restricts.includes(RestrictType.VIDEO))
+        );
 
         if (is_restricted) {
             post.setDescription(
                 `Your message in <#${channel_id}> has been deleted due to channel restrictions.\nAllowed types: ${channel.restricts.map((r) => RestrictType[r]).join(', ')}`,
             );
+
+            if (message.type === MessageType.ThreadCreated) {
+                setTimeout(async () => {
+                    if (!message.thread) return;
+                    const thread = await message.guild!.channels.fetch(message.thread.id);
+                    if (thread && 'delete' in thread) await thread.delete();
+                }, 2500);
+            }
             await message.delete();
 
-            if (channel.restricts.includes(RestrictType.THREAD) && message instanceof ThreadChannel) {
-                setTimeout(async () => {
-                    if (message.parent && 'messages' in message.parent) {
-                        const messages = await message.parent.messages.fetch({ limit: 10 });
-                        for (const msg of messages.values()) {
-                            if (msg.id === message.id) {
-                                await msg.delete();
-                                break;
-                            }
-                        }
-                    }
-                }, 1000);
-            }
             await author.send({ embeds: [post] });
             if (msg_logger && restrict.mod_notifier_channel_id) {
                 await timers.setTimeout(500);
