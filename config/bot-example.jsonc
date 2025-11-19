@@ -1,0 +1,23 @@
+{
+    //* Application ID
+    "app_id": "",
+
+    //* Token
+    "token": "",
+
+    //* Language (supported: en, tr)
+    "language": "en",
+
+    //* Log Level (debug [16] > error [8] > warn [4] > info [2] > log [1] > off [0]) [default: debug (if NODE_ENV is not production)]
+    "log_level": 16,
+
+    //* Settings
+    "clear_old_commands_on_startup": true,
+
+    //* Management (for bot-specific operations like update status, send error logs and etc.)
+    "management": {
+        "channel_id": "",
+        "guild_id": "",
+        "user_id": "",
+    }
+}

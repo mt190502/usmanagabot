@@ -1,0 +1,349 @@
+import {
+    ActionRowBuilder,
+    ChatInputCommandInteraction,
+    Colors,
+    EmbedBuilder,
+    MessageFlags,
+    ModalActionRowComponentBuilder,
+    ModalBuilder,
+    ModalSubmitInteraction,
+    SlashCommandBuilder,
+    StringSelectMenuBuilder,
+    StringSelectMenuInteraction,
+    TextInputBuilder,
+    TextInputStyle,
+} from 'discord.js';
+import { CommandLoader } from '..';
+import { Search, SearchEngines } from '../../types/database/entities/search';
+import { GenericSetting, SettingToggleButtonComponent } from '../../types/decorator/settingcomponents';
+import { CustomizableCommand } from '../../types/structure/command';
+
+export default class SearchCommand extends CustomizableCommand {
+    // ============================ HEADER ============================ //
+    constructor() {
+        super({
+            name: 'search',
+            pretty_name: 'Search',
+            description: 'Search for information on a given topic.',
+            cooldown: 5,
+            help: `
+                Search for information on a given topic.
+                
+                **Usage:**
+                - \`/search [engine] query\` - Searches for the query using the specified search engine.
+                
+                **Examples:**
+                - \`/search engine:Google query:cats\`
+                - \`/search engine:DuckDuckGo query:programming tutorials\`
+            `,
+        });
+    }
+
+    public async prepareCommandData(guild_id: bigint): Promise<void> {
+        this.log.send('debug', 'command.prepare.start', { name: this.name, guild: guild_id });
+        const guild = await this.db.getGuild(guild_id);
+        let search = await this.db.findOne(Search, { where: { from_guild: guild! } });
+        const system_user = await this.db.getUser(BigInt(0));
+        const engines = await this.db.find(SearchEngines, { where: { from_guild: guild! } });
+        if (!search) {
+            const new_settings = new Search();
+            new_settings.is_enabled = true;
+            new_settings.latest_action_from_user = system_user!;
+            new_settings.from_guild = guild!;
+
+            const engine_google = new SearchEngines();
+            engine_google.engine_name = 'Google';
+            engine_google.engine_url = 'https://google.com/search?q=';
+            engine_google.latest_action_from_user = system_user!;
+            engine_google.from_guild = guild!;
+
+            const engine_duckduckgo = new SearchEngines();
+            engine_duckduckgo.engine_name = 'DuckDuckGo';
+            engine_duckduckgo.engine_url = 'https://duckduckgo.com/?q=';
+            engine_duckduckgo.latest_action_from_user = system_user!;
+            engine_duckduckgo.from_guild = guild!;
+
+            await this.db.save(engine_google);
+            await this.db.save(engine_duckduckgo);
+            search = await this.db.save(new_settings);
+            this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
+        }
+        this.enabled = search.is_enabled;
+        const data: SlashCommandBuilder = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
+        if (engines.length === 0) {
+            data.addStringOption((o) =>
+                o
+                    .setName('engine')
+                    .setDescription('Search engine')
+                    .setRequired(true)
+                    .addChoices({ name: 'Google', value: 'https://google.com/search?q=' })
+                    .addChoices({ name: 'DuckDuckGo', value: 'https://duckduckgo.com/?q=' }),
+            );
+        } else {
+            data.addStringOption((o) =>
+                o
+                    .setName('engine')
+                    .setDescription('Search engine')
+                    .setRequired(true)
+                    .addChoices(...engines.map((engine) => ({ name: engine.engine_name, value: engine.engine_url }))),
+            );
+        }
+        data.addStringOption((option) => option.setName('query').setDescription('Search query').setRequired(true));
+        this.base_cmd_data = data;
+        this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
+    }
+    // ================================================================ //
+
+    // ============================ EXECUTE =========================== //
+    public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+        this.log.send('debug', 'command.execute.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
+        const engine = interaction.options.data.find((option) => option.name === 'engine')?.value || null;
+        const query = interaction.options.data.find((option) => option.name === 'query')?.value || null;
+
+        if (!engine || !query) {
+            const post = new EmbedBuilder()
+                .setTitle(':warning: Warning')
+                .setDescription('Search is disabled. Please contact the server administrator.')
+                .setColor(Colors.Yellow);
+            await interaction.reply({
+                embeds: [post],
+                flags: MessageFlags.Ephemeral,
+            });
+            this.log.send('error', 'command.configuration.missing', { name: this.name, guild: interaction.guild });
+            return;
+        }
+
+        await interaction.reply(`${engine}${query.toString().replace(/\s+/g, '+')}`);
+        this.log.send('debug', 'command.execute.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
+    }
+    // ================================================================ //
+
+    // =========================== SETTINGS =========================== //
+    // -- Settings Components -- //
+    private engine_name = new TextInputBuilder()
+        .setCustomId('engine_name')
+        .setLabel('Engine Name')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('DuckDuckGo');
+    private engine_url = new TextInputBuilder()
+        .setCustomId('engine_url')
+        .setLabel('Engine URL')
+        .setStyle(TextInputStyle.Short)
+        .setPlaceholder('https://duckduckgo.com/?q=');
+    // -- -- //
+
+    @SettingToggleButtonComponent({
+        display_name: 'Enabled',
+        database: Search,
+        database_key: 'is_enabled',
+        pretty: 'Toggle Search Command',
+        description: 'Toggle the search command enabled/disabled.',
+        format_specifier: '%s',
+    })
+    public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
+        const search = await this.db.findOne(Search, {
+            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+        });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
+        search!.is_enabled = !search!.is_enabled;
+        search!.latest_action_from_user = user;
+        search!.timestamp = new Date();
+        this.enabled = search!.is_enabled;
+        await this.db.save(Search, search!);
+        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+        await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.toggle.success', {
+            name: this.name,
+            guild: interaction.guild,
+            toggle: this.enabled,
+        });
+    }
+
+    @GenericSetting({
+        pretty: 'Add a New Search Engine',
+        description: 'Add a new search engine to the list of available search engines.',
+    })
+    public async addEngine(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
+        const guild = await this.db.getGuild(BigInt(interaction.guildId!));
+        const user = await this.db.getUser(BigInt(interaction.user.id));
+        const engines = await this.db.find(SearchEngines, { where: { from_guild: guild! } });
+
+        const engine_name = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(this.engine_name);
+        const engine_url = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(this.engine_url);
+
+        if (interaction.isModalSubmit()) {
+            const name = interaction.fields.getTextInputValue('engine_name');
+            const url = interaction.fields.getTextInputValue('engine_url');
+            if (engines.find((e) => e.engine_name.toLowerCase() === name.toLowerCase())) {
+                this.warning = `A search engine with the name \`${name}\` already exists.`;
+                this.log.send('warn', 'command.search.addengine.duplicate_engine', {
+                    name: this.name,
+                    guild: interaction.guild,
+                    user: interaction.user,
+                    engine_name: name,
+                });
+                await this.settingsUI(interaction);
+                return;
+            }
+            const new_engine = new SearchEngines();
+            new_engine.engine_name = name;
+            new_engine.engine_url = url;
+            new_engine.latest_action_from_user = user!;
+            new_engine.from_guild = guild!;
+            new_engine.timestamp = new Date();
+            await this.db.save(new_engine);
+            CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+            await this.settingsUI(interaction);
+            this.log.send('debug', 'command.setting.modalsubmit.success', {
+                name: this.name,
+                guild: interaction.guild,
+                engine_name: name,
+            });
+            return;
+        } else if (interaction.isStringSelectMenu()) {
+            await interaction.showModal(
+                new ModalBuilder()
+                    .setCustomId('settings:search:addengine')
+                    .setTitle('Add Search Engine')
+                    .addComponents([engine_name, engine_url]),
+            );
+        }
+    }
+
+    @GenericSetting({
+        display_name: 'Engines',
+        database: SearchEngines,
+        database_key: 'engine_name',
+        pretty: 'Edit Existing Search Engines',
+        description: 'Edit an existing search engine from the list of available search engines.',
+        db_column_is_array: true,
+        format_specifier: '%s',
+    })
+    public async editEngine(
+        interaction: StringSelectMenuInteraction | ModalSubmitInteraction,
+        engine_name: string,
+    ): Promise<void> {
+        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
+        const guild = await this.db.getGuild(BigInt(interaction.guildId!));
+        const user = await this.db.getUser(BigInt(interaction.user.id));
+        const engines = await this.db.find(SearchEngines, { where: { from_guild: guild! } });
+
+        if (interaction.isModalSubmit()) {
+            const name = interaction.fields.getTextInputValue('engine_name');
+            const url = interaction.fields.getTextInputValue('engine_url');
+            const engine = engines.find((e) => e.engine_name === engine_name)!;
+            engine.engine_name = name;
+            engine.engine_url = url;
+            engine.latest_action_from_user = user!;
+            engine.from_guild = guild!;
+            engine.timestamp = new Date();
+            await this.db.save(engine);
+            CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+            await this.settingsUI(interaction);
+            this.log.send('debug', 'command.setting.modalsubmit.success', {
+                name: this.name,
+                guild: interaction.guild,
+                engine_name: name,
+            });
+            return;
+        } else if (interaction.isStringSelectMenu()) {
+            if (interaction.customId === 'settings:search') {
+                await interaction.update({
+                    components: [
+                        new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+                            new StringSelectMenuBuilder()
+                                .setCustomId('settings:search:editengine')
+                                .setPlaceholder('Select a search engine to edit')
+                                .addOptions(
+                                    ...engines.map((engine) => ({
+                                        label: engine.engine_name,
+                                        description: engine.engine_url,
+                                        value: `settings:search:editengine:${engine.engine_name}`,
+                                    })),
+                                    {
+                                        label: 'Cancel',
+                                        description: 'Cancel editing search engines',
+                                        value: 'settings:search',
+                                    },
+                                ),
+                        ),
+                    ],
+                });
+                return;
+            } else if (interaction.customId.startsWith('settings:search:editengine')) {
+                const engine_name_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
+                    this.engine_name.setValue(engines.find((e) => e.engine_name === engine_name)!.engine_name),
+                );
+                const engine_url_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
+                    this.engine_url.setValue(engines.find((e) => e.engine_name === engine_name)!.engine_url),
+                );
+
+                await interaction.showModal(
+                    new ModalBuilder()
+                        .setCustomId(`settings:search:editengine:${engine_name}`)
+                        .setTitle(`Edit Search Engine: ${engine_name}`)
+                        .addComponents([engine_name_input, engine_url_input]),
+                );
+                return;
+            }
+        }
+    }
+
+    @GenericSetting({
+        pretty: 'Remove a Search Engine',
+        description: 'Remove a search engine from the list of available search engines.',
+    })
+    public async removeEngine(interaction: StringSelectMenuInteraction, engine_name: string): Promise<void> {
+        this.log.send('debug', 'command.setting.selectmenu.start', { name: this.name, guild: interaction.guild });
+        const guild = await this.db.getGuild(BigInt(interaction.guildId!));
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+        const search = await this.db.findOne(Search, { where: { from_guild: guild! } });
+        const engines = await this.db.find(SearchEngines, { where: { from_guild: guild! } });
+
+        if (interaction.customId === 'settings:search') {
+            await interaction.update({
+                components: [
+                    new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+                        new StringSelectMenuBuilder()
+                            .setCustomId('settings:search:removeengine')
+                            .setPlaceholder('Select a search engine to remove')
+                            .addOptions(
+                                ...engines.map((engine) => ({
+                                    label: engine.engine_name,
+                                    description: engine.engine_url,
+                                    value: `settings:search:removeengine:${engine.engine_name}`,
+                                })),
+                                {
+                                    label: 'Cancel',
+                                    description: 'Cancel removing search engines',
+                                    value: 'settings:search',
+                                },
+                            ),
+                    ),
+                ],
+            });
+            return;
+        } else if (interaction.customId.startsWith('settings:search:removeengine')) {
+            await this.db.remove(engines.find((e) => e.engine_name === engine_name)!);
+            CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+            search!.latest_action_from_user = user;
+            search!.timestamp = new Date();
+            await this.db.save(Search, search!);
+            await this.settingsUI(interaction);
+            this.log.send('debug', 'command.setting.selectmenu.success', { name: this.name, guild: interaction.guild });
+            return;
+        }
+    }
+    // ================================================================ //
+}

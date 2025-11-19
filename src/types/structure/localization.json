@@ -1,0 +1,60 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "localization.json",
+    "title": "Localization File",
+    "description": "A JSON file used for localization of strings in the application.",
+    "type": "object",
+    "properties": {
+        "debug": {
+            "type": "object",
+            "description": "Debug messages used in the application.",
+            "patternProperties": {
+                "^[a-zA-Z0-9_.-]+$": {
+                    "type": "string",
+                    "description": "A debug message entry."
+                }
+            }
+        },
+        "error": {
+            "type": "object",
+            "description": "Error messages used in the application.",
+            "patternProperties": {
+                "^[a-zA-Z0-9_.-]+$": {
+                    "type": "string",
+                    "description": "An error message entry."
+                }
+            }
+        },
+        "info": {
+            "type": "object",
+            "description": "Info messages used in the application.",
+            "patternProperties": {
+                "^[a-zA-Z0-9_.-]+$": {
+                    "type": "string",
+                    "description": "An info message entry."
+                }
+            }
+        },
+        "log": {
+            "type": "object",
+            "description": "Log messages used in the application.",
+            "patternProperties": {
+                "^[a-zA-Z0-9_.-]+$": {
+                    "type": "string",
+                    "description": "A log message entry."
+                }
+            }
+        },
+        "warn": {
+            "type": "object",
+            "description": "Warning messages used in the application.",
+            "patternProperties": {
+                "^[a-zA-Z0-9_.-]+$": {
+                    "type": "string",
+                    "description": "A warning message entry."
+                }
+            }
+        }
+    },
+    "required": ["debug", "error", "info", "log", "warn"]
+}

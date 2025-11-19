@@ -1,23 +1,47 @@
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-package-lock.json
-test.js
+# Shell & Environment
+**/.bash*
+**/.direnv
+**/.envrc
+**/.zcompdump*
+**/.zsh*
 
-pids
-*.pid
-*.seed
-*.pid.lock
+# IDE & Editor
+**/.idea
+**/.vscode
 
-node_modules/
+# Configuration files
+**/config/*
+!**/config/*-example.jsonc
 
-.npm
-.idea
+# Database & Logs
+**/*.db
+**/*.log
+**/logs
 
-.eslintcache
+# Process files & Temporary
+**/*.pid
+**/*.pid.lock
+**/*.seed
+**/*.tmp
+**/pids
 
-config/*
-!config/*-example.yml
-dist/*
+# Caches & Package manager
+**/.cache
+**/.eslintcache
+**/.npm
+**/npm-debug.log*
+**/package-lock.json
+**/yarn-debug.log*
+**/yarn-error.log*
+
+# Node modules & build artifacts
+**/build
+**/dist
+**/node_modules
+**/out
+**/result
+**/target
+
+# Miscellaneous
+**/TODO.md
+**/test.ts

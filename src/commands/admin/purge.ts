@@ -1,0 +1,175 @@
+import {
+    ApplicationCommandType,
+    ButtonInteraction,
+    Colors,
+    CommandInteraction,
+    ContextMenuCommandBuilder,
+    EmbedBuilder,
+    Message,
+    MessageFlags,
+    PermissionFlagsBits,
+    SlashCommandBuilder,
+} from 'discord.js';
+import { CommandQuestionPrompt } from '../../types/decorator/commandquestionprompt';
+import { BaseCommand } from '../../types/structure/command';
+
+export default class PurgeCommand extends BaseCommand {
+    // ============================ HEADER ============================ //
+    private static target: Message<boolean>;
+    constructor() {
+        super({
+            name: 'purge',
+            pretty_name: 'Purge',
+            description: 'Purge messages in a channel based on various filters.',
+            is_admin_command: true,
+            cooldown: 10,
+            help: `
+                Purge messages in a channel based on various filters.
+
+                **Usage:**
+                - \`/purge [message_id | message_url]\` - Purges messages up to the specified message ID or URL.
+                - Context Menu: Right-click on a message, go to "Apps", and select "Purge" to purge messages up to that message.
+
+                **Options:**
+                - \`message_id\`: The ID of the message to start purging from.
+                - \`message_url\`: The URL of the message to start purging from.
+
+                **Examples:**
+                - \`/purge 123456789012345678\` - Purges messages up to the message with ID 123456789012345678.
+                - \`/purge https://discord.com/channels/123456789012345678/987654321098765432/123456789012345678\` - Purges messages up to the specified message URL.
+            `,
+        });
+        (this.base_cmd_data as SlashCommandBuilder)
+            .addStringOption((o) =>
+                o
+                    .setName('message_id')
+                    .setRequired(true)
+                    .setDescription('The ID of the message to start purging from.'),
+            )
+            .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
+        this.push_cmd_data = new ContextMenuCommandBuilder()
+            .setName(this.pretty_name)
+            .setType(ApplicationCommandType.Message | ApplicationCommandType.User)
+            .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
+    }
+
+    // ================================================================ //
+
+    // =========================== EXECUTE ============================ //
+    @CommandQuestionPrompt({
+        title: 'Warning',
+        message: 'Are you sure you want to purge messages?',
+        ok_label: 'OK',
+        cancel_label: 'Cancel',
+        flags: MessageFlags.Ephemeral,
+    })
+    public async execute(interaction: ButtonInteraction | CommandInteraction): Promise<void> {
+        this.log.send('debug', 'command.execute.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
+        const post = new EmbedBuilder();
+        if (interaction.isButton()) {
+            const selected_messages: Message<boolean>[] = [];
+
+            let target_is_found = false;
+            let selected_count = 0;
+            let messages = await interaction.channel!.messages.fetch({ limit: 100 });
+
+            while (!target_is_found) {
+                for (const [, message] of messages) {
+                    if (message.id === PurgeCommand.target.id) {
+                        target_is_found = true;
+                        break;
+                    }
+                    selected_count++;
+                    selected_messages.push(message);
+                }
+                if (!target_is_found) {
+                    messages = await interaction.channel!.messages.fetch({
+                        limit: 100,
+                        before: selected_messages.at(-1)!.id,
+                    });
+                }
+            }
+
+            try {
+                if (!interaction.channel?.isTextBased() || interaction.channel.isDMBased()) return;
+                if (selected_count >= 100) {
+                    while (selected_messages.length > 0) {
+                        const chunk = selected_messages.splice(0, 100);
+                        await interaction.channel.bulkDelete(chunk);
+                    }
+                } else {
+                    await interaction.channel.bulkDelete(selected_messages);
+                }
+                this.log.send('debug', 'command.purge.execute.delete.success', {
+                    count: selected_count + 1,
+                    channel: interaction.channel,
+                    user: interaction.user,
+                    guild: interaction.guild,
+                });
+            } catch (err) {
+                post.setTitle(':octagonal_sign: Error')
+                    .setDescription(`Failed to delete some messages\n${(err as Error).message}`)
+                    .setColor(Colors.Red);
+                await interaction.update({ embeds: [post], components: [] });
+                this.log.send('warn', 'command.purge.execute.delete.failed', {
+                    channel: interaction.channel,
+                    user: interaction.user,
+                    guild: interaction.guild,
+                    message: (err as Error).message,
+                });
+                return;
+            }
+
+            PurgeCommand.target.delete();
+            selected_count++;
+
+            post.setTitle(':white_check_mark: Success')
+                .setDescription(`Deleted **${selected_count}** messages`)
+                .setColor(Colors.Green);
+            await interaction.update({ embeds: [post], components: [] });
+            this.log.send('debug', 'command.execute.success', {
+                name: this.name,
+                guild: interaction.guild,
+                user: interaction.user,
+            });
+        } else {
+            if (interaction.isMessageContextMenuCommand()) {
+                PurgeCommand.target = interaction.targetMessage;
+            }
+            if (interaction.isChatInputCommand()) {
+                const message_id = interaction.options
+                    .getString('message_id')!
+                    .split('/')
+                    .at(-1)!
+                    .replaceAll(/(\s|<|>|@|&|!)/g, '');
+                if (!message_id) {
+                    post.setTitle(':warning: Warning').setDescription('Message ID is required').setColor(Colors.Yellow);
+                    await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
+                    return;
+                }
+                try {
+                    PurgeCommand.target = await interaction.channel!.messages.fetch(message_id);
+                } catch (err) {
+                    post.setTitle(':warning: Warning')
+                        .setDescription(
+                            'Message not found in this channel\nAre you sure the message ID is correct or the message is in this channel?',
+                        )
+                        .setColor(Colors.Yellow);
+                    await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
+                    this.log.send('warn', 'command.purge.execute.delete.failed', {
+                        channel: interaction.channel,
+                        user: interaction.user,
+                        guild: interaction.guild,
+                        message: (err as Error).message,
+                    });
+                    return;
+                }
+            }
+        }
+    }
+    // ================================================================ //
+}

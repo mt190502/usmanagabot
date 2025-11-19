@@ -1,0 +1,37 @@
+{
+    "compilerOptions": {
+        "allowImportingTsExtensions": true,
+        "allowSyntheticDefaultImports": true,
+        "baseUrl": ".",
+        "composite": true,
+        "declaration": true,
+        "downlevelIteration": true,
+        "emitDecoratorMetadata": true,
+        "esModuleInterop": true,
+        "experimentalDecorators": true,
+        "forceConsistentCasingInFileNames": true,
+        "lib": ["ES5", "ES6", "ES2024"],
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "noEmit": true,
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "paths": {
+            "@commands/*": ["./src/commands/*"],
+            "@config/*": ["./config/*"],
+            "@events/*": ["./src/events/*"],
+            "@localization/*": ["./src/localization/*"],
+            "@services/*": ["./src/services/*"],
+            "@src/*": ["./src/*"],
+            "@utils/*": ["./src/utils/*"],
+            "*": ["./node_modules/*"]
+        },
+        "strict": true,
+        "target": "ES2024",
+        "types": ["bun-types"]
+    },
+    "compileOnSave": true,
+    "exclude": ["node_modules/**", "**/*.test.ts", "**/*.spec.ts", "dist"],
+    "include": ["./src/**/*", "eslint.config.mjs", "typeorm.config.ts"]
+}
