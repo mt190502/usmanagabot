@@ -55,7 +55,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
-    @Cron({ schedule: '* * * * *' })
+    @Cron({ schedule: '*/5 * * * *' })
     public async execute(): Promise<void> {
         this.log.send('debug', 'command.cronjob.start', { name: 'execute' });
         const earthquake = await this.db.find(Earthquake, { where: { is_enabled: true } });
