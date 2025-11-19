@@ -4,9 +4,9 @@ services:
     environment:
       DB__HOST: db
       DB__PORT: "${DB__PORT:-5432}"
-    #   DB__USER: "${DB__USER:-usmanagabot}"
+    #   DB__USERNAME: "${DB__USERNAME:-usmanagabot}"
     #   DB__PASSWORD: "${DB__PASSWORD:-usmanagabot}"
-    #   DB__NAME: "${DB__NAME:-usmanagabot}"
+    #   DB__DATABASE: "${DB__DATABASE:-usmanagabot}"
     #   BOT__APP_ID: "${BOT__APP_ID:-0}"
     #   BOT__TOKEN: "${BOT__TOKEN:-0}"
     #   BOT__LANGUAGE: "${BOT__LANGUAGE:-en}"
@@ -26,10 +26,10 @@ services:
     expose:
       - "5432"
     environment:
-      POSTGRES_USER: "${DB__USER:-usmanagabot}"
+      POSTGRES_USER: "${DB__USERNAME:-usmanagabot}"
       POSTGRES_PASSWORD: "${DB__PASSWORD:-usmanagabot}"
       POSTGRES_ROOT_PASSWORD: "${DB__PASSWORD:-usmanagabot}"
-      POSTGRES_DB: "${DB__NAME:-usmanagabot}"
+      POSTGRES_DB: "${DB__DATABASE:-usmanagabot}"
     env_file:
       - path: ./.envrc
     restart: always
