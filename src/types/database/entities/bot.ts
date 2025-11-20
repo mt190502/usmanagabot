@@ -1,10 +1,16 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class BotData {
-    @PrimaryColumn({ type: 'varchar', default: '0' })
-    key!: string;
+    @PrimaryGeneratedColumn({ type: 'smallint' })
+    id!: number;
 
-    @Column({ type: 'varchar', default: '0' })
-    value!: string;
+    @Column({ type: 'boolean', default: false })
+    enable_random_status!: boolean;
+
+    @Column({ type: 'smallint', default: 10 })
+    random_status_interval!: number;
+
+    @Column({ type: 'text', array: true, default: '{}' })
+    random_statuses!: string[];
 }
