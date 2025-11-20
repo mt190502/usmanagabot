@@ -1,4 +1,13 @@
-import { Channel, Collection, CommandInteraction, Events, Interaction, MessageFlags, User } from 'discord.js';
+import {
+    BaseInteraction,
+    Channel,
+    Collection,
+    CommandInteraction,
+    Events,
+    Interaction,
+    MessageFlags,
+    User,
+} from 'discord.js';
 import { CommandLoader } from '../commands';
 import { BaseCommand, CustomizableCommand } from '../types/structure/command';
 import { BaseEvent } from '../types/structure/event';
@@ -54,13 +63,7 @@ const handleCommand = async (action: string, interaction: Interaction | CommandI
                 return;
             }
             if (command_name && args.length === 0 && command instanceof CustomizableCommand) {
-                if (
-                    command.settingsUI &&
-                    (interaction.isChatInputCommand() ||
-                        interaction.isStringSelectMenu() ||
-                        interaction.isChannelSelectMenu() ||
-                        interaction.isModalSubmit())
-                ) {
+                if (command.settingsUI && interaction instanceof BaseInteraction) {
                     command.settingsUI.apply(command, [interaction]);
                 }
                 return;
