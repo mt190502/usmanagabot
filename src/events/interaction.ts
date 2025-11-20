@@ -97,20 +97,12 @@ export default class InteractionEvent extends BaseEvent<Events.InteractionCreate
         ]);
 
         if (interaction.isChatInputCommand() || interaction.isContextMenuCommand()) {
-            const req = interaction.commandName.replaceAll(' ', '_').toLowerCase();
-            let command = available_cmds.get(req);
-            if (!command) {
-                const alt_req = interaction.commandName.replaceAll(' ', '').toLowerCase();
-                command = available_cmds.get(alt_req);
-            }
-            if (!command) {
-                for (const [, cmd] of available_cmds) {
-                    if (cmd.aliases?.includes(req)) {
-                        command = cmd;
-                        break;
-                    }
-                }
-            }
+            const name = interaction.commandName;
+            let command = available_cmds.get(name);
+            if (!command) command = [...available_cmds.values()].find((cmd) => cmd.pretty_name === name);
+            if (!command) command = available_cmds.get(name.replaceAll(' ', '_').toLowerCase());
+            if (!command) command = available_cmds.get(name.replaceAll(' ', '').toLowerCase());
+            if (!command) command = [...available_cmds.values()].find((cmd) => cmd.aliases?.includes(name));
             if (!command) return;
 
             if (!cooldowns.has(command.name)) cooldowns.set(command.name, new Collection());
