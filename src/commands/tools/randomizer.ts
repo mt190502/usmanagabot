@@ -4,31 +4,16 @@ import { BaseCommand } from '../../types/structure/command';
 export default class RandomizerCommand extends BaseCommand {
     // =========================== HEADER ============================ //
     constructor() {
-        super({
-            name: 'randomizer',
-            pretty_name: 'Randomizer',
-            description: 'Select random options from a list.',
-            cooldown: 5,
-            help: `
-                Select random options from a list.
-
-                **Usage:**
-                - \`/randomizer item1 item2 item3 ...\` - Selects a random item from the provided list.
-
-                **Examples:**
-                - \`/randomizer apple banana cherry\`
-                - \`/randomizer dog cat mouse\`
-            `,
-        });
+        super({ name: 'randomizer', cooldown: 5 });
         (this.base_cmd_data as SlashCommandBuilder)
             .addStringOption((option) =>
-                option.setName('item_1').setDescription('The first item to choose from.').setRequired(true),
+                option.setName('item_1').setDescription(this.t('randomizer.parameters.1')).setRequired(true),
             )
             .addStringOption((option) =>
-                option.setName('item_2').setDescription('The second item to choose from.').setRequired(true),
+                option.setName('item_2').setDescription(this.t('randomizer.parameters.2')).setRequired(true),
             )
             .addStringOption((option) =>
-                option.setName('extra_items').setDescription('Additional items to choose from, separated by commas.'),
+                option.setName('extra_items').setDescription(this.t('randomizer.parameters.other')).setRequired(false),
             );
     }
     // ================================================================ //
@@ -49,7 +34,10 @@ export default class RandomizerCommand extends BaseCommand {
         if (extra_items) choices.push(...extra_items.split(/,| /));
 
         const random = choices[Math.floor(Math.random() * choices.length)];
-        await interaction.reply({ content: `I choose: **${random}**`, allowedMentions: { parse: [] } });
+        await interaction.reply({
+            content: this.t('randomizer.execute.result', { result: random }),
+            allowedMentions: { parse: [] },
+        });
         this.log.send('debug', 'command.execute.success', {
             name: this.name,
             guild: interaction.guild,

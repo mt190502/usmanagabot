@@ -30,26 +30,14 @@ export default class MessageLoggerCommand extends CustomizableCommand {
     constructor() {
         super({
             name: 'message_logger',
-            pretty_name: 'Message Logger',
-            description: 'Manage message logging settings for the server',
             is_admin_command: true,
-            help: `
-                Manage the message logging system for this server.
-
-                **Usage:**
-                - \`/message_logger <id|url>\` - Find a message in the message logger by its ID or URL.
-                - Right-click a message and select **Apps > Message Logger** to find it in the logger.
-            `,
         });
         this.base_cmd_data = new SlashCommandBuilder()
             .setName(this.name)
-            .setDescription('Find a message in the message logger by its ID')
+            .setDescription(this.description)
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
             .addStringOption((option) =>
-                option
-                    .setName('message_id')
-                    .setDescription('The ID or URL of the message to find in the logger')
-                    .setRequired(true),
+                option.setName('message_id').setDescription(this.t('message_logger.parameters.message_id')!).setRequired(true),
             ) as SlashCommandBuilder;
         this.push_cmd_data = new ContextMenuCommandBuilder()
             .setName(this.pretty_name)
@@ -99,8 +87,8 @@ export default class MessageLoggerCommand extends CustomizableCommand {
                 message_id = input;
             } else {
                 post.setColor(Colors.Yellow)
-                    .setTitle(':warning: Invalid Input')
-                    .setDescription('The provided message ID or URL is invalid: `' + input + '`');
+                    .setTitle(`:warning: ${this.t('message_logger.execute.invalid_input')}`)
+                    .setDescription(this.t('message_logger.execute.invalid_input_description', { input })!);
                 await interaction.reply({
                     embeds: [post],
                     flags: MessageFlags.Ephemeral,
@@ -119,8 +107,8 @@ export default class MessageLoggerCommand extends CustomizableCommand {
 
         if (!message_in_logger) {
             post.setColor(Colors.Yellow)
-                .setTitle(':warning: Message Not Found')
-                .setDescription('The message with ID `' + message_id + '` was not found in the logger.');
+                .setTitle(`:warning: ${this.t('message_logger.execute.message_not_found')}`)
+                .setDescription(this.t('message_logger.execute.message_not_found_description', { message_id })!);
             await interaction.reply({
                 embeds: [post],
                 flags: MessageFlags.Ephemeral,
@@ -134,16 +122,14 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         }
 
         post.setColor(Colors.Green)
-            .setTitle(':mag: Message Found')
+            .setTitle(`:mag: ${this.t('message_logger.execute.message_found')}`)
             .setDescription(
-                'The message with ID `' +
-                    message_id +
-                    '` can be found in the logger: https://discord.com/channels/' +
-                    logger.from_guild.gid +
-                    '/' +
-                    logger.channel_id +
-                    '/' +
+                this.t('message_logger.execute.message_found_description', {
+                    message_id,
+                    guild_id: logger.from_guild.gid,
+                    channel_id: logger.channel_id,
                     message_in_logger,
+                })!,
             );
         await interaction.reply({
             embeds: [post],
@@ -205,11 +191,13 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             const url = ref_message
                 ? `https://discord.com/channels/${ref_message.from_guild.gid}/${logger.channel_id}/${ref_message.logged_message_id}`
                 : `https://discord.com/channels/${message.guild!.id}/${message.channel.id}/${message.reference.messageId}`;
-            content += ` | [Reply](${url})`;
+            content += ` | [${this.t('message_logger.onmessagecreate.reply')}](${url})`;
         }
 
         if (message.stickers.size > 0) {
-            content += ' | Stickers: ' + message.stickers.map((sticker) => sticker.url).join('\n');
+            content +=
+                ` | ${this.t('message_logger.onmessagecreate.stickers')}: ` +
+                message.stickers.map((sticker) => sticker.url).join('\n');
             content += '\n';
         }
 
@@ -270,7 +258,10 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         const db_message = await this.db.findOne(Messages, {
             where: { message_id: BigInt(message.id) },
         });
-        const embed = new EmbedBuilder().setTitle('Deleted Message').setColor(Colors.Red).setTimestamp();
+        const embed = new EmbedBuilder()
+            .setTitle(this.t('message_logger.onmessagedelete.deleted_message'))
+            .setColor(Colors.Red)
+            .setTimestamp();
         if (db_message?.logged_message_id) {
             await webhook.editMessage(db_message.logged_message_id.toString(), { embeds: [embed] });
         }
@@ -297,13 +288,15 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         await setTimeout(500);
 
         const embed = new EmbedBuilder()
-            .setTitle('Updated Message')
+            .setTitle(this.t('message_logger.onmessageupdate.updated_message'))
             .setColor(Colors.Yellow)
             .setTimestamp()
             .setDescription(
-                (new_message.content !== '' ? `**New Message:**\n${new_message.content}\n\n` : '') +
+                (new_message.content !== ''
+                    ? `**${this.t('message_logger.onmessageupdate.new_message')}:**\n${new_message.content}\n\n`
+                    : '') +
                     (new_message.attachments.size > 0
-                        ? `**New Attachments:**\n${new_message.attachments.map((a) => a.url).join('\n')}`
+                        ? `**${this.t('message_logger.onmessageupdate.new_attachments')}:**\n${new_message.attachments.map((a) => a.url).join('\n')}`
                         : ''),
             );
         const db_message = await this.db.findOne(Messages, {
@@ -323,11 +316,8 @@ export default class MessageLoggerCommand extends CustomizableCommand {
 
     // =========================== SETTINGS =========================== //
     @SettingGenericSettingComponent({
-        display_name: 'Enabled',
         database: MessageLogger,
         database_key: 'is_enabled',
-        pretty: 'Toggle Message Logging',
-        description: 'Toggle the message logging system enabled/disabled',
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
@@ -352,15 +342,11 @@ export default class MessageLoggerCommand extends CustomizableCommand {
     }
 
     @SettingChannelMenuComponent({
-        display_name: 'Log Channel',
         database: MessageLogger,
         database_key: 'channel_id',
-        pretty: 'Set Log Channel',
-        description: 'Set the channel where message logs will be sent.',
         format_specifier: '<#%s>',
         options: {
             channel_types: [ChannelType.GuildText],
-            placeholder: 'Select a channel for message logs',
         },
     })
     public async setLogChannel(interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction): Promise<void> {
@@ -396,16 +382,12 @@ export default class MessageLoggerCommand extends CustomizableCommand {
     }
 
     @SettingChannelMenuComponent({
-        display_name: 'Ignored Channels',
         database: MessageLogger,
         database_key: 'ignored_channels',
-        pretty: 'Manage Ignored Channels',
-        description: 'Manage channels that are ignored by the message logging system.',
         format_specifier: '<#%s>',
         db_column_is_array: true,
         options: {
             channel_types: [ChannelType.GuildText],
-            placeholder: 'Select channels to ignore from logging',
             min_values: 0,
             max_values: 25,
         },

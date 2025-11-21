@@ -27,15 +27,7 @@ import { CustomizableCommand } from '../../types/structure/command';
 export default class VerificationCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({
-            name: 'verification',
-            pretty_name: 'Verification System',
-            description: 'Manage the verification system for this server.',
-            is_admin_command: true,
-            help: `
-                This command assigns a special role to users under the specified age, preventing them from accessing the server until they reach it.
-            `,
-        });
+        super({ name: 'verification', is_admin_command: true });
         this.base_cmd_data = null;
     }
 
@@ -161,11 +153,8 @@ export default class VerificationCommand extends CustomizableCommand {
 
     // =========================== SETTINGS =========================== //
     @SettingGenericSettingComponent({
-        display_name: 'Enabled',
         database: VerificationSystem,
         database_key: 'is_enabled',
-        pretty: 'Toggle Verification System',
-        description: 'Toggle the verification system enabled/disabled',
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
@@ -189,18 +178,14 @@ export default class VerificationCommand extends CustomizableCommand {
     }
 
     @SettingChannelMenuComponent({
-        display_name: 'Verification Target Channel',
         database: VerificationSystem,
         database_key: 'channel_id',
-        pretty: 'Set Verification Target Channel',
-        description: 'Set the channel where verification messages will be sent.',
         format_specifier: '<#%s>',
         options: {
             channel_types: [ChannelType.GuildText],
-            placeholder: 'Select a channel for verification messages',
         },
     })
-    public async setVerificationTargetChannel(
+    public async setTargetChannel(
         interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
     ): Promise<void> {
         this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
@@ -223,17 +208,11 @@ export default class VerificationCommand extends CustomizableCommand {
     }
 
     @SettingRoleSelectMenuComponent({
-        display_name: 'Verification System Role',
         database: VerificationSystem,
         database_key: 'role_id',
-        pretty: 'Set Verification System Role',
-        description: 'Set the role that will be automatically assigned to new members requiring verification.',
         format_specifier: '<@&%s>',
-        options: {
-            placeholder: 'Select a role to assign for verification',
-        },
     })
-    public async changeVerificationRole(
+    public async setVerificationRole(
         interaction: StringSelectMenuInteraction | RoleSelectMenuInteraction,
     ): Promise<void> {
         this.log.send('debug', 'command.setting.role.start', { name: this.name, guild: interaction.guild });
@@ -246,7 +225,7 @@ export default class VerificationCommand extends CustomizableCommand {
         const requested_role = server_roles.get(interaction.values[0])!;
 
         if (requested_role.position >= bot_role.position) {
-            this.warning = 'The role is behind the bot role. Please select another role.';
+            this.warning = this.t('verification.settings.setverificationrole.role_hierarchy_error');
             await this.settingsUI(interaction);
             return;
         }
@@ -263,11 +242,8 @@ export default class VerificationCommand extends CustomizableCommand {
     }
 
     @SettingGenericSettingComponent({
-        display_name: 'Verification System Message',
         database: VerificationSystem,
         database_key: 'message',
-        pretty: 'Set Verification System Message',
-        description: 'Set the message that is sent to unverified users upon joining the server.',
         format_specifier: '```\n%s\n```',
     })
     public async setVerificationSystemMessage(
@@ -281,9 +257,10 @@ export default class VerificationCommand extends CustomizableCommand {
         const message_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             new TextInputBuilder()
                 .setCustomId('verification_system_message_input')
-                .setLabel('Verification System Message')
+                .setLabel(this.t('verification.settings.setverificationsystemmessage.pretty_name'))
                 .setStyle(TextInputStyle.Paragraph)
-                .setPlaceholder('Usable variables: {{user}}, {{user_id}}, {{guild}}, {{minimum_age}}')
+                .setPlaceholder(
+                    this.t('verification.settings.setverificationsystemmessage.placeholder', { variables: '{{key}}: user, user_id, guild, minimum_age' }))
                 .setValue(verification_system!.message || '')
                 .setRequired(true)
                 .setMaxLength(1000),
@@ -305,17 +282,14 @@ export default class VerificationCommand extends CustomizableCommand {
         await interaction.showModal(
             new ModalBuilder()
                 .setCustomId('settings:verification:setverificationsystemmessage')
-                .setTitle('Set Verification System Message')
+                .setTitle(this.t('verification.settings.setverificationsystemmessage.pretty_name'))
                 .addComponents([message_input]),
         );
     }
 
     @SettingGenericSettingComponent({
-        display_name: 'Verification Minimum Age (Days)',
         database: VerificationSystem,
         database_key: 'minimum_days',
-        pretty: 'Set Verification Minimum Age',
-        description: 'Set the minimum account age (in days) required to bypass verification.',
         format_specifier: '%s',
     })
     public async setVerificationMinimumAge(
@@ -333,9 +307,9 @@ export default class VerificationCommand extends CustomizableCommand {
         const minimum_age_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             new TextInputBuilder()
                 .setCustomId('minimum_age_input')
-                .setLabel('Minimum Age (Days)')
+                .setLabel(this.t('verification.settings.setverificationminimumage.display_name'))
                 .setStyle(TextInputStyle.Short)
-                .setPlaceholder('Enter the minimum age in days')
+                .setPlaceholder(this.t('verification.settings.setverificationminimumage.placeholder'))
                 .setRequired(true)
                 .setValue(verification_system!.minimum_days.toString())
                 .setMaxLength(8),
@@ -344,7 +318,7 @@ export default class VerificationCommand extends CustomizableCommand {
         if (interaction.isModalSubmit()) {
             const new_age = parseInt(interaction.fields.getTextInputValue('minimum_age_input'));
             if (isNaN(new_age) || new_age < 0) {
-                this.warning = `Invalid minimum age: \`${new_age}\`. Please enter a valid number of days.`;
+                this.warning = this.t('verification.settings.setverificationminimumage.invalid_age', { age: new_age });
                 await this.settingsUI(interaction);
                 return;
             }
@@ -368,7 +342,7 @@ export default class VerificationCommand extends CustomizableCommand {
         await interaction.showModal(
             new ModalBuilder()
                 .setCustomId('settings:verification:setverificationminimumage')
-                .setTitle('Set Verification Minimum Age')
+                .setTitle(this.t('verification.settings.setverificationminimumage.pretty_name'))
                 .addComponents([minimum_age_input]),
         );
     }

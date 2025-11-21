@@ -21,13 +21,7 @@ import { BaseCommand, CustomizableCommand } from '../../types/structure/command'
 class SettingsCommand extends BaseCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({
-            name: 'settings',
-            pretty_name: 'Settings',
-            description: 'Manage modules and bot settings.',
-            is_admin_command: true,
-            help: 'Use this command to manage various modules and settings of the bot.',
-        });
+        super({ name: 'settings', is_admin_command: true });
         this.base_cmd_data!.setDefaultMemberPermissions(
             PermissionFlagsBits.BanMembers | PermissionFlagsBits.KickMembers,
         );
@@ -47,10 +41,10 @@ class SettingsCommand extends BaseCommand {
         });
         const commands = Array.from(CommandLoader.BotCommands.get(interaction.guild!.id)!);
         const payload = await this.paginator.generatePage(interaction.guild!.id, interaction.user.id, this.name, {
-            title: ':gear: Settings - Configurable Modules & Settings',
+            title: `:gear: ${this.t('settings.pretty_name')}`,
             color: Colors.Blurple,
             items: commands
-                .sort((a, b) => a[0].localeCompare(b[0]))
+                .sort((a, b) => a[1].pretty_name.localeCompare(b[1].pretty_name))
                 .filter(([, cmd]) =>
                     cmd.is_bot_owner_command
                         ? interaction.guildId === this.cfg.current_botcfg.management.guild_id &&
@@ -91,13 +85,7 @@ class SettingsCommand extends BaseCommand {
 class BotSettings extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({
-            name: 'botsettings',
-            pretty_name: 'Bot Settings',
-            description: 'Manage bot-wide settings.',
-            is_admin_command: true,
-            is_bot_owner_command: true,
-        });
+        super({ name: 'botsettings', is_admin_command: true, is_bot_owner_command: true });
         this.base_cmd_data = null;
     }
 
@@ -123,11 +111,8 @@ class BotSettings extends CustomizableCommand {
 
     // ========================== SETTINGS ============================ //
     @SettingGenericSettingComponent({
-        display_name: 'Enable Random Status',
         database: BotData,
         database_key: 'enable_random_status',
-        pretty: 'Toggle Random Status',
-        description: 'Toggle whether the bot should cycle through random statuses.',
         format_specifier: '%s',
         is_bot_owner_only: true,
     })
@@ -145,12 +130,9 @@ class BotSettings extends CustomizableCommand {
     }
 
     @SettingGenericSettingComponent({
-        display_name: 'Random Status Interval (minutes)',
-        pretty: 'Random Status Interval',
         database: BotData,
         database_key: 'random_status_interval',
-        description: 'Set the interval (in minutes) for changing random statuses.',
-        format_specifier: '%d minutes',
+        format_specifier: '%d',
         is_bot_owner_only: true,
     })
     public async setRandomStatusInterval(interaction: StringSelectMenuInteraction, args: string): Promise<void> {
@@ -173,7 +155,7 @@ class BotSettings extends CustomizableCommand {
                     .addComponents(
                         new StringSelectMenuBuilder()
                             .setCustomId('settings:botsettings:setrandomstatusinterval')
-                            .setPlaceholder('Select a random status interval (in minutes)')
+                            .setPlaceholder(this.t('botsettings.settings.setrandomstatusinterval.placeholder'))
                             .addOptions(
                                 [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60].map((min) => ({
                                     label: min.toString(),
@@ -187,12 +169,9 @@ class BotSettings extends CustomizableCommand {
     }
 
     @SettingGenericSettingComponent({
-        display_name: 'Random Statuses',
-        pretty: 'Random Statuses',
         database: BotData,
         database_key: 'random_statuses',
         db_column_is_array: true,
-        description: 'Manage the list of random statuses the bot will cycle through (comma seperated).',
         format_specifier: '`%s`',
         is_bot_owner_only: true,
     })
@@ -205,9 +184,9 @@ class BotSettings extends CustomizableCommand {
         const random_status_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             new TextInputBuilder()
                 .setCustomId('bot_random_statuses_input')
-                .setLabel('Random Statuses (comma separated)')
+                .setLabel(this.t('botsettings.settings.managerandomstatuses.placeholder'))
                 .setStyle(TextInputStyle.Short)
-                .setPlaceholder('Enter the Random Statuses here, separated by commas')
+                .setPlaceholder(settings!.random_statuses.join(', '))
                 .setRequired(true)
                 .setMaxLength(300),
         );
@@ -226,7 +205,7 @@ class BotSettings extends CustomizableCommand {
         await interaction.showModal(
             new ModalBuilder()
                 .setCustomId('settings:botsettings:managerandomstatuses')
-                .setTitle('Set Random Statuses')
+                .setTitle(this.t('botsettings.settings.managerandomstatuses.pretty_name'))
                 .addComponents([random_status_input]),
         );
     }

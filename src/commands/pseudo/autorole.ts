@@ -11,19 +11,7 @@ import { CustomizableCommand } from '../../types/structure/command';
 export default class AutoroleCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({
-            name: 'autorole',
-            pretty_name: 'AutoRole',
-            description: 'Manage automatic role assignments for new members',
-            cooldown: 10,
-            is_admin_command: true,
-            help: `
-                Use this command to manage automatic role assignments for new members joining the server.
-
-                **Usage:**
-                - \`No Usage\`
-            `,
-        });
+        super({ name: 'autorole', is_admin_command: true });
         this.base_cmd_data = null;
     }
 
@@ -74,11 +62,8 @@ export default class AutoroleCommand extends CustomizableCommand {
 
     // =========================== SETTINGS =========================== //
     @SettingGenericSettingComponent({
-        display_name: 'Enabled',
         database: Autorole,
         database_key: 'is_enabled',
-        pretty: 'Toggle Autorole System',
-        description: 'Toggle the autorole system enabled/disabled.',
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
@@ -102,15 +87,9 @@ export default class AutoroleCommand extends CustomizableCommand {
     }
 
     @SettingRoleSelectMenuComponent({
-        display_name: 'Role to Assign',
         database: Autorole,
         database_key: 'role_id',
-        pretty: 'Set Role to Assign',
-        description: 'Set the role that will be automatically assigned to new members.',
         format_specifier: '<@&%s>',
-        options: {
-            placeholder: 'Select a role to assign to new members',
-        },
     })
     public async changeRole(interaction: StringSelectMenuInteraction | RoleSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.role.start', { name: this.name, guild: interaction.guild });
@@ -123,7 +102,7 @@ export default class AutoroleCommand extends CustomizableCommand {
         const requested_role = server_roles.get(interaction.values[0])!;
 
         if (requested_role.position >= bot_role.position) {
-            this.warning = 'The role is behind the bot role. Please select another role.';
+            this.warning = this.t('autorole.settings.changerole.role_hierarchy_error');
             await this.settingsUI(interaction);
             return;
         }

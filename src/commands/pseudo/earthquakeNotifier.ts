@@ -21,14 +21,7 @@ import { CustomizableCommand } from '../../types/structure/command';
 export default class EarthquakeNotifierCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({
-            name: 'earthquake',
-            pretty_name: 'Earthquake Notifier',
-            description: 'Notifies about earthquakes at scheduled intervals.',
-            help: `
-                This command periodically checks for earthquake data and sends notifications to subscribed channels.
-            `,
-        });
+        super({ name: 'earthquake' });
         this.base_cmd_data = null;
     }
 
@@ -91,46 +84,46 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
                 ).locality;
 
                 const post = new EmbedBuilder();
-                post.setTitle(':warning: New Earthquake Alert');
+                post.setTitle(`:warning: ${this.t('earthquake.execute.title')}`);
                 post.setColor(Colors.Yellow);
                 post.setTimestamp();
                 post.addFields(
                     {
-                        name: 'Time',
+                        name: this.t('earthquake.execute.time'),
                         value: new Date(eq.properties.time).toLocaleString(),
                         inline: true,
                     },
                     {
-                        name: 'ID',
+                        name: this.t('earthquake.execute.id'),
                         value: eq.id,
                         inline: true,
                     },
                     {
-                        name: 'Location',
+                        name: this.t('earthquake.execute.location'),
                         value: geo_translate || 'Unknown',
                         inline: true,
                     },
                     {
-                        name: 'Source',
+                        name: this.t('earthquake.execute.source'),
                         value: eq.properties.auth,
                         inline: true,
                     },
                     {
-                        name: 'Magnitude',
+                        name: this.t('earthquake.execute.magnitude'),
                         value: eq.properties.mag.toString(),
                         inline: true,
                     },
                     {
-                        name: 'Coordinates',
+                        name: this.t('earthquake.execute.coordinates'),
                         value: `Latitude: ${eq.properties.lat}\nLongitude: ${eq.properties.lon}`,
                         inline: true,
                     },
                     {
-                        name: 'Link',
+                        name: this.t('earthquake.execute.link'),
                         value: `https://www.seismicportal.eu/eventdetails.html?unid=${eq.id}`,
                     },
                     {
-                        name: 'Other Earthquakes',
+                        name: this.t('earthquake.execute.other_earthquakes'),
                         value: 'https://deprem.core.xeome.dev',
                     },
                 );
@@ -168,11 +161,8 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
 
     // =========================== SETTINGS =========================== //
     @SettingGenericSettingComponent({
-        display_name: 'Enabled',
         database: Earthquake,
         database_key: 'is_enabled',
-        pretty: 'Toggle Earthquake System',
-        description: 'Toggle the earthquake notifier system enabled/disabled.',
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
@@ -196,15 +186,11 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
     }
 
     @SettingChannelMenuComponent({
-        display_name: 'Notification Channel',
         database: Earthquake,
         database_key: 'channel_id',
-        pretty: 'Set Notification Channel',
-        description: 'Set the channel where earthquake notifications will be sent.',
         format_specifier: '<#%s>',
         options: {
             channel_types: [ChannelType.GuildText],
-            placeholder: 'Select a channel for earthquake notifications',
         },
     })
     public async setNotificationChannel(
@@ -229,11 +215,8 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
     }
 
     @SettingGenericSettingComponent({
-        display_name: 'Magnitude Limit',
         database: Earthquake,
         database_key: 'magnitude_limit',
-        pretty: 'Set Magnitude Limit',
-        description: 'Set the minimum magnitude for earthquake notifications.',
         format_specifier: '%s',
     })
     public async setMagnitudeLimit(interaction: StringSelectMenuInteraction, args: string): Promise<void> {
@@ -259,7 +242,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
                     .addComponents(
                         new StringSelectMenuBuilder()
                             .setCustomId('settings:earthquake:setmagnitude')
-                            .setPlaceholder('Select a magnitude')
+                            .setPlaceholder(this.t('earthquake.settings.setmagnitudelimit.placeholder'))
                             .addOptions(
                                 ['1.0', '1.5', '2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0'].map((magnitude) => ({
                                     label: magnitude,
@@ -273,11 +256,8 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
     }
 
     @SettingGenericSettingComponent({
-        display_name: 'Seismicportal API URL',
         database: Earthquake,
         database_key: 'seismicportal_api_url',
-        pretty: 'Set Seismicportal API URL',
-        description: 'Set the API URL for fetching earthquake data from Seismicportal.',
         format_specifier: '[API URL](%s)',
     })
     public async setSeismicportalApiUrl(
@@ -292,9 +272,9 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         const url_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             new TextInputBuilder()
                 .setCustomId('seismicportal_api_url_input')
-                .setLabel('Seismicportal API URL')
+                .setLabel(this.t('earthquake.settings.setseismicportalapiurl.display_name'))
                 .setStyle(TextInputStyle.Short)
-                .setPlaceholder('Enter the Seismicportal API URL')
+                .setPlaceholder(this.t('earthquake.settings.setseismicportalapiurl.placeholder'))
                 .setRequired(true)
                 .setMaxLength(300),
         );
@@ -315,17 +295,14 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         await interaction.showModal(
             new ModalBuilder()
                 .setCustomId('settings:earthquake:setseismicportalapiurl')
-                .setTitle('Set Seismicportal API URL')
+                .setTitle(this.t('earthquake.settings.setseismicportalapiurl.display_name'))
                 .addComponents([url_input]),
         );
     }
 
     @SettingGenericSettingComponent({
-        display_name: 'Region Code (api-bdc.net)',
         database: Earthquake,
         database_key: 'region_code',
-        pretty: 'Set Region Code',
-        description: 'Set the region code for earthquake notifications.',
         format_specifier: '`%s`',
     })
     public async setRegionCode(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
@@ -338,9 +315,9 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         const region_code_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             new TextInputBuilder()
                 .setCustomId('region_code_input')
-                .setLabel('Region Code')
+                .setLabel(this.t('earthquake.settings.setregioncode.display_name'))
                 .setStyle(TextInputStyle.Short)
-                .setPlaceholder('Enter the region code (e.g., en, de, tr)')
+                .setPlaceholder(this.t('earthquake.settings.setregioncode.placeholder'))
                 .setRequired(true)
                 .setMaxLength(5),
         );
@@ -361,7 +338,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         await interaction.showModal(
             new ModalBuilder()
                 .setCustomId('settings:earthquake:setregioncode')
-                .setTitle('Set Region Code')
+                .setTitle(this.t('earthquake.settings.setregioncode.display_name'))
                 .addComponents([region_code_input]),
         );
     }

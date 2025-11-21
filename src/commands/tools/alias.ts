@@ -19,21 +19,7 @@ import { CustomizableCommand } from '../../types/structure/command';
 export default class AliasCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({
-            name: 'alias',
-            pretty_name: 'Alias',
-            description: 'Create an alias for keyword',
-            is_admin_command: true,
-            help: `
-                Use this command to create, view, and manage command aliases for easier access.
-
-                **Usage:**
-                - \`/alias add <name> <content> <options>\` - Add a new alias.
-                - \`/alias list\` - List all aliases for this server.
-                - \`/alias modify <name> <content> <options>\` - Modify an existing alias.
-                - \`/alias remove <name>\` - Remove an existing alias.
-            `,
-        });
+        super({ name: 'alias', is_admin_command: true });
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
@@ -61,50 +47,52 @@ export default class AliasCommand extends CustomizableCommand {
         }
 
         this.base_cmd_data = new SlashCommandBuilder()
-            .setName('alias')
-            .setDescription('Create an alias for keyword')
+            .setName(this.name)
+            .setDescription(this.t('alias.description'))
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
 
         (this.base_cmd_data as SlashCommandBuilder).addSubcommand((subcommand) =>
             subcommand
                 .setName('add')
-                .setDescription('Add an alias')
-                .addStringOption((option) => option.setName('alias_name').setDescription('Name').setRequired(true))
+                .setDescription(this.t('alias.subcommands.add.description'))
+                .addStringOption((option) =>
+                    option.setName('alias_name').setDescription(this.t('alias.parameters.name')).setRequired(true),
+                )
                 .addStringOption((option) =>
                     option
                         .setName('alias_content')
                         .setDescription(
-                            'Content (Variables: {{user}},{{user_id}},{{channel}},{{channel_id}},{{guild}},{{mentioned_users}})',
+                            this.t('alias.parameters.content', {
+                                variables:
+                                    '({{user}},{{user_id}},{{channel}},{{channel_id}},{{guild}},{{mentioned_users}})',
+                            }),
                         )
                         .setRequired(true),
                 )
                 .addBooleanOption((option) =>
                     option
                         .setName('case_sensitive')
-                        .setDescription('Whether the alias is case sensitive')
+                        .setDescription(this.t('alias.parameters.casesensitive'))
                         .setRequired(false),
                 )
                 .addBooleanOption((option) =>
                     option
                         .setName('message_consists_only_of_word')
-                        .setDescription('If the message consists only of the alias word')
+                        .setDescription(this.t('alias.parameters.messageconsistsonlyofword'))
                         .setRequired(false),
                 )
                 .addBooleanOption((option) =>
-                    option
-                        .setName('use_regex')
-                        .setDescription('Whether the alias uses regex for matching')
-                        .setRequired(false),
+                    option.setName('use_regex').setDescription(this.t('alias.parameters.useregex')).setRequired(false),
                 ),
         );
         (this.base_cmd_data as SlashCommandBuilder).addSubcommand((subcommand) =>
             subcommand
                 .setName('remove')
-                .setDescription('Remove an alias')
+                .setDescription(this.t('alias.subcommands.remove.description'))
                 .addStringOption((option) =>
                     option
                         .setName('alias_name')
-                        .setDescription('Name')
+                        .setDescription(this.t('alias.parameters.name'))
                         .setRequired(true)
                         .setChoices(...choices.sort((a, b) => a.name.localeCompare(b.name))),
                 ),
@@ -113,11 +101,11 @@ export default class AliasCommand extends CustomizableCommand {
         (this.base_cmd_data as SlashCommandBuilder).addSubcommand((subcommand) =>
             subcommand
                 .setName('modify')
-                .setDescription('Modify an alias')
+                .setDescription(this.t('alias.subcommands.modify.description'))
                 .addStringOption((option) =>
                     option
                         .setName('alias_name')
-                        .setDescription('Name')
+                        .setDescription(this.t('alias.parameters.name'))
                         .setRequired(true)
                         .setChoices(...choices.sort((a, b) => a.name.localeCompare(b.name))),
                 )
@@ -125,32 +113,32 @@ export default class AliasCommand extends CustomizableCommand {
                     option
                         .setName('alias_content')
                         .setDescription(
-                            'Content (Variables: {{user}},{{user_id}},{{channel}},{{channel_id}},{{guild}},{{mentioned_users}})',
+                            this.t('alias.parameters.content', {
+                                variables:
+                                    '({{user}},{{user_id}},{{channel}},{{channel_id}},{{guild}},{{mentioned_users}})',
+                            }),
                         )
                         .setRequired(false),
                 )
                 .addBooleanOption((option) =>
                     option
                         .setName('case_sensitive')
-                        .setDescription('Whether the alias is case sensitive')
+                        .setDescription(this.t('alias.parameters.casesensitive'))
                         .setRequired(false),
                 )
                 .addBooleanOption((option) =>
                     option
                         .setName('message_consists_only_of_word')
-                        .setDescription('If the message consists only of the alias word')
+                        .setDescription(this.t('alias.parameters.messageconsistsonlyofword'))
                         .setRequired(false),
                 )
                 .addBooleanOption((option) =>
-                    option
-                        .setName('use_regex')
-                        .setDescription('Whether the alias uses regex for matching')
-                        .setRequired(false),
+                    option.setName('use_regex').setDescription(this.t('alias.parameters.useregex')).setRequired(false),
                 ),
         );
 
         (this.base_cmd_data as SlashCommandBuilder).addSubcommand((subcommand) =>
-            subcommand.setName('list').setDescription('List all aliases'),
+            subcommand.setName('list').setDescription(this.t('alias.subcommands.list.description')),
         );
     }
     // ================================================================ //
@@ -190,7 +178,7 @@ export default class AliasCommand extends CustomizableCommand {
         const existing_alias = aliases.find((alias) => alias.name === alias_name);
         if (existing_alias) {
             await interaction.reply({
-                content: `An alias with the name \`${alias_name}\` already exists.`,
+                content: this.t('alias.add.alias_exists', { alias_name }),
                 flags: MessageFlags.Ephemeral,
             });
             this.log.send('warn', 'command.alias.add.alias_exists', {
@@ -215,7 +203,7 @@ export default class AliasCommand extends CustomizableCommand {
         await this.db.save(Aliases, new_alias);
         CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await interaction.reply({
-            content: `Alias \`${alias_name}\` has been added.`,
+            content: this.t('alias.add.success', { alias_name }),
             flags: MessageFlags.Ephemeral,
         });
         this.log.send('debug', 'command.alias.add.alias_created', {
@@ -244,7 +232,7 @@ export default class AliasCommand extends CustomizableCommand {
         });
         if (!alias) {
             await interaction.reply({
-                content: `No alias found with the name \`${alias_name}\`.`,
+                content: this.t('alias.alias_not_found', { alias_name }),
                 flags: MessageFlags.Ephemeral,
             });
             this.log.send('warn', 'command.alias.remove.alias_not_found', {
@@ -258,7 +246,7 @@ export default class AliasCommand extends CustomizableCommand {
         await this.db.remove(Aliases, alias);
         CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await interaction.reply({
-            content: `Alias \`${alias_name}\` has been removed.`,
+            content: this.t('alias.execute.remove.alias_removed', { alias_name }),
             flags: MessageFlags.Ephemeral,
         });
         this.log.send('debug', 'command.execute.subcommand.success', {
@@ -281,7 +269,7 @@ export default class AliasCommand extends CustomizableCommand {
         });
         if (aliases.length === 0) {
             await interaction.reply({
-                content: 'No aliases found for this server.',
+                content: this.t('alias.list.no_aliases'),
                 flags: MessageFlags.Ephemeral,
             });
             this.log.send('warn', 'command.alias.list.no_aliases', {
@@ -292,7 +280,7 @@ export default class AliasCommand extends CustomizableCommand {
         }
 
         const payload = await this.paginator.generatePage(interaction.guild!.id, interaction.user.id, this.name, {
-            title: ':notepad_spiral: Alias List',
+            title: `:notepad_spiral: ${this.t('alias.list.title')}`,
             color: 0x00ffff,
             items: aliases
                 .sort((a, b) => a.name.localeCompare(b.name))
@@ -338,14 +326,14 @@ export default class AliasCommand extends CustomizableCommand {
             where: { name: item_name, from_guild: { gid: BigInt(interaction.guild!.id) } },
         });
         const payload = await this.paginator.viewPage(interaction.guild!.id, interaction.user.id, this.name, {
-            title: `:notepad_spiral: About Alias: ${alias!.name}`,
+            title: `:notepad_spiral: ${alias!.name}`,
             color: 0x00ffff,
             description: `
-                **Name:** \`${alias!.name}\`
-                **Content:**\n\`\`\`${alias!.content}\`\`\`
-                **Case Sensitive:** ${alias!.case_sensitive ? ':green_circle: Yes' : ' :red_circle: No'}
-                **Message Consists Only Of Word:** ${alias!.consists_only_of_word ? ':green_circle: Yes' : ' :red_circle: No'}
-                **Uses Regex:** ${alias!.use_regex ? ':green_circle: Yes' : ' :red_circle: No'}
+                **${this.t('alias.handlepageitem.name')}:** \`${alias!.name}\`
+                **${this.t('alias.handlepageitem.content')}:**\n\`\`\`${alias!.content}\`\`\`
+                **${this.t('alias.handlepageitem.casesensitive')}:** ${alias!.case_sensitive ? `:green_circle: ${this.t('settings.true')}` : `:red_circle: ${this.t('settings.false')}`}
+                **${this.t('alias.handlepageitem.messageconsistsonlyofword')}:** ${alias!.consists_only_of_word ? `:green_circle: ${this.t('settings.true')}` : `:red_circle: ${this.t('settings.false')}`}
+                **${this.t('alias.handlepageitem.useregex')}:** ${alias!.use_regex ? `:green_circle: ${this.t('settings.true')}` : `:red_circle: ${this.t('settings.false')}`}
             `,
         });
         await interaction.update({
@@ -377,7 +365,7 @@ export default class AliasCommand extends CustomizableCommand {
         });
         if (!alias) {
             await interaction.reply({
-                content: `No alias found with the name \`${alias_name}\`.`,
+                content: this.t('alias.alias_not_found', { alias_name }),
                 flags: MessageFlags.Ephemeral,
             });
             this.log.send('warn', 'command.alias.modify.alias_not_found', {
@@ -395,7 +383,7 @@ export default class AliasCommand extends CustomizableCommand {
         await this.db.save(Aliases, alias);
         CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await interaction.reply({
-            content: `Alias \`${alias_name}\` has been modified.`,
+            content: this.t('alias.modify.success', { alias_name }),
             flags: MessageFlags.Ephemeral,
         });
         this.log.send('debug', 'command.execute.subcommand.success', {
@@ -484,11 +472,8 @@ export default class AliasCommand extends CustomizableCommand {
 
     // =========================== SETTINGS =========================== //
     @SettingGenericSettingComponent({
-        display_name: 'Enabled',
         database: AliasSystem,
         database_key: 'is_enabled',
-        pretty: 'Toggle Alias System',
-        description: 'Toggle the alias system enabled/disabled.',
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {

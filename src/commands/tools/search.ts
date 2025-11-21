@@ -1,9 +1,6 @@
 import {
     ActionRowBuilder,
     ChatInputCommandInteraction,
-    Colors,
-    EmbedBuilder,
-    MessageFlags,
     ModalActionRowComponentBuilder,
     ModalBuilder,
     ModalSubmitInteraction,
@@ -21,22 +18,7 @@ import { CustomizableCommand } from '../../types/structure/command';
 export default class SearchCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({
-            name: 'search',
-            pretty_name: 'Search',
-            description: 'Search for information on a given topic.',
-            cooldown: 5,
-            help: `
-                Search for information on a given topic.
-                
-                **Usage:**
-                - \`/search [engine] query\` - Searches for the query using the specified search engine.
-                
-                **Examples:**
-                - \`/search engine:Google query:cats\`
-                - \`/search engine:DuckDuckGo query:programming tutorials\`
-            `,
-        });
+        super({ name: 'search', cooldown: 5 });
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
@@ -69,12 +51,13 @@ export default class SearchCommand extends CustomizableCommand {
             this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
         }
         this.enabled = search.is_enabled;
+
         const data: SlashCommandBuilder = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
         if (engines.length === 0) {
             data.addStringOption((o) =>
                 o
                     .setName('engine')
-                    .setDescription('Search engine')
+                    .setDescription(this.t('search.parameters.engine'))
                     .setRequired(true)
                     .addChoices({ name: 'Google', value: 'https://google.com/search?q=' })
                     .addChoices({ name: 'DuckDuckGo', value: 'https://duckduckgo.com/?q=' }),
@@ -83,12 +66,14 @@ export default class SearchCommand extends CustomizableCommand {
             data.addStringOption((o) =>
                 o
                     .setName('engine')
-                    .setDescription('Search engine')
+                    .setDescription(this.t('search.parameters.engine'))
                     .setRequired(true)
                     .addChoices(...engines.map((engine) => ({ name: engine.engine_name, value: engine.engine_url }))),
             );
         }
-        data.addStringOption((option) => option.setName('query').setDescription('Search query').setRequired(true));
+        data.addStringOption((option) =>
+            option.setName('query').setDescription(this.t('search.parameters.query')).setRequired(true),
+        );
         this.base_cmd_data = data;
         this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
     }
@@ -101,23 +86,10 @@ export default class SearchCommand extends CustomizableCommand {
             guild: interaction.guild,
             user: interaction.user,
         });
-        const engine = interaction.options.data.find((option) => option.name === 'engine')?.value || null;
-        const query = interaction.options.data.find((option) => option.name === 'query')?.value || null;
+        const engine = interaction.options.data.find((option) => option.name === 'engine')!.value;
+        const query = interaction.options.data.find((option) => option.name === 'query')!.value;
 
-        if (!engine || !query) {
-            const post = new EmbedBuilder()
-                .setTitle(':warning: Warning')
-                .setDescription('Search is disabled. Please contact the server administrator.')
-                .setColor(Colors.Yellow);
-            await interaction.reply({
-                embeds: [post],
-                flags: MessageFlags.Ephemeral,
-            });
-            this.log.send('error', 'command.configuration.missing', { name: this.name, guild: interaction.guild });
-            return;
-        }
-
-        await interaction.reply(`${engine}${query.toString().replace(/\s+/g, '+')}`);
+        await interaction.reply(`${engine}${query!.toString().replace(/\s+/g, '+')}`);
         this.log.send('debug', 'command.execute.success', {
             name: this.name,
             guild: interaction.guild,
@@ -130,22 +102,19 @@ export default class SearchCommand extends CustomizableCommand {
     // -- Settings Components -- //
     private engine_name = new TextInputBuilder()
         .setCustomId('engine_name')
-        .setLabel('Engine Name')
+        .setLabel(this.t('search.parameters.engine_name'))
         .setStyle(TextInputStyle.Short)
         .setPlaceholder('DuckDuckGo');
     private engine_url = new TextInputBuilder()
         .setCustomId('engine_url')
-        .setLabel('Engine URL')
+        .setLabel(this.t('search.parameters.engine_url'))
         .setStyle(TextInputStyle.Short)
         .setPlaceholder('https://duckduckgo.com/?q=');
     // -- -- //
 
     @SettingGenericSettingComponent({
-        display_name: 'Enabled',
         database: Search,
         database_key: 'is_enabled',
-        pretty: 'Toggle Search Command',
-        description: 'Toggle the search command enabled/disabled.',
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
@@ -169,10 +138,7 @@ export default class SearchCommand extends CustomizableCommand {
         });
     }
 
-    @SettingGenericSettingComponent({
-        pretty: 'Add a New Search Engine',
-        description: 'Add a new search engine to the list of available search engines.',
-    })
+    @SettingGenericSettingComponent({ view_in_ui: false })
     public async addEngine(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
@@ -186,7 +152,7 @@ export default class SearchCommand extends CustomizableCommand {
             const name = interaction.fields.getTextInputValue('engine_name');
             const url = interaction.fields.getTextInputValue('engine_url');
             if (engines.find((e) => e.engine_name.toLowerCase() === name.toLowerCase())) {
-                this.warning = `A search engine with the name \`${name}\` already exists.`;
+                this.warning = this.t('search.settings.addengine.duplicate_engine', { name });
                 this.log.send('warn', 'command.search.addengine.duplicate_engine', {
                     name: this.name,
                     guild: interaction.guild,
@@ -215,18 +181,15 @@ export default class SearchCommand extends CustomizableCommand {
             await interaction.showModal(
                 new ModalBuilder()
                     .setCustomId('settings:search:addengine')
-                    .setTitle('Add Search Engine')
+                    .setTitle(this.t('search.settings.addengine.pretty_name'))
                     .addComponents([engine_name, engine_url]),
             );
         }
     }
 
     @SettingGenericSettingComponent({
-        display_name: 'Engines',
         database: SearchEngines,
         database_key: 'engine_name',
-        pretty: 'Edit Existing Search Engines',
-        description: 'Edit an existing search engine from the list of available search engines.',
         db_column_is_array: true,
         format_specifier: '%s',
     })
@@ -264,7 +227,7 @@ export default class SearchCommand extends CustomizableCommand {
                         new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                             new StringSelectMenuBuilder()
                                 .setCustomId('settings:search:editengine')
-                                .setPlaceholder('Select a search engine to edit')
+                                .setPlaceholder(this.t('search.settings.editengine.placeholder'))
                                 .addOptions(
                                     ...engines.map((engine) => ({
                                         label: engine.engine_name,
@@ -272,8 +235,8 @@ export default class SearchCommand extends CustomizableCommand {
                                         value: `settings:search:editengine:${engine.engine_name}`,
                                     })),
                                     {
-                                        label: 'Cancel',
-                                        description: 'Cancel editing search engines',
+                                        label: this.t('search.settings.cancel'),
+                                        description: this.t('search.settings.cancel_description'),
                                         value: 'settings:search',
                                     },
                                 ),
@@ -292,7 +255,7 @@ export default class SearchCommand extends CustomizableCommand {
                 await interaction.showModal(
                     new ModalBuilder()
                         .setCustomId(`settings:search:editengine:${engine_name}`)
-                        .setTitle(`Edit Search Engine: ${engine_name}`)
+                        .setTitle(this.t('search.settings.editengine.title', { name: engine_name }))
                         .addComponents([engine_name_input, engine_url_input]),
                 );
                 return;
@@ -300,10 +263,7 @@ export default class SearchCommand extends CustomizableCommand {
         }
     }
 
-    @SettingGenericSettingComponent({
-        pretty: 'Remove a Search Engine',
-        description: 'Remove a search engine from the list of available search engines.',
-    })
+    @SettingGenericSettingComponent({ view_in_ui: false })
     public async removeEngine(interaction: StringSelectMenuInteraction, engine_name: string): Promise<void> {
         this.log.send('debug', 'command.setting.selectmenu.start', { name: this.name, guild: interaction.guild });
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
@@ -317,7 +277,7 @@ export default class SearchCommand extends CustomizableCommand {
                     new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                         new StringSelectMenuBuilder()
                             .setCustomId('settings:search:removeengine')
-                            .setPlaceholder('Select a search engine to remove')
+                            .setPlaceholder(this.t('search.settings.removeengine.placeholder'))
                             .addOptions(
                                 ...engines.map((engine) => ({
                                     label: engine.engine_name,
@@ -325,8 +285,8 @@ export default class SearchCommand extends CustomizableCommand {
                                     value: `settings:search:removeengine:${engine.engine_name}`,
                                 })),
                                 {
-                                    label: 'Cancel',
-                                    description: 'Cancel removing search engines',
+                                    label: this.t('search.settings.cancel'),
+                                    description: this.t('search.settings.cancel_description'),
                                     value: 'settings:search',
                                 },
                             ),

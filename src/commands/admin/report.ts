@@ -24,29 +24,20 @@ export default class ReportCommand extends CustomizableCommand {
     constructor() {
         super({
             name: 'report',
-            pretty_name: 'Report',
-            description: 'Report a user to the moderators',
             cooldown: 10,
-            help: `
-                Use this command to report a user to the moderators. If you provide a message URL, it will help the moderators understand the context of your report.
-
-                **Usage:**
-                - \`/report [user] [reason] <message_urls?>\`
-
-                **Options:**
-                - \`user\` (required): The user you want to report.
-                - \`reason\` (required): The reason for reporting the user.
-                - \`message_urls\` (optional): One or more message URLs that provide context for the report.
-
-                **Example:**
-                - \`/report user:1234567890 reason:Inappropriate behavior message_url:https://discord.com/channels/123456789012345678/987654321098765432/123456789012345678\`
-            `,
         });
         (this.base_cmd_data as SlashCommandBuilder)
-            .addUserOption((option) => option.setName('user').setDescription('User to report').setRequired(true))
-            .addStringOption((option) => option.setName('reason').setDescription('Reason for report').setRequired(true))
+            .addUserOption((option) =>
+                option.setName('user').setDescription(this.t('report.parameters.user')).setRequired(true),
+            )
             .addStringOption((option) =>
-                option.setName('message_url').setDescription('Message URL/URLs').setRequired(false),
+                option.setName('reason').setDescription(this.t('report.parameters.reason')).setRequired(true),
+            )
+            .addStringOption((option) =>
+                option
+                    .setName('message_url')
+                    .setDescription(this.t('report.parameters.message_url_list'))
+                    .setRequired(false),
             );
     }
 
@@ -96,8 +87,8 @@ export default class ReportCommand extends CustomizableCommand {
 
         if (!report?.channel_id) {
             user_post
-                .setTitle(':warning: Warning')
-                .setDescription('Report command is not configured properly. Please contact an administrator.')
+                .setTitle(`:warning: ${this.t('command.execute.warning')}`)
+                .setDescription(this.t('report.execute.command_not_configured'))
                 .setColor(Colors.Red);
             await interaction.reply({ embeds: [user_post], flags: MessageFlags.Ephemeral });
             this.log.send('warn', 'command.configuration.missing', { name: this.name, guild: interaction.guild });
@@ -110,14 +101,14 @@ export default class ReportCommand extends CustomizableCommand {
             for (const url of message_urls) {
                 if (!pattern.test(url)) {
                     user_post
-                        .setTitle(':warning: Warning')
-                        .setDescription(`Invalid message URL: ${url}`)
+                        .setTitle(`:warning: ${this.t('command.execute.warning')}`)
+                        .setDescription(this.t('report.execute.invalid_url', { url }))
                         .setColor(Colors.Red);
-                    await interaction.reply({ content: `Invalid message URL: ${url}`, flags: MessageFlags.Ephemeral });
+                    await interaction.reply({ embeds: [user_post], flags: MessageFlags.Ephemeral });
                     this.log.send('warn', 'command.report.execute.invalid_url', {
                         guild: interaction.guild,
                         user: interaction.user,
-                        url: url,
+                        url,
                     });
                     return;
                 }
@@ -125,8 +116,8 @@ export default class ReportCommand extends CustomizableCommand {
         } else {
             if (!message_in_database) {
                 user_post
-                    .setTitle(':warning: Warning')
-                    .setDescription('Message not found in database. Please provide a message URL.')
+                    .setTitle(`:warning: ${this.t('command.execute.warning')}`)
+                    .setDescription(this.t('report.execute.message_not_found'))
                     .setColor(Colors.Red);
                 await interaction.reply({
                     embeds: [user_post],
@@ -149,7 +140,13 @@ export default class ReportCommand extends CustomizableCommand {
             .setThumbnail(user.displayAvatarURL())
             .setTimestamp()
             .setDescription(
-                `:mag: **Reported**: ${user.username} (ID ${user.id})\n:page_facing_up: **Reason**: ${reason}\n:envelope: **Messages**: ${message_urls.join(' ')}\n:triangular_flag_on_post: **Channel**: <#${interaction.channel!.id}>`,
+                this.t('report.admin_report_description', {
+                    username: user.username,
+                    user_id: user.id,
+                    reason,
+                    message_urls: message_urls.join(' '),
+                    channel_id: interaction.channel!.id,
+                }),
             );
         (message_channel_id as TextChannel).send({
             content: report.moderator_role_id ? `<@&${report.moderator_role_id}>` : undefined,
@@ -157,9 +154,14 @@ export default class ReportCommand extends CustomizableCommand {
         });
 
         user_post
-            .setTitle(':white_check_mark: Success')
+            .setTitle(`:white_check_mark: ${this.t('command.execute.success')}`)
             .setColor(Colors.Green)
-            .setDescription(`**User**: ${user} reported successfully.\n**Reason**: ${reason}`);
+            .setDescription(
+                this.t('report.execute.user_reported_description', {
+                    user: user.username,
+                    reason: reason,
+                }),
+            );
         await interaction.reply({ embeds: [user_post], flags: MessageFlags.Ephemeral });
         this.log.send('debug', 'command.execute.success', {
             name: this.name,
@@ -171,11 +173,8 @@ export default class ReportCommand extends CustomizableCommand {
 
     // =========================== SETTINGS =========================== //
     @SettingGenericSettingComponent({
-        display_name: 'Enabled',
         database: Reports,
         database_key: 'is_enabled',
-        pretty: 'Toggle Report Command',
-        description: 'Toggle the report command enabled/disabled.',
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
@@ -199,15 +198,11 @@ export default class ReportCommand extends CustomizableCommand {
     }
 
     @SettingChannelMenuComponent({
-        display_name: 'Target Channel',
         database: Reports,
         database_key: 'channel_id',
-        pretty: 'Set Report Target Channel',
-        description: 'Set the target channel where reports will be posted.',
         format_specifier: '<#%s>',
         options: {
             channel_types: [ChannelType.GuildText],
-            placeholder: 'Select the target channel for reports',
         },
     })
     public async changeTargetChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
@@ -231,14 +226,10 @@ export default class ReportCommand extends CustomizableCommand {
     }
 
     @SettingRoleSelectMenuComponent({
-        display_name: 'Moderator Role',
         database: Reports,
         database_key: 'moderator_role_id',
-        pretty: 'Set Moderator Role',
-        description: 'Set the role that can manage reports.',
         format_specifier: '<@&%s>',
         options: {
-            placeholder: 'Select the moderator role',
             min_values: 0,
             max_values: 1,
         },
@@ -262,10 +253,7 @@ export default class ReportCommand extends CustomizableCommand {
         });
     }
 
-    @SettingGenericSettingComponent({
-        pretty: 'Remove Moderator Tagging',
-        description: 'Remove the moderator role tagging from reports.',
-    })
+    @SettingGenericSettingComponent({ view_in_ui: false })
     public async removeModeratorRole(interaction: StringSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.report.removemoderatorrole.start', { guild: interaction.guild });
         const report = await this.db.findOne(Reports, {

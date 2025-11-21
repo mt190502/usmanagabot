@@ -6,18 +6,7 @@ import { BaseCommand } from '../../types/structure/command';
 export default class HelpCommand extends BaseCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({
-            name: 'help',
-            pretty_name: 'Help',
-            description: 'Provides information about available commands and how to use them.',
-            help: `
-                Provides information about available commands and how to use them.
-
-                **Usage:**
-                - \`/help\` - Lists all available commands.
-            `,
-            cooldown: 5,
-        });
+        super({ name: 'help', cooldown: 5 });
     }
     // ================================================================ //
 
@@ -46,20 +35,21 @@ export default class HelpCommand extends BaseCommand {
         ])
             .filter(([, cmd]) => cmd.enabled)
             .filter(([, cmd]) => (cmd.is_admin_command ? user_is_admin : true))
+            .filter(([, cmd]) => !cmd.help?.includes('missing'))
             .filter(([, cmd]) =>
                 cmd.is_bot_owner_command
                     ? interaction.guildId === this.cfg.current_botcfg.management.guild_id &&
                       interaction.user.id === this.cfg.current_botcfg.management.user_id
                     : true,
             )
-            .sort((a, b) => a[1].name.localeCompare(b[1].name));
+            .sort((a, b) => a[1].pretty_name.localeCompare(b[1].pretty_name));
         const payload = await this.paginator.generatePage(interaction.guild!.id, interaction.user.id, this.name, {
-            title: ':information_source: Help - Command List',
+            title: `:information_source: ${this.t('help.execute.main_title')}`,
             color: 0x00ffff,
             items: commands.map(([, cmd]) => ({
                 name: cmd.name,
                 pretty_name: cmd.pretty_name || cmd.name,
-                description: cmd.description || 'Not provided.',
+                description: cmd.description || '<missing>',
                 namespace: 'command' as const,
             })),
             items_per_page: 5,
@@ -100,9 +90,9 @@ export default class HelpCommand extends BaseCommand {
             ...(CommandLoader.BotCommands.get('global')?.entries() || []),
         ].find(([, cmd]) => cmd.name === item_name)![1];
         const payload = await this.paginator.viewPage(interaction.guild!.id, interaction.user.id, this.name, {
-            title: `:information_source: About ${command.pretty_name} Command`,
+            title: `:information_source: ${this.t('help.execute.command_title', { command: command.pretty_name })}`,
             color: 0x00ffff,
-            description: command.help || 'No description provided.',
+            description: command.help || '<missing>',
         });
         await interaction.update({
             embeds: payload.embeds,

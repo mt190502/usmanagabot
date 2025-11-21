@@ -19,32 +19,11 @@ export default class PurgeCommand extends BaseCommand {
     constructor() {
         super({
             name: 'purge',
-            pretty_name: 'Purge',
-            description: 'Purge messages in a channel based on various filters.',
             is_admin_command: true,
-            cooldown: 10,
-            help: `
-                Purge messages in a channel based on various filters.
-
-                **Usage:**
-                - \`/purge [message_id | message_url]\` - Purges messages up to the specified message ID or URL.
-                - Context Menu: Right-click on a message, go to "Apps", and select "Purge" to purge messages up to that message.
-
-                **Options:**
-                - \`message_id\`: The ID of the message to start purging from.
-                - \`message_url\`: The URL of the message to start purging from.
-
-                **Examples:**
-                - \`/purge 123456789012345678\` - Purges messages up to the message with ID 123456789012345678.
-                - \`/purge https://discord.com/channels/123456789012345678/987654321098765432/123456789012345678\` - Purges messages up to the specified message URL.
-            `,
         });
         (this.base_cmd_data as SlashCommandBuilder)
             .addStringOption((o) =>
-                o
-                    .setName('message_id')
-                    .setRequired(true)
-                    .setDescription('The ID of the message to start purging from.'),
+                o.setName('message_id').setRequired(true).setDescription(this.t('purge.parameters.message_id')),
             )
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
         this.push_cmd_data = new ContextMenuCommandBuilder()
@@ -57,10 +36,10 @@ export default class PurgeCommand extends BaseCommand {
 
     // =========================== EXECUTE ============================ //
     @CommandQuestionPrompt({
-        title: 'Warning',
-        message: 'Are you sure you want to purge messages?',
-        ok_label: 'OK',
-        cancel_label: 'Cancel',
+        title: 'command.execute.warning',
+        message: 'purge.execute.are_you_sure',
+        ok_label: 'command.execute.ok',
+        cancel_label: 'command.execute.cancel',
         flags: MessageFlags.Ephemeral,
     })
     public async execute(interaction: ButtonInteraction | CommandInteraction): Promise<void> {
@@ -111,8 +90,8 @@ export default class PurgeCommand extends BaseCommand {
                     guild: interaction.guild,
                 });
             } catch (err) {
-                post.setTitle(':octagonal_sign: Error')
-                    .setDescription(`Failed to delete some messages\n${(err as Error).message}`)
+                post.setTitle(`:octagonal_sign: ${this.t('command.execute.error')}`)
+                    .setDescription(this.t('purge.execute.error', { error: (err as Error).message }))
                     .setColor(Colors.Red);
                 await interaction.update({ embeds: [post], components: [] });
                 this.log.send('warn', 'command.purge.execute.delete.failed', {
@@ -127,8 +106,8 @@ export default class PurgeCommand extends BaseCommand {
             PurgeCommand.target.delete();
             selected_count++;
 
-            post.setTitle(':white_check_mark: Success')
-                .setDescription(`Deleted **${selected_count}** messages`)
+            post.setTitle(`:white_check_mark: ${this.t('command.execute.success')}`)
+                .setDescription(this.t('purge.execute.success', { count: selected_count }))
                 .setColor(Colors.Green);
             await interaction.update({ embeds: [post], components: [] });
             this.log.send('debug', 'command.execute.success', {
@@ -147,17 +126,17 @@ export default class PurgeCommand extends BaseCommand {
                     .at(-1)!
                     .replaceAll(/(\s|<|>|@|&|!)/g, '');
                 if (!message_id) {
-                    post.setTitle(':warning: Warning').setDescription('Message ID is required').setColor(Colors.Yellow);
+                    post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
+                        .setDescription(this.t('purge.execute.message_id_required'))
+                        .setColor(Colors.Yellow);
                     await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
                     return;
                 }
                 try {
                     PurgeCommand.target = await interaction.channel!.messages.fetch(message_id);
                 } catch (err) {
-                    post.setTitle(':warning: Warning')
-                        .setDescription(
-                            'Message not found in this channel\nAre you sure the message ID is correct or the message is in this channel?',
-                        )
+                    post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
+                        .setDescription(this.t('purge.execute.message_not_found_in_channel'))
                         .setColor(Colors.Yellow);
                     await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
                     this.log.send('warn', 'command.purge.execute.delete.failed', {

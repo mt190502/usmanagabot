@@ -26,22 +26,7 @@ import { CustomizableCommand } from '../../types/structure/command';
 export default class IntroductionCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({
-            name: 'introduction',
-            pretty_name: 'Introduction',
-            description: 'User introduction database command.',
-            cooldown: 5,
-            help: `
-                Introduction command allows create customizable user introductions
-
-                **Usage:**
-                \`/introduction [options]\`
-
-                **Examples:**
-                - \`/introduction os:linux de:gnome\` - Sets introduction to "os:linux de:gnome"
-                - \`/introduction car:peugeot bike:yamaha\` - Sets introduction to "car:peugeot bike:yamaha"
-            `,
-        });
+        super({ name: 'introduction', cooldown: 5 });
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
@@ -70,7 +55,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             const [opt_name, opt_value] = (introduction[column_name as keyof Introduction] as [string, string]) || [];
             if (!opt_name && !opt_value) continue;
             data.addStringOption((option) =>
-                option.setName(opt_name || `option${i}`).setDescription(opt_value || `Option ${i} description`),
+                option.setName(opt_name || `col${i}`).setDescription(opt_value || `<missing> ${i}`),
             );
         }
         this.base_cmd_data = data;
@@ -112,8 +97,12 @@ export default class IntroductionCommand extends CustomizableCommand {
             diff_timestamp >= 3600 &&
             last_introduction_submit_from_user.hourly_submit_count === introduction!.daily_submit_limit
         ) {
-            const msg = `You have reached the maximum number of submissions for today.\nPlease try again on date: <t:${Math.floor(end_timestamp)}:F>`;
-            post.setTitle(':warning: Warning').setDescription(msg).setColor(Colors.Red);
+            const msg = this.t('introduction.execute.rate_limited', {
+                date: `<t:${Math.floor(end_timestamp)}:F>`,
+            });
+            post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
+                .setDescription(msg)
+                .setColor(Colors.Red);
             await interaction.reply({
                 embeds: [post],
                 flags: MessageFlags.Ephemeral,
@@ -131,8 +120,8 @@ export default class IntroductionCommand extends CustomizableCommand {
                 : last_introduction_submit_from_user.hourly_submit_count + 1;
 
         if (!introduction!.is_enabled || !introduction!.channel_id) {
-            post.setTitle(':warning: Warning')
-                .setDescription('Introduction system is not set up properly.\nPlease contact the server administrator.')
+            post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
+                .setDescription(this.t('introduction.execute.not_configured'))
                 .setColor(Colors.Red);
             await interaction.reply({
                 embeds: [post],
@@ -145,7 +134,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         const user_roles = interaction
             .guild!.members.cache.get(interaction.user.id)!
             .roles.cache.sort((a, b) => b.position - a.position);
-        const data: string[] = [`**__About ${interaction.user.username}__**\n`];
+        const data: string[] = [`**__${this.t('introduction.execute.header', { user: interaction.user.username })}__**\n`];
 
         let values = 0;
         for (let i = 1; i <= 8; i++) {
@@ -164,7 +153,9 @@ export default class IntroductionCommand extends CustomizableCommand {
         }
 
         if (values === 0) {
-            post.setTitle(':warning: Warning').setDescription('Please provide at least one value').setColor(Colors.Red);
+            post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
+                .setDescription(this.t('introduction.execute.validation_failed'))
+                .setColor(Colors.Red);
             await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
             this.log.send('debug', 'command.introduction.execute.validation.failed', {
                 guild: interaction.guild,
@@ -174,17 +165,17 @@ export default class IntroductionCommand extends CustomizableCommand {
         }
 
         data.push(
-            '\n**__Account Information__**\n',
-            `**Username**: ${interaction.user.username}\n`,
-            `**Nickname**: <@!${interaction.user.id}>\n`,
-            `**ID**: ${interaction.user.id}\n`,
-            `**Created At**: <t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>\n`,
-            `**Joined At**: <t:${Math.floor(interaction.guild!.members.cache.get(interaction.user.id)!.joinedTimestamp! / 1000)}:R>\n`,
-            `**Roles**: ${
+            `\n**__${this.t('introduction.execute.account_info')}__**\n`,
+            `**${this.t('introduction.execute.username')}**: ${interaction.user.username}\n`,
+            `**${this.t('introduction.execute.nickname')}**: <@!${interaction.user.id}>\n`,
+            `**${this.t('introduction.execute.id')}**: ${interaction.user.id}\n`,
+            `**${this.t('introduction.execute.created_at')}**: <t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>\n`,
+            `**${this.t('introduction.execute.joined_at')}**: <t:${Math.floor(interaction.guild!.members.cache.get(interaction.user.id)!.joinedTimestamp! / 1000)}:R>\n`,
+            `**${this.t('introduction.execute.roles')}**: ${
                 user_roles
                     .filter((r) => r.name !== '@everyone')
                     .map((r) => `<@&${r.id}>`)
-                    .join(', ') || 'None'
+                    .join(', ') || this.t('introduction.execute.no_roles')
             }\n`,
         );
 
@@ -194,7 +185,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             .setColor(color || 'Random')
             .setThumbnail(interaction.user.displayAvatarURL())
             .setTimestamp();
-        if (last_submit_timestamp) embed.setFooter({ text: 'Introduction Updated' });
+        if (last_submit_timestamp) embed.setFooter({ text: this.t('introduction.execute.updated') });
 
         const target_channel = interaction.guild!.channels.cache.get(introduction!.channel_id) as TextChannel;
         const publish = await target_channel.send({ content: `<@${interaction.user.id}>`, embeds: [embed] });
@@ -223,10 +214,13 @@ export default class IntroductionCommand extends CustomizableCommand {
         last_introduction_submit_from_user.from_guild = guild!;
         await this.db.save(last_introduction_submit_from_user);
 
-        post.setTitle(':white_check_mark: Success')
+        post.setTitle(`:white_check_mark: ${this.t('command.execute.success')}`)
             .setColor(Colors.Green)
             .setDescription(
-                `Introduction submitted successfully.\nYou have **${introduction!.daily_submit_limit - last_introduction_submit_from_user.hourly_submit_count}** submissions left for today.\nIntroduction URL: ${publish.url}`,
+                this.t('introduction.execute.submission_successful', {
+                    remaining: introduction!.daily_submit_limit - last_introduction_submit_from_user.hourly_submit_count,
+                    url: publish.url,
+                }),
             );
         await interaction.reply({
             embeds: [post],
@@ -242,11 +236,8 @@ export default class IntroductionCommand extends CustomizableCommand {
 
     // =========================== SETTINGS =========================== //
     @SettingGenericSettingComponent({
-        display_name: 'Enabled',
         database: Introduction,
         database_key: 'is_enabled',
-        pretty: 'Toggle Introduction Command',
-        description: 'Toggle the introduction command enabled/disabled.',
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
@@ -270,10 +261,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         });
     }
 
-    @SettingGenericSettingComponent({
-        pretty: 'Customize Introduction Command Name and Description',
-        description: 'Customize the name and description of the introduction command for this server.',
-    })
+    @SettingGenericSettingComponent({ view_in_ui: false })
     public async customizeCommand(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const introduction = await this.db.findOne(Introduction, {
@@ -283,7 +271,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         const cmd_name = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             new TextInputBuilder()
                 .setCustomId('cmd_name')
-                .setLabel('Command Name')
+                .setLabel(this.t('introduction.settings.customizecommand.parameters.command_name'))
                 .setValue(introduction!.cmd_name)
                 .setStyle(TextInputStyle.Short)
                 .setRequired(false),
@@ -291,7 +279,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         const cmd_desc = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             new TextInputBuilder()
                 .setCustomId('cmd_desc')
-                .setLabel('Command Description')
+                .setLabel(this.t('introduction.settings.customizecommand.parameters.command_description'))
                 .setValue(introduction!.cmd_desc)
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(false),
@@ -315,16 +303,13 @@ export default class IntroductionCommand extends CustomizableCommand {
             await interaction.showModal(
                 new ModalBuilder()
                     .setCustomId('settings:introduction:customizecommand')
-                    .setTitle('Customize Introduction Command')
+                    .setTitle(this.t('introduction.settings.customizecommand.pretty_name'))
                     .addComponents([cmd_name, cmd_desc]),
             );
         }
     }
 
-    @SettingGenericSettingComponent({
-        pretty: 'Customize Columns',
-        description: 'Customize the names and descriptions of the introduction command columns.',
-    })
+    @SettingGenericSettingComponent({ view_in_ui: false })
     public async customizeColumns(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const introduction = await this.db.findOne(Introduction, {
@@ -341,7 +326,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             }
             for (const column of parsed) {
                 if (name_set.has(column.name)) {
-                    this.warning = `Column name \`${column.name}\` is duplicated. Please ensure all column names are unique.`;
+                    this.warning = this.t('introduction.settings.customizecolumns.duplicated', { column: column.name });
                     this.log.send('warn', 'command.introduction.setting.validation.failed', {
                         guild: interaction.guild,
                         user: interaction.user,
@@ -370,13 +355,13 @@ export default class IntroductionCommand extends CustomizableCommand {
             await interaction.showModal(
                 new ModalBuilder()
                     .setCustomId('settings:introduction:customize_columns')
-                    .setTitle('Customize Introduction Columns')
+                    .setTitle(this.t('introduction.settings.customizecolumns.pretty_name'))
                     .addComponents(
                         new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
                             new TextInputBuilder()
                                 .setCustomId('column_names')
-                                .setLabel('Column Names')
-                                .setPlaceholder('- name: key\n  value: value\n(max 8 columns)')
+                                .setLabel(this.t('introduction.settings.customizecolumns.parameters.column_names'))
+                                .setPlaceholder(this.t('introduction.settings.customizecolumns.parameters.column_names_placeholder'))
                                 .setValue(
                                     introduction!.yaml_data ||
                                         '- name: key1\n  value: value1\n- name: key2\n  value: value2',
@@ -389,11 +374,8 @@ export default class IntroductionCommand extends CustomizableCommand {
     }
 
     @SettingGenericSettingComponent({
-        display_name: 'Daily Submission Limit',
         database: Introduction,
         database_key: 'daily_submit_limit',
-        pretty: 'Set Daily Submission Limit',
-        description: 'Set the daily submission limit for users.',
         format_specifier: '`%s`',
     })
     public async setDailySubmissionLimit(
@@ -409,7 +391,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             const limit_value = interaction.fields.getTextInputValue('daily_limit');
             const limit = parseInt(limit_value, 10);
             if (isNaN(limit) || limit < 1 || limit > 100) {
-                this.warning = 'Please enter a valid number between 1 and 100.';
+                this.warning = this.t('introduction.settings.setdailysubmissionlimit.limit_range');
                 this.log.send('warn', 'command.introduction.setting.validation.failed', {
                     guild: interaction.guild,
                     user: interaction.user,
@@ -430,12 +412,12 @@ export default class IntroductionCommand extends CustomizableCommand {
             await interaction.showModal(
                 new ModalBuilder()
                     .setCustomId('settings:introduction:setdailysubmissionlimit')
-                    .setTitle('Set Daily Submission Limit')
+                    .setTitle(this.t('introduction.settings.setdailysubmissionlimit.pretty_name'))
                     .addComponents(
                         new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
                             new TextInputBuilder()
                                 .setCustomId('daily_limit')
-                                .setLabel('Daily Submission Limit (1-100)')
+                                .setLabel(this.t('introduction.settings.setdailysubmissionlimit.parameters.label'))
                                 .setMaxLength(3)
                                 .setStyle(TextInputStyle.Short)
                                 .setValue(introduction!.daily_submit_limit.toString()),
@@ -446,15 +428,11 @@ export default class IntroductionCommand extends CustomizableCommand {
     }
 
     @SettingChannelMenuComponent({
-        display_name: 'Target Channel',
         database: Introduction,
         database_key: 'channel_id',
-        pretty: 'Set Introduction Target Channel',
-        description: 'Set the target channel where introductions will be posted.',
         format_specifier: '<#%s>',
         options: {
             channel_types: [ChannelType.GuildText],
-            placeholder: 'Select a channel for introductions',
         },
     })
     public async changeTargetChannel(

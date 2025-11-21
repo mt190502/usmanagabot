@@ -16,26 +16,9 @@ import { BaseCommand } from '../../types/structure/command';
 export default class UserInformationCommand extends BaseCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({
-            name: 'user_information',
-            pretty_name: 'User Information',
-            description: 'Get information about a user.',
-            cooldown: 5,
-            help: `
-                Use this command to get detailed information about a user, including their account details and roles within the server.
-
-                **Usage:**
-                - \`/userinfo [user]\`
-                
-                **Options:**
-                - \`user\` (optional): The user you want to get information about. If not provided, it defaults to yourself.
-
-                **Example:**
-                - \`/userinfo user:@Username\`
-            `,
-        });
+        super({ name: 'user_information', cooldown: 5 });
         (this.base_cmd_data as SlashCommandBuilder).addUserOption((option) =>
-            option.setName('user').setDescription('The user to get information about').setRequired(false),
+            option.setName('user').setDescription(this.t('user_information.parameters.user')).setRequired(false),
         );
         this.push_cmd_data = new ContextMenuCommandBuilder()
             .setName(this.pretty_name)
@@ -64,8 +47,8 @@ export default class UserInformationCommand extends BaseCommand {
 
         if (!interaction.guild!.members.cache.get(user.id)) {
             const post = new EmbedBuilder()
-                .setTitle(':warning: Warning')
-                .setDescription('User not found.')
+                .setTitle(`:warning: ${this.t('command.execute.warning')}`)
+                .setDescription(this.t('user_information.execute.user_not_found_in_guild', { user: user.username }))
                 .setColor(Colors.Yellow);
             await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
             this.log.send('warn', 'command.user_information.execute.user_not_found', {
@@ -94,7 +77,7 @@ export default class UserInformationCommand extends BaseCommand {
                 where: { from_user: { uid: BigInt(user.id) }, from_guild: { gid: BigInt(interaction.guild!.id) } },
             });
             if (last_introduction_submit) {
-                data.push(`**__About ${user.username}__**\n`);
+                data.push(`**__${this.t('introduction.execute.header', { user: interaction.user.username })}__**\n`);
                 for (let i = 1; i <= 8; i++) {
                     const key = introduction[`col${i}` as keyof Introduction];
                     if (Array.isArray(key)) {
@@ -110,17 +93,17 @@ export default class UserInformationCommand extends BaseCommand {
         }
 
         data.push(
-            '\n**__Account Information__**\n',
-            `**Username**: ${user.username}\n`,
-            `**Nickname**: <@!${user.id}>\n`,
-            `**ID**: ${user.id}\n`,
-            `**Created At**: <t:${Math.floor(user.createdTimestamp / 1000)}:R>\n`,
-            `**Joined At**: <t:${Math.floor(interaction.guild!.members.cache.get(user.id)!.joinedTimestamp! / 1000)}:R>\n`,
-            `**Roles**: ${
+            `\n**__${this.t('introduction.execute.account_info')}__**\n`,
+            `**${this.t('introduction.execute.username')}**: ${interaction.user.username}\n`,
+            `**${this.t('introduction.execute.nickname')}**: <@!${interaction.user.id}>\n`,
+            `**${this.t('introduction.execute.id')}**: ${interaction.user.id}\n`,
+            `**${this.t('introduction.execute.created_at')}**: <t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>\n`,
+            `**${this.t('introduction.execute.joined_at')}**: <t:${Math.floor(interaction.guild!.members.cache.get(interaction.user.id)!.joinedTimestamp! / 1000)}:R>\n`,
+            `**${this.t('introduction.execute.roles')}**: ${
                 user_roles!
                     .filter((r) => r.name !== '@everyone')
                     .map((r) => `<@&${r.id}>`)
-                    .join(', ') || 'None'
+                    .join(', ') || this.t('introduction.execute.no_roles')
             }\n`,
         );
 

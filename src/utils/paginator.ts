@@ -6,6 +6,7 @@ import {
     EmbedBuilder,
     StringSelectMenuBuilder,
 } from 'discord.js';
+import { Translator } from '../services/translator';
 
 /**
  * Paginator module.
@@ -101,16 +102,16 @@ export class Paginator {
         const prev = new ButtonBuilder()
             .setCustomId(`page:${command_name}:prev`)
             .setEmoji('⬅️')
-            .setLabel('Previous')
+            .setLabel(this.t('paginator.previous'))
             .setStyle(ButtonStyle.Primary);
         const next = new ButtonBuilder()
             .setCustomId(`page:${command_name}:next`)
             .setEmoji('➡️')
-            .setLabel('Next')
+            .setLabel(this.t('paginator.next'))
             .setStyle(ButtonStyle.Primary);
         const string_select_menu = new StringSelectMenuBuilder()
             .setCustomId(`command:${command_name}:pageitem`)
-            .setPlaceholder(select_menu_placeholder || 'Select an item from the list');
+            .setPlaceholder(select_menu_placeholder || this.t('paginator.select'));
 
         post.setTitle(title).setColor(color);
         let description = '';
@@ -124,13 +125,12 @@ export class Paginator {
         const end_index = current_page * items_per_page;
         const page_items = config.items.slice(start_index, end_index);
 
-        for (const item of page_items) {
+        for (const item of page_items.sort((a, b) => a.pretty_name.localeCompare(b.pretty_name))) {
             description += `**${item.pretty_name}**\n${item.description}\n\n`;
             string_select_menu.addOptions({
                 label: item.pretty_name,
                 description:
-                    item.description?.substring(0, 97) + (item.description?.length >= 100 ? '...' : '') ||
-                    'No description provided.',
+                    item.description?.substring(0, 97) + (item.description?.length >= 100 ? '...' : '') || '<missing>',
                 value:
                     item.namespace === 'settings'
                         ? `settings:${item.name}`
@@ -138,7 +138,7 @@ export class Paginator {
             });
         }
         post.setDescription(description.trim());
-        post.setFooter({ text: `Page ${current_page} of ${total_pages}` });
+        post.setFooter({ text: this.t('paginator.page_status', { current_page, total_pages }) });
 
         return {
             embeds: [post],
@@ -218,7 +218,7 @@ export class Paginator {
             new ButtonBuilder()
                 .setCustomId(`page:${command_name}:back`)
                 .setEmoji('⬅️')
-                .setLabel('Back')
+                .setLabel(this.t('paginator.back'))
                 .setStyle(ButtonStyle.Secondary),
         );
         return {
@@ -298,6 +298,20 @@ export class Paginator {
         const pagination_state = Paginator.page_states.get(state_key);
         if (!pagination_state) return { embeds: [], components: [] };
         return this.buildPageResponse(pagination_state, command_name);
+    }
+
+    /**
+     * Translate a command string using the commands localization category.
+     * This method provides localization support for user-facing messages in commands.
+     *
+     * @protected
+     * @param {string} key Localization key from the commands category (e.g., 'purge.warning.title')
+     * @param {Record<string, unknown>} [replacements] Optional placeholder replacements for dynamic values
+     * @returns {string} Translated message in the current language
+     */
+    protected t(key: string, replacements?: Record<string, unknown>): string {
+        const translator = Translator.getInstance();
+        return translator.querySync('commands', key, replacements);
     }
 
     /**

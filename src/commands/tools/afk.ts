@@ -14,23 +14,9 @@ import { BaseCommand } from '../../types/structure/command';
 export default class AFKCommand extends BaseCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({
-            name: 'afk',
-            pretty_name: 'AFK',
-            description: 'Set your AFK (Away From Keyboard) status.',
-            cooldown: 10,
-            help: `
-                Set your AFK (Away From Keyboard) status.
-
-                **Usage:**
-                - \`/afk [reason]\` - Sets your AFK status with an reason.
-
-                **Examples:**
-                - \`/afk reason:I'm currently away.\`
-            `,
-        });
+        super({ name: 'afk', cooldown: 10 });
         (this.base_cmd_data as SlashCommandBuilder).addStringOption((option) =>
-            option.setName('reason').setDescription('The reason for going AFK.').setRequired(true),
+            option.setName('reason').setDescription(this.t('afk.parameters.reason')).setRequired(true),
         );
     }
     // ================================================================ //
@@ -50,7 +36,7 @@ export default class AFKCommand extends BaseCommand {
         const post = new EmbedBuilder();
 
         if (user_afk) {
-            post.setTitle(':warning: You are already AFK!').setColor(Colors.Yellow);
+            post.setTitle(`:warning: ${this.t('afk.execute.already_afk')}`).setColor(Colors.Yellow);
             await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
             return;
         }
@@ -61,9 +47,9 @@ export default class AFKCommand extends BaseCommand {
         afk.message = reason;
         await this.db.save(afk);
 
-        post.setTitle(':white_check_mark: You are now AFK').setColor(Colors.Green);
+        post.setTitle(`:white_check_mark: ${this.t('afk.execute.afk_success')}`).setColor(Colors.Green);
         if (!member.manageable) {
-            post.setDescription('**Warning:** I am unable to change your nickname (Probably due to role hierarchy)');
+            post.setDescription(`:warning: ${this.t('afk.execute.role_hierarchy_error')}`);
             this.log.send('warn', 'command.afk.execute.nickname_change_failed', {
                 guild: interaction.guild,
                 user: interaction.user,
@@ -94,13 +80,13 @@ export default class AFKCommand extends BaseCommand {
         if (user_afk) {
             const post = new EmbedBuilder();
             if (member.manageable) await member?.setNickname(member.nickname!.replaceAll('[AFK]', ''));
-            post.setTitle(':white_check_mark: You are no longer AFK').setColor(Colors.Green);
+            post.setTitle(`:white_check_mark: ${this.t('afk.onmessagecreate.no_longer_afk')}`).setColor(Colors.Green);
             if (user_afk.mentions.length > 0) {
-                post.setDescription(
-                    `You were mentioned **${user_afk.mentions.length}** times while you were **AFK** and I have sent you a DM with the message urls`,
-                );
+                post.setDescription(this.t('afk.onmessagecreate.mentions', { length: user_afk.mentions.length }));
                 await message.author.send({
-                    content: 'You were mentioned while you were **AFK**\n' + user_afk.mentions.join('\n'),
+                    content: this.t('afk.onmessagecreate.dm_description', {
+                        message_list: user_afk.mentions.join('\n'),
+                    }),
                 });
             }
             await this.db.delete(Afk, { id: user_afk.id });
@@ -112,9 +98,11 @@ export default class AFKCommand extends BaseCommand {
             });
             if (mentioned_user_afk) {
                 const post = new EmbedBuilder();
-                post.setTitle(':warning: User is AFK').setColor(Colors.Yellow);
+                post.setTitle(`:warning: ${this.t('afk.onmessagecreate.afk_info')}`).setColor(Colors.Yellow);
                 if (mentioned_user_afk.message) {
-                    post.setDescription(`**Reason:** ${mentioned_user_afk.message}`);
+                    post.setDescription(
+                        `**${this.t('afk.onmessagecreate.afk_reason', { reason: mentioned_user_afk.message })}**`,
+                    );
                 }
                 await message.reply({
                     embeds: [post],

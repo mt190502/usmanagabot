@@ -23,24 +23,7 @@ import { CustomizableCommand } from '../../types/structure/command';
 export default class ChannelRestrictCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({
-            name: 'channelrestrict',
-            pretty_name: 'Channel Restrict',
-            description: 'Restrict message types in a specific channel',
-            is_admin_command: true,
-            help: `
-                Restrict certain types of messages in a specific channel.
-
-                **Usage:**
-                - \`No Usage\`
-
-                **Options:**
-                - \`No Options\`
-                
-                **Example:**
-                - \`No Example\`
-            `,
-        });
+        super({ name: 'channel_restrict', is_admin_command: true });
         this.base_cmd_data = null;
     }
 
@@ -87,7 +70,9 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
             return;
         }
 
-        const post = new EmbedBuilder().setTitle(':no_entry: Your message has been deleted').setColor(Colors.Red);
+        const post = new EmbedBuilder()
+            .setTitle(`:no_entry: ${this.t('channel_restrict.execute.message_deleted')}`)
+            .setColor(Colors.Red);
         const guild_id = message.guild!.id;
         const message_id = message.id;
         let author: User;
@@ -134,7 +119,10 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
 
         if (is_restricted) {
             post.setDescription(
-                `Your message in <#${channel_id}> has been deleted due to channel restrictions.\nAllowed types: ${channel.restricts.map((r) => RestrictType[r]).join(', ')}`,
+                this.t('channel_restrict.execute.message_deleted_description', {
+                    channel: `<#${channel_id}>`,
+                    restrictions: channel.restricts.map((r) => RestrictType[r]).join(', '),
+                }),
             );
 
             if (message.type === MessageType.ThreadCreated) {
@@ -165,10 +153,13 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                     .setThumbnail(author.displayAvatarURL())
                     .setTimestamp();
                 mod_post.setDescription(
-                    `A message in <#${channel_id}> has been deleted due to channel restrictions.\n` +
-                        (logged?.logged_message_id
+                    this.t('channel_restrict.execute.admin_post', {
+                        channel_id,
+                        message_url: logged?.logged_message_id
                             ? `Message URL: https://discord.com/channels/${guild_id}/${msg_logger.channel_id}/${logged.logged_message_id}`
-                            : ''),
+                            : '-',
+                        restrictions: channel.restricts.map((r) => RestrictType[r]).join(', '),
+                    }),
                 );
                 if (target && 'send' in target) await target.send({ embeds: [mod_post] });
             }
@@ -179,11 +170,8 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
 
     // =========================== SETTINGS =========================== //
     @SettingGenericSettingComponent({
-        display_name: 'Enabled',
         database: ChannelRestrictSystem,
         database_key: 'is_enabled',
-        pretty: 'Toggle Restrict System',
-        description: 'Toggle the restrict system enabled/disabled.',
         format_specifier: '%s',
     })
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
@@ -207,12 +195,10 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
     }
 
     @SettingChannelMenuComponent({
-        pretty: 'Add Channel',
-        description: 'Add a channel to the restrict system.',
         options: {
             channel_types: [ChannelType.GuildText],
-            placeholder: 'Select a channel to add to the restrict system',
         },
+        view_in_ui: false,
     })
     public async addChannel(interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.channelrestrict.addchannel.start', {
@@ -225,7 +211,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
         if (restricts.find((channel) => channel.channel_id === interaction.values[0])) {
-            this.warning = 'This channel is already added to the restrict system.';
+            this.warning = this.t('channel_restrict.settings.addchannel.already_added', { channel: `<#${interaction.values[0]}>` });
             this.log.send('warn', 'command.channelrestrict.addchannel.exists', {
                 guild: interaction.guild,
                 channel_id: interaction.values[0],
@@ -247,11 +233,8 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
     }
 
     @SettingGenericSettingComponent({
-        display_name: 'Restricted Channels',
         database: ChannelRestricts,
         database_key: 'channel_id',
-        pretty: 'Define or Edit Channel Restrictions',
-        description: 'Define or edit the restrictions for a specific channel.',
         format_specifier: '<#%s>',
         db_column_is_array: true,
     })
@@ -284,7 +267,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                         .addComponents(
                             new StringSelectMenuBuilder()
                                 .setCustomId('settings:channelrestrict:definechannelrestrictions')
-                                .setPlaceholder('Select restrictions for the channel')
+                                .setPlaceholder(this.t('channel_restrict.settings.definechannelrestrictions.restricts.placeholder'))
                                 .setMaxValues(Object.keys(RestrictType).filter((key) => !isNaN(Number(key))).length)
                                 .addOptions(
                                     ...Object.values(RestrictType)
@@ -292,7 +275,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                                         .map((restrict) => ({
                                             label: RestrictType[restrict],
                                             description: Object.keys(RestrictType)[restrict - 1],
-                                            value: `settings:channelrestrict:definechannelrestrictions:${args[0]}:${restrict}`,
+                                            value: `settings:channel_restrict:definechannelrestrictions:${args[0]}:${restrict}`,
                                             default: restricts
                                                 .find((c) => BigInt(c.channel_id) === BigInt(args[0]))
                                                 ?.restricts.includes(restrict),
@@ -309,18 +292,18 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                         .addComponents(
                             new StringSelectMenuBuilder()
                                 .setCustomId('settings:channelrestrict:definechannelrestrictions')
-                                .setPlaceholder('Select a channel to define or edit restrictions')
+                                .setPlaceholder(this.t('channel_restrict.settings.definechannelrestrictions.channels.placeholder'))
                                 .addOptions(
                                     ...restricts.map((channel) => ({
                                         label: interaction.guild!.channels.cache.get(channel.channel_id)!.name,
                                         description: channel.restricts.length
                                             ? channel.restricts.map((r) => RestrictType[r]).join(', ')
-                                            : 'None',
-                                        value: `settings:channelrestrict:definechannelrestrictions:${channel.channel_id}`,
+                                            : '-',
+                                        value: `settings:channel_restrict:definechannelrestrictions:${channel.channel_id}`,
                                     })),
                                     {
-                                        label: 'Back',
-                                        description: 'Return to the previous menu',
+                                        label: this.t('channel_restrict.settings.definechannelrestrictions.back'),
+                                        description: this.t('channel_restrict.settings.definechannelrestrictions.back_description'),
                                         value: 'settings:channelrestrict',
                                     },
                                 ),
@@ -332,11 +315,9 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
     }
 
     @SettingChannelMenuComponent({
-        pretty: 'Remove Channel from Restrict System',
-        description: 'Remove a channel from the restrict system.',
+        view_in_ui: false,
         options: {
             channel_types: [ChannelType.GuildText],
-            placeholder: 'Select a channel to remove from the restrict system',
         },
     })
     public async removeChannel(interaction: ChannelSelectMenuInteraction | StringSelectMenuInteraction): Promise<void> {
@@ -351,7 +332,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
 
         const selected = restricts.find((channel) => channel.channel_id === interaction.values[0]);
         if (!selected) {
-            this.warning = 'This channel is not in the restrict system.';
+            this.warning = this.t('channel_restrict.settings.removechannel.not_found', { channel: `<#${interaction.values[0]}>` });
             this.log.send('warn', 'command.channelrestrict.removechannel.not_found', {
                 guild: interaction.guild,
                 channel_id: interaction.values[0],
@@ -371,15 +352,11 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
     }
 
     @SettingChannelMenuComponent({
-        display_name: 'Notifier Channel',
         database: ChannelRestrictSystem,
         database_key: 'mod_notifier_channel_id',
-        pretty: 'Set Notifier Channel',
-        description: 'Set the channel where moderation actions will be reported.',
         format_specifier: '<#%s>',
         options: {
             channel_types: [ChannelType.GuildText],
-            placeholder: 'Select a channel for moderation notifications',
         },
     })
     public async changeModNotifierChannel(
