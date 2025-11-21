@@ -91,7 +91,7 @@ export class CommandLoader {
      */
     private rest_commands: Collection<
         string,
-        (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
+        Set<RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody>
     > = new Collection();
 
     /**
@@ -169,7 +169,7 @@ export class CommandLoader {
             let file_name_with_path = '';
             if (typeof file === 'string') {
                 file_name_with_path = file.match(/([^/]+\/[^/]+\/[^/]+)$/)![0];
-                const content = ((await import(file)).default);
+                const content = (await import(file)).default;
                 if (Array.isArray(content)) {
                     for (const cmd_class of content) {
                         commands.push({ name: file_name_with_path, data: new cmd_class() });
@@ -206,16 +206,16 @@ export class CommandLoader {
                 if (custom_command) {
                     const rest_entry = this.rest_commands.get(guild);
                     if (rest_entry) {
-                        for (let i = rest_entry.length - 1; i >= 0; i--) {
-                            if (rest_entry[i].name === cmd.name) {
-                                rest_entry.splice(i, 1);
+                        for (const entry of rest_entry) {
+                            if (entry.name === cmd.name) {
+                                rest_entry.delete(entry);
                             }
                         }
                     }
                 }
                 if (!CommandLoader.BotCommands.has(guild)) {
                     CommandLoader.BotCommands.set(guild, new Map());
-                    this.rest_commands.set(guild, []);
+                    this.rest_commands.set(guild, new Set());
                 }
                 if (
                     cmd instanceof CustomizableCommand &&
@@ -233,7 +233,7 @@ export class CommandLoader {
                         });
                         continue;
                     }
-                    if (c) this.rest_commands.get(guild)!.push(c.toJSON());
+                    if (c) this.rest_commands.get(guild)!.add(c.toJSON());
                 }
             }
         }
@@ -265,7 +265,7 @@ export class CommandLoader {
                         });
                     }
                     await rest.put(Routes.applicationCommands(cfg.app_id), {
-                        body: Object.values(commands),
+                        body: Array.from(commands.values()),
                     });
                 } else {
                     if (cfg.clear_old_commands_on_startup) {
@@ -274,7 +274,7 @@ export class CommandLoader {
                         });
                     }
                     await rest.put(Routes.applicationGuildCommands(cfg.app_id, guild_id), {
-                        body: Object.values(commands),
+                        body: Array.from(commands.values()),
                     });
                 }
             } catch (error) {

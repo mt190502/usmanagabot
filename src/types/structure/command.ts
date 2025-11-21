@@ -118,7 +118,7 @@ export abstract class BaseCommand {
      * @static
      * @type {(SlashCommandBuilder | ContextMenuCommandBuilder)[]}
      */
-    private extra_command_data: (SlashCommandBuilder | ContextMenuCommandBuilder)[] = [];
+    private extra_command_data: Set<SlashCommandBuilder | ContextMenuCommandBuilder> = new Set();
     // ================================================================ //
 
     // ===================== COMMAND BASE SECTION ===================== //
@@ -218,7 +218,7 @@ export abstract class BaseCommand {
      * @param {SlashCommandBuilder | ContextMenuCommandBuilder} data - The command data to add.
      */
     public set push_cmd_data(data: SlashCommandBuilder | ContextMenuCommandBuilder) {
-        this.extra_command_data.push(data);
+        this.extra_command_data.add(data);
     }
     // ================================================================ //
 }
