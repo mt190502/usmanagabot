@@ -1,10 +1,8 @@
 import dayjs from 'dayjs';
-import { BaseChannel, Colors, EmbedBuilder, Guild, User } from 'discord.js';
-import fs from 'fs';
-import jsonc from 'jsonc-parser';
-import path from 'path';
+import { Colors, EmbedBuilder } from 'discord.js';
 import { BotClient } from './client';
 import { Config } from './config';
+import { SupportedLanguages, Translator } from './translator';
 
 /**
  * Log levels used by the Logger.
@@ -17,14 +15,6 @@ export enum LogLevels {
     warn = 4,
     error = 8,
     debug = 16,
-}
-
-/**
- * Supported languages for localization files under src/localization.
- */
-export enum SupportedLanguages {
-    EN = 'en',
-    TR = 'tr',
 }
 
 /**
@@ -42,6 +32,11 @@ export class Logger {
      * Singleton instance reference.
      */
     private static instance: Logger | null = null;
+
+    /**
+     * Translator instance for localization lookups.
+     */
+    private translator: Translator = Translator.getInstance();
 
     /**
      * Current language used when resolving localization keys.
@@ -107,49 +102,6 @@ export class Logger {
     }
 
     /**
-     * Format a Discord entity as "name (id)".
-     * @param {unknown} entity - Discord entity (Guild, User, or Channel) or plain object with name/id properties.
-     * @returns {string} Formatted string in "name (id)" format.
-     */
-    private formatDiscordEntity(entity: BaseChannel | Guild | User): string {
-        if (!entity) return 'Unknown';
-
-        if (typeof entity === 'object' && entity !== null) {
-            if (entity instanceof BaseChannel) {
-                return `Channel (<#${entity.id}>)`;
-            } else if (entity instanceof Guild) {
-                return `${entity.name} (<@${entity.id}>)`;
-            } else if (entity instanceof User) {
-                return `${entity.username} (<@${entity.id}>)`;
-            }
-        }
-        return String(entity);
-    }
-
-    /**
-     * Resolve a localization key and optionally apply numbered replacements.
-     * @param {string} key Localization key (e.g., 'events.index.loading').
-     * @param {(string | number | unknown)[]} [replacements] Optional values to replace {0}, {1}, ... in the template.
-     * @returns {string} Localized and formatted message.
-     */
-    public querySync(mode: keyof typeof LogLevels, key: string, replacements?: { [key: string]: unknown }): string {
-        const file = jsonc.parse(
-            fs.readFileSync(path.join(__dirname, `../localization/${Logger.current_language}.jsonc`), 'utf-8'),
-        );
-        let translation = file[mode][key] || '<missing translation> ' + key;
-        if (replacements && Object.keys(replacements).length > 0) {
-            for (const [k, v] of Object.entries(replacements)) {
-                const formatted_value =
-                    typeof v === 'object' && v !== null
-                        ? this.formatDiscordEntity(v as BaseChannel | Guild | User)
-                        : String(v);
-                translation = translation.replace(`{${k}}`, formatted_value);
-            }
-        }
-        return translation;
-    }
-
-    /**
      * Send logs to Discord for higher-severity levels.
      * Uses management config if enabled, otherwise falls back to LogNotifier database entries.
      * @param {string} type Log type: 'error' | 'warn'.
@@ -164,7 +116,7 @@ export class Logger {
         message: string,
         filename: string,
         linenumber: string,
-        formatted_message: string
+        formatted_message: string,
     ): Promise<void> {
         const management = Config.getInstance().current_botcfg.management;
         const client = BotClient.client;
@@ -203,7 +155,7 @@ export class Logger {
      */
     public send(type: keyof typeof LogLevels, key: string, replacements?: { [key: string]: unknown }): void {
         if (LogLevels[type] > Logger.selected_log_level) return;
-        const msg = this.querySync(type, key, replacements);
+        const msg = this.translator.querySync(type, key, replacements);
 
         const { filename, linenumber } = this.getCallerInfo();
         const formatted_message = this.format({ type: LogLevels[type], message: msg, filename, linenumber });
@@ -220,14 +172,6 @@ export class Logger {
             default:
                 console.log(formatted_message);
         }
-    }
-
-    /**
-     * Update the current language for subsequent localization lookups.
-     * @param {SupportedLanguages} lang New language to set.
-     */
-    public set setLanguage(lang: SupportedLanguages) {
-        if (lang.toUpperCase() in SupportedLanguages) Logger.current_language = lang;
     }
 
     /**

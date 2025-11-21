@@ -7,6 +7,7 @@ import {
     UserSelectMenuBuilder,
 } from 'discord.js';
 import { ObjectLiteral } from 'typeorm';
+import { Translator } from '../../services/translator';
 import { BaseCommand, CustomizableCommand } from '../structure/command';
 
 /** ***************************************************************************
@@ -24,14 +25,14 @@ import { BaseCommand, CustomizableCommand } from '../structure/command';
  * @property {boolean} [db_column_is_array=false] - Whether the database column is an array
  */
 type componentOptions = {
-    display_name?: string;
+    display_name: string;
     pretty: string;
     description: string;
-    format_specifier?: string;
-    database?: ObjectLiteral;
-    database_key?: string;
-    db_column_is_array?: boolean;
-    is_bot_owner_only?: boolean;
+    format_specifier: string;
+    database: ObjectLiteral;
+    database_key: string;
+    db_column_is_array: boolean;
+    is_bot_owner_only: boolean;
 };
 
 /**
@@ -54,7 +55,7 @@ type descriptorType = (
  * @returns {MethodDecorator} A method decorator for the setting component
  */
 function generateSettingComponent(
-    o: componentOptions,
+    o: Partial<componentOptions>,
     wrapper?: (
         orig: descriptorType,
         context: {
@@ -76,12 +77,12 @@ function generateSettingComponent(
         }
 
         metadata.set(pretty_key, {
-            pretty: o.pretty,
+            pretty: t(o.pretty ?? `${name}.settings.${pretty_key}.pretty_name`),
             database: o.database,
             database_key: o.database_key,
-            display_name: o.display_name,
-            description: o.description,
-            format_specifier: o.format_specifier ?? '`View in Edit Mode`',
+            display_name: t(o.display_name ?? `${name}.settings.${pretty_key}.display_name`),
+            description: t(o.description ?? `${name}.settings.${pretty_key}.description`),
+            format_specifier: o.format_specifier ?? t('settings.view_in_edit_mode'),
             db_column_is_array: o.db_column_is_array ?? false,
             is_bot_owner_only: o.is_bot_owner_only ?? false,
             func: descriptor,
@@ -90,6 +91,20 @@ function generateSettingComponent(
         Reflect.defineMetadata('custom:settings', metadata, target.constructor);
     };
 }
+
+/**
+ * Translate a command string using the commands localization category.
+ * This method provides localization support for user-facing messages in commands.
+ *
+ * @protected
+ * @param {string} key Localization key from the commands category (e.g., 'purge.warning.title')
+ * @param {Record<string, unknown>} [replacements] Optional placeholder replacements for dynamic values
+ * @returns {string} Translated message in the current language
+ */
+function t(key: string, replacements?: Record<string, unknown>): string {
+    const translator = Translator.getInstance();
+    return translator.querySync('commands', key, replacements);
+}
 /** ************************************************************************** */
 
 /**
@@ -97,7 +112,7 @@ function generateSettingComponent(
  * @param {componentOptions} o - The options for the generic setting
  * @returns {MethodDecorator} A method decorator for the generic setting
  */
-export function GenericSetting(o: componentOptions): MethodDecorator {
+export function GenericSetting(o: Partial<componentOptions>): MethodDecorator {
     return (target_class, property_key, descriptor_func) => {
         const settings: Map<string, typeof o & { func: typeof descriptor_func }> =
             Reflect.getMetadata('custom:settings', target_class.constructor) ?? new Map();
@@ -107,7 +122,7 @@ export function GenericSetting(o: componentOptions): MethodDecorator {
             database_key: o.database_key,
             display_name: o.display_name,
             description: o.description,
-            format_specifier: o.format_specifier ?? '`View in Edit Mode`',
+            format_specifier: o.format_specifier ?? t('settings.view_in_edit_mode'),
             db_column_is_array: o.db_column_is_array ?? false,
             is_bot_owner_only: o.is_bot_owner_only ?? false,
             func: descriptor_func,
@@ -135,7 +150,7 @@ export function SettingToggleButtonComponent(o: componentOptions): MethodDecorat
  * @returns {MethodDecorator} A method decorator for the channel select menu setting
  */
 export function SettingChannelMenuComponent(
-    o: componentOptions & {
+    o: Partial<componentOptions> & {
         options?: {
             channel_types?: ChannelType[];
             min_values?: number;
@@ -155,7 +170,12 @@ export function SettingChannelMenuComponent(
                     new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(
                         new ChannelSelectMenuBuilder()
                             .setCustomId(`settings:${name}:${pretty_key}`)
-                            .setPlaceholder((options as typeof o).options?.placeholder ?? 'Select a channel')
+                            .setPlaceholder(
+                                t(
+                                    (options as typeof o).options?.placeholder ??
+                                        `${name}.settings.${pretty_key}.placeholder`,
+                                ),
+                            )
                             .setMinValues((options as typeof o).options?.min_values ?? 1)
                             .setMaxValues((options as typeof o).options?.max_values ?? 1)
                             .addChannelTypes((options as typeof o).options?.channel_types ?? []),
@@ -175,7 +195,7 @@ export function SettingChannelMenuComponent(
  * @returns {MethodDecorator} A method decorator for the role select menu setting
  */
 export function SettingRoleSelectMenuComponent(
-    o: componentOptions & {
+    o: Partial<componentOptions> & {
         options?: {
             min_values?: number;
             max_values?: number;
@@ -194,7 +214,12 @@ export function SettingRoleSelectMenuComponent(
                     new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(
                         new RoleSelectMenuBuilder()
                             .setCustomId(`settings:${name}:${pretty_key}`)
-                            .setPlaceholder((options as typeof o).options?.placeholder ?? 'Select a role')
+                            .setPlaceholder(
+                                t(
+                                    (options as typeof o).options?.placeholder ??
+                                        `${name}.settings.${pretty_key}.placeholder`,
+                                ),
+                            )
                             .setMinValues((options as typeof o).options?.min_values ?? 1)
                             .setMaxValues((options as typeof o).options?.max_values ?? 1),
                     ),
@@ -213,7 +238,7 @@ export function SettingRoleSelectMenuComponent(
  * @returns {MethodDecorator} A method decorator for the user select menu setting
  */
 export function SettingUserSelectMenuComponent(
-    o: componentOptions & {
+    o: Partial<componentOptions> & {
         options?: {
             min_values?: number;
             max_values?: number;
@@ -232,7 +257,12 @@ export function SettingUserSelectMenuComponent(
                     new ActionRowBuilder<UserSelectMenuBuilder>().addComponents(
                         new UserSelectMenuBuilder()
                             .setCustomId(`settings:${name}:${pretty_key}`)
-                            .setPlaceholder((options as typeof o).options?.placeholder ?? 'Select a user')
+                            .setPlaceholder(
+                                t(
+                                    (options as typeof o).options?.placeholder ??
+                                        `${name}.settings.${pretty_key}.placeholder`,
+                                ),
+                            )
                             .setMinValues((options as typeof o).options?.min_values ?? 1)
                             .setMaxValues((options as typeof o).options?.max_values ?? 1),
                     ),

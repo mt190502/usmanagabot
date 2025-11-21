@@ -1,9 +1,10 @@
 import botcfg from '@config/bot.jsonc';
 import dbcfg from '@config/database.jsonc';
-import { Logger, LogLevels, SupportedLanguages } from '@services/logger';
+import { Logger, LogLevels } from '@services/logger';
 import fs from 'fs';
 import { env } from 'process';
 import { z } from 'zod';
+import { SupportedLanguages } from './translator';
 
 /**
  * Configuration module.

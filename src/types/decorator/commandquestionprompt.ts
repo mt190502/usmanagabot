@@ -10,8 +10,33 @@ import {
     InteractionReplyOptions,
     StringSelectMenuInteraction,
 } from 'discord.js';
+import { Translator } from '../../services/translator';
 import { InteractionResponseRegistry } from '../../utils/interactionRegistry';
 import { BaseCommand, CustomizableCommand } from '../structure/command';
+
+/** ***************************************************************************
+ * Base options for the CommandQuestionPrompt decorator.
+ * ****************************************************************************/
+
+/**
+ * Translate a command string using the commands localization category.
+ * This method provides localization support for user-facing messages in commands.
+ *
+ * @protected
+ * @param {string} key Localization key from the commands category (e.g., 'purge.warning.title')
+ * @param {Record<string, unknown>} [replacements] Optional placeholder replacements for dynamic values
+ * @returns {string} Translated message in the current language
+ */
+function t(key: string, replacements?: Record<string, unknown>): string {
+    const translator = Translator.getInstance();
+    return translator.querySync('commands', key, replacements);
+}
+/** ************************************************************************** */
+
+/**
+ * Decorator for command methods that require a confirmation prompt before execution.
+ * @param o Configuration options for the confirmation prompt.
+ */
 export function CommandQuestionPrompt(o: {
     title: string;
     message: string;
@@ -43,14 +68,14 @@ export function CommandQuestionPrompt(o: {
             );
 
             const post = new EmbedBuilder()
-                .setTitle(`:warning: ${o.title}`)
-                .setDescription(o.message)
+                .setTitle(`:warning: ${t(o.title)}`)
+                .setDescription(t(o.message))
                 .setColor(Colors.Yellow);
 
             if (interaction.isButton()) {
                 if (interaction.customId.endsWith(':ok')) {
-                    post.setTitle(':hourglass_flowing_sand: Processing')
-                        .setDescription('Please wait...')
+                    post.setTitle(`:hourglass_flowing_sand: ${t('question.processing')}`)
+                        .setDescription(t('question.please_wait'))
                         .setColor(Colors.Blue);
 
                     const stored_response = InteractionResponseRegistry.get(registry_key);
@@ -67,7 +92,9 @@ export function CommandQuestionPrompt(o: {
                     await orig.apply(this, [interaction, ...args]);
                     InteractionResponseRegistry.delete(registry_key);
                 } else if (interaction.customId.endsWith(':cancel')) {
-                    post.setTitle(':x: Cancelled').setDescription('Process cancelled').setColor(Colors.Red);
+                    post.setTitle(`:x: ${t('question.cancelled')}`)
+                        .setDescription(t('question.cancelled_description'))
+                        .setColor(Colors.Red);
                     await interaction.update({ components: [], embeds: [post] });
                     InteractionResponseRegistry.delete(registry_key);
                     return;
@@ -78,18 +105,18 @@ export function CommandQuestionPrompt(o: {
             const ok_btn = new ButtonBuilder()
                 .setCustomId(`command:${name}:${property_key.toString().toLowerCase()}:ok`)
                 .setEmoji('✅')
-                .setLabel(o.ok_label)
+                .setLabel(t(o.ok_label))
                 .setStyle(ButtonStyle.Success);
             const cancel_btn = new ButtonBuilder()
                 .setCustomId(`command:${name}:${property_key.toString().toLowerCase()}:cancel`)
                 .setEmoji('❌')
-                .setLabel(o.cancel_label)
+                .setLabel(t(o.cancel_label))
                 .setStyle(ButtonStyle.Danger);
             const extra = o.extra_buttons
                 ? o.extra_buttons.map((b) =>
                     new ButtonBuilder()
                         .setCustomId(`command:${name}:${property_key.toString().toLowerCase()}:${b.key}`)
-                        .setLabel(b.label)
+                        .setLabel(t(b.label))
                         .setEmoji(b.emoji ?? '')
                         .setStyle(b.style ?? ButtonStyle.Primary),
                 )

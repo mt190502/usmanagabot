@@ -18,6 +18,7 @@ import { BotClient } from '../../services/client';
 import { Config } from '../../services/config';
 import { Database } from '../../services/database';
 import { Logger } from '../../services/logger';
+import { Translator } from '../../services/translator';
 import { Paginator } from '../../utils/paginator';
 import { Users } from '../database/entities/users';
 import { DatabaseManager } from './database';
@@ -138,11 +139,11 @@ export abstract class BaseCommand {
     constructor(options: Partial<BaseCommand> & { name: string }) {
         this.enabled = options.enabled ?? true;
         this.name = options.name;
-        this.pretty_name = options.pretty_name ?? 'No pretty name provided.';
-        this.description = options.description ?? 'No description provided.';
+        this.pretty_name = this.t(options.pretty_name ?? `${this.name}.pretty_name`) ?? 'No pretty name provided.';
+        this.description = this.t(options.description ?? `${this.name}.description`) ?? 'No description provided.';
         this.is_admin_command = options.is_admin_command ?? false;
         this.is_bot_owner_command = options.is_bot_owner_command ?? false;
-        this.help = options.help ?? 'No help provided.';
+        this.help = this.t(options.help ?? `${this.name}.help`) ?? 'No help provided.';
         this.cooldown = options.cooldown ?? 0;
         this.main_command_data = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
     }
@@ -159,15 +160,6 @@ export abstract class BaseCommand {
     }
 
     /**
-     * Provides access to the logger instance.
-     * @protected
-     * @returns {Logger} The logger instance.
-     */
-    protected get log(): Logger {
-        return Logger.getInstance();
-    }
-
-    /**
      * Provides access to the database manager.
      * @protected
      * @returns {DatabaseManager} The database manager instance.
@@ -177,12 +169,35 @@ export abstract class BaseCommand {
     }
 
     /**
+     * Provides access to the logger instance.
+     * @protected
+     * @returns {Logger} The logger instance.
+     */
+    protected get log(): Logger {
+        return Logger.getInstance();
+    }
+
+    /**
      * Provides access to the paginator instance.
      * @protected
      * @returns {Paginator} The paginator instance.
      */
     protected get paginator(): Paginator {
         return Paginator.getInstance();
+    }
+
+    /**
+     * Translate a command string using the commands localization category.
+     * This method provides localization support for user-facing messages in commands.
+     *
+     * @protected
+     * @param {string} key Localization key from the commands category (e.g., 'purge.warning.title')
+     * @param {Record<string, unknown>} [replacements] Optional placeholder replacements for dynamic values
+     * @returns {string} Translated message in the current language
+     */
+    protected t(key: string, replacements?: Record<string, unknown>): string {
+        const translator = Translator.getInstance();
+        return translator.querySync('commands', key, replacements);
     }
 
     /**
@@ -259,7 +274,7 @@ export abstract class CustomizableCommand extends BaseCommand {
      */
     public async settingsUI(interaction: BaseInteraction | CommandInteraction): Promise<void> {
         const subsettings = Reflect.getMetadata('custom:settings', this.constructor);
-        const ui = new EmbedBuilder().setTitle(`:gear: ${this.pretty_name} Settings`);
+        const ui = new EmbedBuilder().setTitle(`:gear: ${this.t('settings.title', { command: this.pretty_name })}`);
         const menu = new StringSelectMenuBuilder().setCustomId(`settings:${this.name}`);
 
         if (this.warning) {
@@ -311,21 +326,23 @@ export abstract class CustomizableCommand extends BaseCommand {
                 }
                 let value;
                 if (typeof row === 'boolean') {
-                    value = row ? ':green_circle: True' : ':red_circle: False';
+                    value = row
+                        ? `:green_circle: ${this.t('settings.true')}`
+                        : `:red_circle: ${this.t('settings.false')}`;
                 } else if (setting.db_column_is_array) {
                     value = setting.database_key
                         ? Array.isArray(row) && row.length > 0
                             ? row.length == 1 && row[0] === null
-                                ? ':orange_circle: Not Set'
+                                ? `:orange_circle: ${this.t('settings.not_set')}`
                                 : row.map((val) => format(setting.format_specifier, val)).join(', ')
-                            : ':orange_circle: Not Set'
-                        : '`View in Edit Mode`';
+                            : `:orange_circle: ${this.t('settings.not_set')}`
+                        : this.t('settings.view_in_edit_mode');
                 } else {
                     value = setting.database_key
                         ? row
                             ? format(setting.format_specifier, row ?? '')
-                            : ':orange_circle: Not Set'
-                        : '`View in Edit Mode`';
+                            : `:orange_circle: ${this.t('settings.not_set')}`
+                        : this.t('settings.view_in_edit_mode');
                 }
                 ui.addFields({
                     name: setting.display_name,
@@ -339,8 +356,8 @@ export abstract class CustomizableCommand extends BaseCommand {
             });
         }
         menu.addOptions({
-            label: 'Back to Main Menu',
-            description: 'Return to the main settings menu.',
+            label: this.t('settings.back_to_main_menu'),
+            description: this.t('settings.back_to_main_menu_description'),
             value: 'command:settings',
         });
 
@@ -367,7 +384,10 @@ export abstract class CustomizableCommand extends BaseCommand {
                 ui.addFields({ name: '\u00A0', value: '' });
                 ui.setFooter({
                     iconURL: user ? user.displayAvatarURL() : undefined,
-                    text: `Last modified by ${user ? user.tag : 'Unknown User'} on ${date ? date : 'Unknown Date'}`,
+                    text: this.t('settings.last_modified_by', {
+                        user: user ? user.tag : this.t('settings.unknown_user'),
+                        date: date ? date : this.t('settings.unknown_date'),
+                    }),
                 });
             }
         }
