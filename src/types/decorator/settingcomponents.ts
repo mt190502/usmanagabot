@@ -33,6 +33,7 @@ type componentOptions = {
     database_key: string;
     db_column_is_array: boolean;
     is_bot_owner_only: boolean;
+    view_in_ui: boolean;
 };
 
 /**
@@ -85,6 +86,7 @@ function generateSettingComponent(
             format_specifier: o.format_specifier ?? t('settings.view_in_edit_mode'),
             db_column_is_array: o.db_column_is_array ?? false,
             is_bot_owner_only: o.is_bot_owner_only ?? false,
+            view_in_ui: o.view_in_ui ?? true,
             func: descriptor,
         });
 

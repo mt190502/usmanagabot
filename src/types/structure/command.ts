@@ -287,7 +287,7 @@ export abstract class CustomizableCommand extends BaseCommand {
 
         let latest_action_from_user: [Users | string | null, Date | null] = [null, null];
         for (const [name, setting] of subsettings) {
-            if (setting.display_name) {
+            if (setting.view_in_ui) {
                 let row;
                 if (setting.is_bot_owner_only) {
                     if (setting.db_column_is_array) {
