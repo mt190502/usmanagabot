@@ -15,11 +15,7 @@ import {
 import { BotClient } from '../../services/client';
 import { Earthquake, EarthquakeLogs } from '../../types/database/entities/earthquake';
 import { Cron } from '../../types/decorator/cronjob';
-import {
-    GenericSetting,
-    SettingChannelMenuComponent,
-    SettingToggleButtonComponent,
-} from '../../types/decorator/settingcomponents';
+import { SettingChannelMenuComponent, SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class EarthquakeNotifierCommand extends CustomizableCommand {
@@ -171,7 +167,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @SettingToggleButtonComponent({
+    @SettingGenericSettingComponent({
         display_name: 'Enabled',
         database: Earthquake,
         database_key: 'is_enabled',
@@ -232,7 +228,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         });
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         display_name: 'Magnitude Limit',
         database: Earthquake,
         database_key: 'magnitude_limit',
@@ -276,7 +272,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         });
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         display_name: 'Seismicportal API URL',
         database: Earthquake,
         database_key: 'seismicportal_api_url',
@@ -324,7 +320,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         );
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         display_name: 'Region Code (api-bdc.net)',
         database: Earthquake,
         database_key: 'region_code',

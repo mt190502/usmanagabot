@@ -13,7 +13,7 @@ import { Aliases, AliasSystem } from '../../types/database/entities/alias';
 import { Channels } from '../../types/database/entities/channels';
 import { ChainEvent } from '../../types/decorator/chainevent';
 import { HandleAction } from '../../types/decorator/command';
-import { SettingToggleButtonComponent } from '../../types/decorator/settingcomponents';
+import { SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class AliasCommand extends CustomizableCommand {
@@ -483,7 +483,7 @@ export default class AliasCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @SettingToggleButtonComponent({
+    @SettingGenericSettingComponent({
         display_name: 'Enabled',
         database: AliasSystem,
         database_key: 'is_enabled',

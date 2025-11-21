@@ -22,7 +22,7 @@ import { CommandLoader } from '..';
 import { MessageLogger } from '../../types/database/entities/message_logger';
 import { Messages } from '../../types/database/entities/messages';
 import { ChainEvent } from '../../types/decorator/chainevent';
-import { SettingChannelMenuComponent, SettingToggleButtonComponent } from '../../types/decorator/settingcomponents';
+import { SettingChannelMenuComponent, SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class MessageLoggerCommand extends CustomizableCommand {
@@ -322,7 +322,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @SettingToggleButtonComponent({
+    @SettingGenericSettingComponent({
         display_name: 'Enabled',
         database: MessageLogger,
         database_key: 'is_enabled',

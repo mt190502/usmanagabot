@@ -15,7 +15,7 @@ import {
 } from 'discord.js';
 import { CommandLoader } from '..';
 import { BotData } from '../../types/database/entities/bot';
-import { GenericSetting, SettingToggleButtonComponent } from '../../types/decorator/settingcomponents';
+import { SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
 import { BaseCommand, CustomizableCommand } from '../../types/structure/command';
 
 class SettingsCommand extends BaseCommand {
@@ -122,7 +122,7 @@ class BotSettings extends CustomizableCommand {
     // ================================================================ //
 
     // ========================== SETTINGS ============================ //
-    @SettingToggleButtonComponent({
+    @SettingGenericSettingComponent({
         display_name: 'Enable Random Status',
         database: BotData,
         database_key: 'enable_random_status',
@@ -144,7 +144,7 @@ class BotSettings extends CustomizableCommand {
         return;
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         display_name: 'Random Status Interval (minutes)',
         pretty: 'Random Status Interval',
         database: BotData,
@@ -186,7 +186,7 @@ class BotSettings extends CustomizableCommand {
         });
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         display_name: 'Random Statuses',
         pretty: 'Random Statuses',
         database: BotData,

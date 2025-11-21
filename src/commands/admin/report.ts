@@ -13,10 +13,9 @@ import { CommandLoader } from '..';
 import { Messages } from '../../types/database/entities/messages';
 import { Reports } from '../../types/database/entities/reports';
 import {
-    GenericSetting,
     SettingChannelMenuComponent,
+    SettingGenericSettingComponent,
     SettingRoleSelectMenuComponent,
-    SettingToggleButtonComponent,
 } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
@@ -171,7 +170,7 @@ export default class ReportCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @SettingToggleButtonComponent({
+    @SettingGenericSettingComponent({
         display_name: 'Enabled',
         database: Reports,
         database_key: 'is_enabled',
@@ -263,7 +262,7 @@ export default class ReportCommand extends CustomizableCommand {
         });
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         pretty: 'Remove Moderator Tagging',
         description: 'Remove the moderator role tagging from reports.',
     })

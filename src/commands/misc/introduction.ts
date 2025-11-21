@@ -20,11 +20,7 @@ import 'reflect-metadata';
 import yaml from 'yaml';
 import { CommandLoader } from '..';
 import { Introduction, IntroductionSubmit } from '../../types/database/entities/introduction';
-import {
-    GenericSetting,
-    SettingChannelMenuComponent,
-    SettingToggleButtonComponent,
-} from '../../types/decorator/settingcomponents';
+import { SettingChannelMenuComponent, SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class IntroductionCommand extends CustomizableCommand {
@@ -245,7 +241,7 @@ export default class IntroductionCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @SettingToggleButtonComponent({
+    @SettingGenericSettingComponent({
         display_name: 'Enabled',
         database: Introduction,
         database_key: 'is_enabled',
@@ -274,7 +270,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         });
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         pretty: 'Customize Introduction Command Name and Description',
         description: 'Customize the name and description of the introduction command for this server.',
     })
@@ -325,7 +321,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         }
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         pretty: 'Customize Columns',
         description: 'Customize the names and descriptions of the introduction command columns.',
     })
@@ -392,7 +388,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         }
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         display_name: 'Daily Submission Limit',
         database: Introduction,
         database_key: 'daily_submit_limit',

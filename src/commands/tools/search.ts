@@ -15,7 +15,7 @@ import {
 } from 'discord.js';
 import { CommandLoader } from '..';
 import { Search, SearchEngines } from '../../types/database/entities/search';
-import { GenericSetting, SettingToggleButtonComponent } from '../../types/decorator/settingcomponents';
+import { SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class SearchCommand extends CustomizableCommand {
@@ -140,7 +140,7 @@ export default class SearchCommand extends CustomizableCommand {
         .setPlaceholder('https://duckduckgo.com/?q=');
     // -- -- //
 
-    @SettingToggleButtonComponent({
+    @SettingGenericSettingComponent({
         display_name: 'Enabled',
         database: Search,
         database_key: 'is_enabled',
@@ -169,7 +169,7 @@ export default class SearchCommand extends CustomizableCommand {
         });
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         pretty: 'Add a New Search Engine',
         description: 'Add a new search engine to the list of available search engines.',
     })
@@ -221,7 +221,7 @@ export default class SearchCommand extends CustomizableCommand {
         }
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         display_name: 'Engines',
         database: SearchEngines,
         database_key: 'engine_name',
@@ -300,7 +300,7 @@ export default class SearchCommand extends CustomizableCommand {
         }
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         pretty: 'Remove a Search Engine',
         description: 'Remove a search engine from the list of available search engines.',
     })

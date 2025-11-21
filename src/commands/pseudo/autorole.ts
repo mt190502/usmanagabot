@@ -2,7 +2,10 @@ import { Events, GuildMember, RoleSelectMenuInteraction, StringSelectMenuInterac
 import { BotClient } from '../../services/client';
 import { Autorole } from '../../types/database/entities/autorole';
 import { ChainEvent } from '../../types/decorator/chainevent';
-import { SettingRoleSelectMenuComponent, SettingToggleButtonComponent } from '../../types/decorator/settingcomponents';
+import {
+    SettingGenericSettingComponent,
+    SettingRoleSelectMenuComponent,
+} from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class AutoroleCommand extends CustomizableCommand {
@@ -70,7 +73,7 @@ export default class AutoroleCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @SettingToggleButtonComponent({
+    @SettingGenericSettingComponent({
         display_name: 'Enabled',
         database: Autorole,
         database_key: 'is_enabled',

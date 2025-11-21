@@ -17,11 +17,7 @@ import { ChannelRestricts, ChannelRestrictSystem, RestrictType } from '../../typ
 import { MessageLogger } from '../../types/database/entities/message_logger';
 import { Messages } from '../../types/database/entities/messages';
 import { ChainEvent } from '../../types/decorator/chainevent';
-import {
-    GenericSetting,
-    SettingChannelMenuComponent,
-    SettingToggleButtonComponent,
-} from '../../types/decorator/settingcomponents';
+import { SettingChannelMenuComponent, SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class ChannelRestrictCommand extends CustomizableCommand {
@@ -182,7 +178,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @SettingToggleButtonComponent({
+    @SettingGenericSettingComponent({
         display_name: 'Enabled',
         database: ChannelRestrictSystem,
         database_key: 'is_enabled',
@@ -250,7 +246,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         });
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         display_name: 'Restricted Channels',
         database: ChannelRestricts,
         database_key: 'channel_id',

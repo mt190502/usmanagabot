@@ -108,35 +108,11 @@ function t(key: string, replacements?: Record<string, unknown>): string {
 /** ************************************************************************** */
 
 /**
- * Generic setting decorator
- * @param {componentOptions} o - The options for the generic setting
+ * Generic setting decorator to generate a basic setting component
+ * @param {object} o - The options for the generic setting
  * @returns {MethodDecorator} A method decorator for the generic setting
  */
-export function GenericSetting(o: Partial<componentOptions>): MethodDecorator {
-    return (target_class, property_key, descriptor_func) => {
-        const settings: Map<string, typeof o & { func: typeof descriptor_func }> =
-            Reflect.getMetadata('custom:settings', target_class.constructor) ?? new Map();
-        settings.set(property_key.toString().toLowerCase() as string, {
-            pretty: o.pretty,
-            database: o.database,
-            database_key: o.database_key,
-            display_name: o.display_name,
-            description: o.description,
-            format_specifier: o.format_specifier ?? t('settings.view_in_edit_mode'),
-            db_column_is_array: o.db_column_is_array ?? false,
-            is_bot_owner_only: o.is_bot_owner_only ?? false,
-            func: descriptor_func,
-        });
-        Reflect.defineMetadata('custom:settings', settings, target_class.constructor);
-    };
-}
-
-/**
- * Toggle button setting decorator to generate a toggle button component
- * @param {componentOptions} o - The options for the toggle button setting
- * @returns {MethodDecorator} A method decorator for the toggle button setting
- */
-export function SettingToggleButtonComponent(o: componentOptions): MethodDecorator {
+export function SettingGenericSettingComponent(o: Partial<componentOptions>): MethodDecorator {
     return generateSettingComponent(o);
 }
 

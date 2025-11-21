@@ -18,10 +18,9 @@ import { Verification, VerificationSystem } from '../../types/database/entities/
 import { ChainEvent } from '../../types/decorator/chainevent';
 import { Cron } from '../../types/decorator/cronjob';
 import {
-    GenericSetting,
     SettingChannelMenuComponent,
+    SettingGenericSettingComponent,
     SettingRoleSelectMenuComponent,
-    SettingToggleButtonComponent,
 } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
@@ -161,7 +160,7 @@ export default class VerificationCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    @SettingToggleButtonComponent({
+    @SettingGenericSettingComponent({
         display_name: 'Enabled',
         database: VerificationSystem,
         database_key: 'is_enabled',
@@ -263,7 +262,7 @@ export default class VerificationCommand extends CustomizableCommand {
         });
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         display_name: 'Verification System Message',
         database: VerificationSystem,
         database_key: 'message',
@@ -311,7 +310,7 @@ export default class VerificationCommand extends CustomizableCommand {
         );
     }
 
-    @GenericSetting({
+    @SettingGenericSettingComponent({
         display_name: 'Verification Minimum Age (Days)',
         database: VerificationSystem,
         database_key: 'minimum_days',
