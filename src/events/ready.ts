@@ -22,8 +22,6 @@ export default class ReadyEvent extends BaseEvent<Events.ClientReady> {
 
             setActivity();
             setInterval(setActivity, (bot_settings?.random_status_interval ?? 10) * 60 * 1000);
-        } else {
-            client.user.setActivity('for commands', { type: ActivityType.Watching });
         }
     }
 }
