@@ -1,5 +1,4 @@
 import {
-    ActionRowBuilder,
     ChannelSelectMenuInteraction,
     ChannelType,
     ChatInputCommandInteraction,
@@ -7,20 +6,21 @@ import {
     Colors,
     EmbedBuilder,
     MessageFlags,
-    ModalActionRowComponentBuilder,
-    ModalBuilder,
     ModalSubmitInteraction,
     SlashCommandBuilder,
     StringSelectMenuInteraction,
     TextChannel,
-    TextInputBuilder,
     TextInputStyle,
 } from 'discord.js';
 import 'reflect-metadata';
 import yaml from 'yaml';
 import { CommandLoader } from '..';
 import { Introduction, IntroductionSubmit } from '../../types/database/entities/introduction';
-import { SettingChannelMenuComponent, SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
+import {
+    SettingChannelMenuComponent,
+    SettingGenericSettingComponent,
+    SettingModalComponent,
+} from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class IntroductionCommand extends CustomizableCommand {
@@ -261,137 +261,73 @@ export default class IntroductionCommand extends CustomizableCommand {
         });
     }
 
-    @SettingGenericSettingComponent({ view_in_ui: false })
-    public async customizeCommand(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
-        const introduction = await this.db.findOne(Introduction, {
-            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
-        });
-        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
-        const cmd_name = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
-            new TextInputBuilder()
-                .setCustomId('cmd_name')
-                .setLabel(this.t('introduction.settings.customizecommand.parameters.command_name'))
-                .setValue(introduction!.cmd_name)
-                .setStyle(TextInputStyle.Short)
-                .setRequired(false),
-        );
-        const cmd_desc = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
-            new TextInputBuilder()
-                .setCustomId('cmd_desc')
-                .setLabel(this.t('introduction.settings.customizecommand.parameters.command_description'))
-                .setValue(introduction!.cmd_desc)
-                .setStyle(TextInputStyle.Paragraph)
-                .setRequired(false),
-        );
-        if (interaction.isModalSubmit()) {
-            const new_cmd_name = interaction.fields.getTextInputValue('cmd_name');
-            const new_cmd_desc = interaction.fields.getTextInputValue('cmd_desc');
-            if (new_cmd_name) introduction!.cmd_name = new_cmd_name;
-            if (new_cmd_desc) introduction!.cmd_desc = new_cmd_desc;
-            introduction!.latest_action_from_user = user;
-            introduction!.timestamp = new Date();
-            await this.db.save(Introduction, introduction!);
-            CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
-            await interaction.deferUpdate();
-            this.log.send('debug', 'command.setting.modalsubmit.success', {
-                name: this.name,
-                guild: interaction.guild,
-            });
-            return;
-        } else if (interaction.isStringSelectMenu()) {
-            await interaction.showModal(
-                new ModalBuilder()
-                    .setCustomId('settings:introduction:customizecommand')
-                    .setTitle(this.t('introduction.settings.customizecommand.pretty_name'))
-                    .addComponents([cmd_name, cmd_desc]),
-            );
-        }
-    }
-
-    @SettingGenericSettingComponent({ view_in_ui: false })
-    public async customizeColumns(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
-        const introduction = await this.db.findOne(Introduction, {
-            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
-        });
-        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
-
-        if (interaction.isModalSubmit()) {
-            const name_set = new Set<string>();
-            const columns = interaction.fields.getTextInputValue('column_names');
-            let parsed = yaml.parse(columns);
-            if (parsed.length > 8) {
-                parsed = parsed.slice(0, 8);
-            }
-            for (const column of parsed) {
-                if (name_set.has(column.name)) {
-                    this.warning = this.t('introduction.settings.customizecolumns.duplicated', { column: column.name });
-                    this.log.send('warn', 'command.introduction.setting.validation.failed', {
-                        guild: interaction.guild,
-                        user: interaction.user,
-                    });
-                    await this.settingsUI(interaction);
-                    return;
-                }
-                name_set.add(column.name);
-            }
-            for (let i = 0; i < 8; i++) {
-                if (!parsed[i]) parsed[i] = { name: null, value: null };
-                (introduction![`col${i + 1}` as keyof Introduction] as string[]) = [parsed[i].name, parsed[i].value];
-            }
-            introduction!.yaml_data = columns;
-            introduction!.latest_action_from_user = user;
-            introduction!.timestamp = new Date();
-            await this.db.save(Introduction, introduction!);
-            CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
-            await interaction.deferUpdate();
-            this.log.send('debug', 'command.setting.modalsubmit.success', {
-                name: this.name,
-                guild: interaction.guild,
-            });
-        }
-        if (interaction.isStringSelectMenu()) {
-            await interaction.showModal(
-                new ModalBuilder()
-                    .setCustomId('settings:introduction:customize_columns')
-                    .setTitle(this.t('introduction.settings.customizecolumns.pretty_name'))
-                    .addComponents(
-                        new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
-                            new TextInputBuilder()
-                                .setCustomId('column_names')
-                                .setLabel(this.t('introduction.settings.customizecolumns.parameters.column_names'))
-                                .setPlaceholder(this.t('introduction.settings.customizecolumns.parameters.column_names_placeholder'))
-                                .setValue(
-                                    introduction!.yaml_data ||
-                                        '- name: key1\n  value: value1\n- name: key2\n  value: value2',
-                                )
-                                .setStyle(TextInputStyle.Paragraph),
-                        ),
-                    ),
-            );
-        }
-    }
-
-    @SettingGenericSettingComponent({
+    @SettingModalComponent({
+        view_in_ui: false,
         database: Introduction,
-        database_key: 'daily_submit_limit',
-        format_specifier: '`%s`',
+        inputs: [
+            {
+                id: 'cmd_name',
+                database_key: 'cmd_name',
+                style: TextInputStyle.Short,
+                max_length: 25,
+            },
+            {
+                id: 'cmd_desc',
+                database_key: 'cmd_desc',
+                style: TextInputStyle.Paragraph,
+            },
+        ],
     })
-    public async setDailySubmissionLimit(
-        interaction: StringSelectMenuInteraction | ModalSubmitInteraction,
-    ): Promise<void> {
+    public async customizeCommand(interaction: ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
         const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
-        if (interaction.isModalSubmit()) {
-            const limit_value = interaction.fields.getTextInputValue('daily_limit');
-            const limit = parseInt(limit_value, 10);
-            if (isNaN(limit) || limit < 1 || limit > 100) {
-                this.warning = this.t('introduction.settings.setdailysubmissionlimit.limit_range');
+        const new_cmd_name = interaction.fields.getTextInputValue('cmd_name');
+        const new_cmd_desc = interaction.fields.getTextInputValue('cmd_desc');
+        if (new_cmd_name) introduction!.cmd_name = new_cmd_name;
+        if (new_cmd_desc) introduction!.cmd_desc = new_cmd_desc;
+        introduction!.latest_action_from_user = user;
+        introduction!.timestamp = new Date();
+        await this.db.save(Introduction, introduction!);
+        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+        await interaction.deferUpdate();
+        this.log.send('debug', 'command.setting.modalsubmit.success', {
+            name: this.name,
+            guild: interaction.guild,
+        });
+    }
+
+    @SettingModalComponent({
+        view_in_ui: false,
+        database: Introduction,
+        inputs: [
+            {
+                id: 'column_names',
+                database_key: 'yaml_data',
+                style: TextInputStyle.Paragraph,
+                required: true,
+            },
+        ],
+    })
+    public async customizeColumns(interaction: ModalSubmitInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
+        const introduction = await this.db.findOne(Introduction, {
+            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+        });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
+        const name_set = new Set<string>();
+        const columns = interaction.fields.getTextInputValue('column_names');
+        let parsed = yaml.parse(columns);
+        if (parsed.length > 8) {
+            parsed = parsed.slice(0, 8);
+        }
+        for (const column of parsed) {
+            if (name_set.has(column.name)) {
+                this.warning = this.t('introduction.settings.customizecolumns.duplicated', { column: column.name });
                 this.log.send('warn', 'command.introduction.setting.validation.failed', {
                     guild: interaction.guild,
                     user: interaction.user,
@@ -399,32 +335,64 @@ export default class IntroductionCommand extends CustomizableCommand {
                 await this.settingsUI(interaction);
                 return;
             }
-            introduction!.daily_submit_limit = limit;
-            introduction!.latest_action_from_user = user;
-            introduction!.timestamp = new Date();
-            await this.db.save(Introduction, introduction!);
-            await this.settingsUI(interaction);
-            this.log.send('debug', 'command.setting.modalsubmit.success', {
-                name: this.name,
-                guild: interaction.guild,
-            });
-        } else if (interaction.isStringSelectMenu()) {
-            await interaction.showModal(
-                new ModalBuilder()
-                    .setCustomId('settings:introduction:setdailysubmissionlimit')
-                    .setTitle(this.t('introduction.settings.setdailysubmissionlimit.pretty_name'))
-                    .addComponents(
-                        new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
-                            new TextInputBuilder()
-                                .setCustomId('daily_limit')
-                                .setLabel(this.t('introduction.settings.setdailysubmissionlimit.parameters.label'))
-                                .setMaxLength(3)
-                                .setStyle(TextInputStyle.Short)
-                                .setValue(introduction!.daily_submit_limit.toString()),
-                        ),
-                    ),
-            );
+            name_set.add(column.name);
         }
+        for (let i = 0; i < 8; i++) {
+            if (!parsed[i]) parsed[i] = { name: null, value: null };
+            (introduction![`col${i + 1}` as keyof Introduction] as string[]) = [parsed[i].name, parsed[i].value];
+        }
+        introduction!.yaml_data = columns;
+        introduction!.latest_action_from_user = user;
+        introduction!.timestamp = new Date();
+        await this.db.save(Introduction, introduction!);
+        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+        await interaction.deferUpdate();
+        this.log.send('debug', 'command.setting.modalsubmit.success', {
+            name: this.name,
+            guild: interaction.guild,
+        });
+    }
+
+    @SettingModalComponent({
+        database: Introduction,
+        database_key: 'daily_submit_limit',
+        format_specifier: '`%s`',
+        inputs: [
+            {
+                id: 'daily_limit',
+                database_key: 'daily_submit_limit',
+                style: TextInputStyle.Short,
+                max_length: 3,
+            },
+        ],
+    })
+    public async setDailySubmissionLimit(interaction: ModalSubmitInteraction): Promise<void> {
+        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
+        const introduction = await this.db.findOne(Introduction, {
+            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+        });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
+        const limit_value = interaction.fields.getTextInputValue('daily_limit');
+        const limit = parseInt(limit_value, 10);
+        if (isNaN(limit) || limit < 1 || limit > 100) {
+            this.warning = this.t('introduction.settings.setdailysubmissionlimit.limit_range');
+            this.log.send('warn', 'command.introduction.setting.validation.failed', {
+                guild: interaction.guild,
+                user: interaction.user,
+            });
+            await this.settingsUI(interaction);
+            return;
+        }
+        introduction!.daily_submit_limit = limit;
+        introduction!.latest_action_from_user = user;
+        introduction!.timestamp = new Date();
+        await this.db.save(Introduction, introduction!);
+        await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.modalsubmit.success', {
+            name: this.name,
+            guild: interaction.guild,
+        });
     }
 
     @SettingChannelMenuComponent({

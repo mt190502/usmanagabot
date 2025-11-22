@@ -4,18 +4,15 @@ import {
     CommandInteraction,
     Interaction,
     MessageFlags,
-    ModalActionRowComponentBuilder,
-    ModalBuilder,
     ModalSubmitInteraction,
     PermissionFlagsBits,
     StringSelectMenuBuilder,
     StringSelectMenuInteraction,
-    TextInputBuilder,
     TextInputStyle,
 } from 'discord.js';
 import { CommandLoader } from '..';
 import { BotData } from '../../types/database/entities/bot';
-import { SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
+import { SettingGenericSettingComponent, SettingModalComponent } from '../../types/decorator/settingcomponents';
 import { BaseCommand, CustomizableCommand } from '../../types/structure/command';
 
 class SettingsCommand extends BaseCommand {
@@ -168,46 +165,33 @@ class BotSettings extends CustomizableCommand {
         });
     }
 
-    @SettingGenericSettingComponent({
+    @SettingModalComponent({
         database: BotData,
         database_key: 'random_statuses',
         db_column_is_array: true,
         format_specifier: '`%s`',
         is_bot_owner_only: true,
+        inputs: [
+            {
+                id: 'bot_random_statuses',
+                style: TextInputStyle.Short,
+                required: true,
+                max_length: 300,
+            },
+        ],
     })
-    public async manageRandomStatuses(
-        interaction: StringSelectMenuInteraction | ModalSubmitInteraction,
-    ): Promise<void> {
+    public async manageRandomStatuses(interaction: ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const settings = await this.db.findOne(BotData, { where: { id: 1 } });
 
-        const random_status_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
-            new TextInputBuilder()
-                .setCustomId('bot_random_statuses_input')
-                .setLabel(this.t('botsettings.settings.managerandomstatuses.placeholder'))
-                .setStyle(TextInputStyle.Short)
-                .setPlaceholder(settings!.random_statuses.join(', '))
-                .setRequired(true)
-                .setMaxLength(300),
-        );
-
-        if (interaction.isModalSubmit()) {
-            const statuses = interaction.fields.getTextInputValue('bot_random_statuses_input');
-            settings!.random_statuses = statuses.split(',').map((s) => s.trim());
-            await this.db.save(settings!);
-            await this.settingsUI(interaction);
-            this.log.send('debug', 'command.setting.modalsubmit.success', {
-                name: this.name,
-                guild: interaction.guild,
-            });
-            return;
-        }
-        await interaction.showModal(
-            new ModalBuilder()
-                .setCustomId('settings:botsettings:managerandomstatuses')
-                .setTitle(this.t('botsettings.settings.managerandomstatuses.pretty_name'))
-                .addComponents([random_status_input]),
-        );
+        const statuses = interaction.fields.getTextInputValue('bot_random_statuses');
+        settings!.random_statuses = statuses.split(',').map((s) => s.trim());
+        await this.db.save(settings!);
+        await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.modalsubmit.success', {
+            name: this.name,
+            guild: interaction.guild,
+        });
     }
     // ================================================================ //
 }

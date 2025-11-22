@@ -4,18 +4,19 @@ import {
     ChannelType,
     Colors,
     EmbedBuilder,
-    ModalActionRowComponentBuilder,
-    ModalBuilder,
     ModalSubmitInteraction,
     StringSelectMenuBuilder,
     StringSelectMenuInteraction,
-    TextInputBuilder,
     TextInputStyle,
 } from 'discord.js';
 import { BotClient } from '../../services/client';
 import { Earthquake, EarthquakeLogs } from '../../types/database/entities/earthquake';
 import { Cron } from '../../types/decorator/cronjob';
-import { SettingChannelMenuComponent, SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
+import {
+    SettingChannelMenuComponent,
+    SettingGenericSettingComponent,
+    SettingModalComponent,
+} from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class EarthquakeNotifierCommand extends CustomizableCommand {
@@ -255,92 +256,68 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         });
     }
 
-    @SettingGenericSettingComponent({
+    @SettingModalComponent({
         database: Earthquake,
         database_key: 'seismicportal_api_url',
         format_specifier: '[API URL](%s)',
+        inputs: [
+            {
+                id: 'seismicportal_api_url',
+                style: TextInputStyle.Short,
+                required: true,
+                max_length: 300,
+            },
+        ],
     })
-    public async setSeismicportalApiUrl(
-        interaction: StringSelectMenuInteraction | ModalSubmitInteraction,
-    ): Promise<void> {
+    public async setSeismicportalApiUrl(interaction: ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const earthquake = await this.db.findOne(Earthquake, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
         const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
-        const url_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
-            new TextInputBuilder()
-                .setCustomId('seismicportal_api_url_input')
-                .setLabel(this.t('earthquake.settings.setseismicportalapiurl.display_name'))
-                .setStyle(TextInputStyle.Short)
-                .setPlaceholder(this.t('earthquake.settings.setseismicportalapiurl.placeholder'))
-                .setRequired(true)
-                .setMaxLength(300),
-        );
-
-        if (interaction.isModalSubmit()) {
-            const api_url = interaction.fields.getTextInputValue('seismicportal_api_url_input');
-            earthquake!.seismicportal_api_url = api_url;
-            earthquake!.latest_action_from_user = user;
-            earthquake!.timestamp = new Date();
-            await this.db.save(Earthquake, earthquake!);
-            await this.settingsUI(interaction);
-            this.log.send('debug', 'command.setting.modalsubmit.success', {
-                name: this.name,
-                guild: interaction.guild,
-            });
-            return;
-        }
-        await interaction.showModal(
-            new ModalBuilder()
-                .setCustomId('settings:earthquake:setseismicportalapiurl')
-                .setTitle(this.t('earthquake.settings.setseismicportalapiurl.display_name'))
-                .addComponents([url_input]),
-        );
+        const api_url = interaction.fields.getTextInputValue('seismicportal_api_url');
+        earthquake!.seismicportal_api_url = api_url;
+        earthquake!.latest_action_from_user = user;
+        earthquake!.timestamp = new Date();
+        await this.db.save(Earthquake, earthquake!);
+        await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.modalsubmit.success', {
+            name: this.name,
+            guild: interaction.guild,
+        });
     }
 
-    @SettingGenericSettingComponent({
+    @SettingModalComponent({
         database: Earthquake,
         database_key: 'region_code',
         format_specifier: '`%s`',
+        inputs: [
+            {
+                id: 'region_code',
+                style: TextInputStyle.Short,
+                required: true,
+                max_length: 5,
+            },
+        ],
     })
-    public async setRegionCode(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
+    public async setRegionCode(interaction: ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const earthquake = await this.db.findOne(Earthquake, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
         const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
-        const region_code_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
-            new TextInputBuilder()
-                .setCustomId('region_code_input')
-                .setLabel(this.t('earthquake.settings.setregioncode.display_name'))
-                .setStyle(TextInputStyle.Short)
-                .setPlaceholder(this.t('earthquake.settings.setregioncode.placeholder'))
-                .setRequired(true)
-                .setMaxLength(5),
-        );
-
-        if (interaction.isModalSubmit()) {
-            const region_code = interaction.fields.getTextInputValue('region_code_input');
-            earthquake!.region_code = region_code;
-            earthquake!.latest_action_from_user = user;
-            earthquake!.timestamp = new Date();
-            await this.db.save(Earthquake, earthquake!);
-            await this.settingsUI(interaction);
-            this.log.send('debug', 'command.setting.modalsubmit.success', {
-                name: this.name,
-                guild: interaction.guild,
-            });
-            return;
-        }
-        await interaction.showModal(
-            new ModalBuilder()
-                .setCustomId('settings:earthquake:setregioncode')
-                .setTitle(this.t('earthquake.settings.setregioncode.display_name'))
-                .addComponents([region_code_input]),
-        );
+        const region_code = interaction.fields.getTextInputValue('region_code');
+        earthquake!.region_code = region_code;
+        earthquake!.latest_action_from_user = user;
+        earthquake!.timestamp = new Date();
+        await this.db.save(Earthquake, earthquake!);
+        await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.modalsubmit.success', {
+            name: this.name,
+            guild: interaction.guild,
+        });
     }
     // ================================================================ //
 }

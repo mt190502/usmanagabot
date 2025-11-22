@@ -1,18 +1,15 @@
 import {
     ActionRowBuilder,
     ChatInputCommandInteraction,
-    ModalActionRowComponentBuilder,
-    ModalBuilder,
     ModalSubmitInteraction,
     SlashCommandBuilder,
     StringSelectMenuBuilder,
     StringSelectMenuInteraction,
-    TextInputBuilder,
     TextInputStyle,
 } from 'discord.js';
 import { CommandLoader } from '..';
 import { Search, SearchEngines } from '../../types/database/entities/search';
-import { SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
+import { SettingGenericSettingComponent, SettingModalComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
 export default class SearchCommand extends CustomizableCommand {
@@ -99,19 +96,6 @@ export default class SearchCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
-    // -- Settings Components -- //
-    private engine_name = new TextInputBuilder()
-        .setCustomId('engine_name')
-        .setLabel(this.t('search.parameters.engine_name'))
-        .setStyle(TextInputStyle.Short)
-        .setPlaceholder('DuckDuckGo');
-    private engine_url = new TextInputBuilder()
-        .setCustomId('engine_url')
-        .setLabel(this.t('search.parameters.engine_url'))
-        .setStyle(TextInputStyle.Short)
-        .setPlaceholder('https://duckduckgo.com/?q=');
-    // -- -- //
-
     @SettingGenericSettingComponent({
         database: Search,
         database_key: 'is_enabled',
@@ -138,129 +122,105 @@ export default class SearchCommand extends CustomizableCommand {
         });
     }
 
-    @SettingGenericSettingComponent({ view_in_ui: false })
-    public async addEngine(interaction: StringSelectMenuInteraction | ModalSubmitInteraction): Promise<void> {
+    @SettingModalComponent({
+        view_in_ui: false,
+        inputs: [
+            {
+                id: 'engine_name',
+                style: TextInputStyle.Short,
+                required: true,
+            },
+            {
+                id: 'engine_url',
+                style: TextInputStyle.Short,
+                required: true,
+            },
+        ],
+    })
+    public async addEngine(interaction: ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
         const user = await this.db.getUser(BigInt(interaction.user.id));
         const engines = await this.db.find(SearchEngines, { where: { from_guild: guild! } });
 
-        const engine_name = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(this.engine_name);
-        const engine_url = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(this.engine_url);
-
-        if (interaction.isModalSubmit()) {
-            const name = interaction.fields.getTextInputValue('engine_name');
-            const url = interaction.fields.getTextInputValue('engine_url');
-            if (engines.find((e) => e.engine_name.toLowerCase() === name.toLowerCase())) {
-                this.warning = this.t('search.settings.addengine.duplicate_engine', { name });
-                this.log.send('warn', 'command.search.addengine.duplicate_engine', {
-                    name: this.name,
-                    guild: interaction.guild,
-                    user: interaction.user,
-                    engine_name: name,
-                });
-                await this.settingsUI(interaction);
-                return;
-            }
-            const new_engine = new SearchEngines();
-            new_engine.engine_name = name;
-            new_engine.engine_url = url;
-            new_engine.latest_action_from_user = user!;
-            new_engine.from_guild = guild!;
-            new_engine.timestamp = new Date();
-            await this.db.save(new_engine);
-            CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
-            await this.settingsUI(interaction);
-            this.log.send('debug', 'command.setting.modalsubmit.success', {
+        const name = interaction.fields.getTextInputValue('engine_name');
+        const url = interaction.fields.getTextInputValue('engine_url');
+        if (engines.find((e) => e.engine_name.toLowerCase() === name.toLowerCase())) {
+            this.warning = this.t('search.settings.addengine.duplicate_engine', { name });
+            this.log.send('warn', 'command.search.addengine.duplicate_engine', {
                 name: this.name,
                 guild: interaction.guild,
+                user: interaction.user,
                 engine_name: name,
             });
+            await this.settingsUI(interaction);
             return;
-        } else if (interaction.isStringSelectMenu()) {
-            await interaction.showModal(
-                new ModalBuilder()
-                    .setCustomId('settings:search:addengine')
-                    .setTitle(this.t('search.settings.addengine.pretty_name'))
-                    .addComponents([engine_name, engine_url]),
-            );
         }
+        const new_engine = new SearchEngines();
+        new_engine.engine_name = name;
+        new_engine.engine_url = url;
+        new_engine.latest_action_from_user = user!;
+        new_engine.from_guild = guild!;
+        new_engine.timestamp = new Date();
+        await this.db.save(new_engine);
+        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+        await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.modalsubmit.success', {
+            name: this.name,
+            guild: interaction.guild,
+            engine_name: name,
+        });
     }
 
-    @SettingGenericSettingComponent({
+    @SettingModalComponent({
         database: SearchEngines,
         database_key: 'engine_name',
         db_column_is_array: true,
         format_specifier: '%s',
+        select_menu: {
+            enable: true,
+            label_key: 'engine_name',
+            description_key: 'engine_url',
+        },
+        inputs: [
+            {
+                id: 'engine_name',
+                database_key: 'engine_name',
+                style: TextInputStyle.Short,
+                required: true,
+            },
+            {
+                id: 'engine_url',
+                database_key: 'engine_url',
+                style: TextInputStyle.Short,
+                required: true,
+            },
+        ],
     })
-    public async editEngine(
-        interaction: StringSelectMenuInteraction | ModalSubmitInteraction,
-        engine_name: string,
-    ): Promise<void> {
+    public async editEngine(interaction: ModalSubmitInteraction, engine_name: string): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
         const user = await this.db.getUser(BigInt(interaction.user.id));
         const engines = await this.db.find(SearchEngines, { where: { from_guild: guild! } });
 
-        if (interaction.isModalSubmit()) {
-            const name = interaction.fields.getTextInputValue('engine_name');
-            const url = interaction.fields.getTextInputValue('engine_url');
-            const engine = engines.find((e) => e.engine_name === engine_name)!;
-            engine.engine_name = name;
-            engine.engine_url = url;
-            engine.latest_action_from_user = user!;
-            engine.from_guild = guild!;
-            engine.timestamp = new Date();
-            await this.db.save(engine);
-            CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
-            await this.settingsUI(interaction);
-            this.log.send('debug', 'command.setting.modalsubmit.success', {
-                name: this.name,
-                guild: interaction.guild,
-                engine_name: name,
-            });
-            return;
-        } else if (interaction.isStringSelectMenu()) {
-            if (interaction.customId === 'settings:search') {
-                await interaction.update({
-                    components: [
-                        new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-                            new StringSelectMenuBuilder()
-                                .setCustomId('settings:search:editengine')
-                                .setPlaceholder(this.t('search.settings.editengine.placeholder'))
-                                .addOptions(
-                                    ...engines.map((engine) => ({
-                                        label: engine.engine_name,
-                                        description: engine.engine_url,
-                                        value: `settings:search:editengine:${engine.engine_name}`,
-                                    })),
-                                    {
-                                        label: this.t('search.settings.cancel'),
-                                        description: this.t('search.settings.cancel_description'),
-                                        value: 'settings:search',
-                                    },
-                                ),
-                        ),
-                    ],
-                });
-                return;
-            } else if (interaction.customId.startsWith('settings:search:editengine')) {
-                const engine_name_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
-                    this.engine_name.setValue(engines.find((e) => e.engine_name === engine_name)!.engine_name),
-                );
-                const engine_url_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
-                    this.engine_url.setValue(engines.find((e) => e.engine_name === engine_name)!.engine_url),
-                );
+        const name = interaction.fields.getTextInputValue('engine_name');
+        const url = interaction.fields.getTextInputValue('engine_url');
+        const engine = engines.find((e) => e.engine_name === engine_name)!;
 
-                await interaction.showModal(
-                    new ModalBuilder()
-                        .setCustomId(`settings:search:editengine:${engine_name}`)
-                        .setTitle(this.t('search.settings.editengine.title', { name: engine_name }))
-                        .addComponents([engine_name_input, engine_url_input]),
-                );
-                return;
-            }
-        }
+        engine.engine_name = name;
+        engine.engine_url = url;
+        engine.latest_action_from_user = user!;
+        engine.from_guild = guild!;
+        engine.timestamp = new Date();
+
+        await this.db.save(engine);
+        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+        await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.modalsubmit.success', {
+            name: this.name,
+            guild: interaction.guild,
+            engine_name: name,
+        });
     }
 
     @SettingGenericSettingComponent({ view_in_ui: false })

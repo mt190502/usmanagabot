@@ -1,15 +1,11 @@
 import {
-    ActionRowBuilder,
     ChannelSelectMenuInteraction,
     ChannelType,
     Events,
     GuildMember,
-    ModalActionRowComponentBuilder,
-    ModalBuilder,
     ModalSubmitInteraction,
     RoleSelectMenuInteraction,
     StringSelectMenuInteraction,
-    TextInputBuilder,
     TextInputStyle,
 } from 'discord.js';
 import { BotClient } from '../../services/client';
@@ -20,6 +16,7 @@ import { Cron } from '../../types/decorator/cronjob';
 import {
     SettingChannelMenuComponent,
     SettingGenericSettingComponent,
+    SettingModalComponent,
     SettingRoleSelectMenuComponent,
 } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
@@ -241,60 +238,52 @@ export default class VerificationCommand extends CustomizableCommand {
         });
     }
 
-    @SettingGenericSettingComponent({
+    @SettingModalComponent({
         database: VerificationSystem,
         database_key: 'message',
         format_specifier: '```\n%s\n```',
+        inputs: [
+            {
+                id: 'verification_message',
+                style: TextInputStyle.Paragraph,
+                required: true,
+                max_length: 1000,
+            },
+        ],
     })
-    public async setVerificationSystemMessage(
-        interaction: StringSelectMenuInteraction | ModalSubmitInteraction,
-    ): Promise<void> {
+    public async setVerificationSystemMessage(interaction: ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const verification_system = await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
         const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
-        const message_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
-            new TextInputBuilder()
-                .setCustomId('verification_system_message_input')
-                .setLabel(this.t('verification.settings.setverificationsystemmessage.pretty_name'))
-                .setStyle(TextInputStyle.Paragraph)
-                .setPlaceholder(
-                    this.t('verification.settings.setverificationsystemmessage.placeholder', { variables: '{{key}}: user, user_id, guild, minimum_age' }))
-                .setValue(verification_system!.message || '')
-                .setRequired(true)
-                .setMaxLength(1000),
-        );
 
-        if (interaction.isModalSubmit()) {
-            const message = interaction.fields.getTextInputValue('verification_system_message_input');
-            verification_system!.message = message;
-            verification_system!.latest_action_from_user = user;
-            verification_system!.timestamp = new Date();
-            await this.db.save(VerificationSystem, verification_system!);
-            await this.settingsUI(interaction);
-            this.log.send('debug', 'command.setting.modalsubmit.success', {
-                name: this.name,
-                guild: interaction.guild,
-            });
-            return;
-        }
-        await interaction.showModal(
-            new ModalBuilder()
-                .setCustomId('settings:verification:setverificationsystemmessage')
-                .setTitle(this.t('verification.settings.setverificationsystemmessage.pretty_name'))
-                .addComponents([message_input]),
-        );
+        const message = interaction.fields.getTextInputValue('verification_message');
+        verification_system!.message = message;
+        verification_system!.latest_action_from_user = user;
+        verification_system!.timestamp = new Date();
+        await this.db.save(VerificationSystem, verification_system!);
+        await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.modalsubmit.success', {
+            name: this.name,
+            guild: interaction.guild,
+        });
     }
 
-    @SettingGenericSettingComponent({
+    @SettingModalComponent({
         database: VerificationSystem,
         database_key: 'minimum_days',
         format_specifier: '%s',
+        inputs: [
+            {
+                id: 'minimum_age',
+                style: TextInputStyle.Short,
+                required: true,
+                max_length: 8,
+            },
+        ],
     })
-    public async setVerificationMinimumAge(
-        interaction: StringSelectMenuInteraction | ModalSubmitInteraction,
-    ): Promise<void> {
+    public async setVerificationMinimumAge(interaction: ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const verification_system = await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
@@ -304,47 +293,27 @@ export default class VerificationCommand extends CustomizableCommand {
         });
         const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
-        const minimum_age_input = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
-            new TextInputBuilder()
-                .setCustomId('minimum_age_input')
-                .setLabel(this.t('verification.settings.setverificationminimumage.display_name'))
-                .setStyle(TextInputStyle.Short)
-                .setPlaceholder(this.t('verification.settings.setverificationminimumage.placeholder'))
-                .setRequired(true)
-                .setValue(verification_system!.minimum_days.toString())
-                .setMaxLength(8),
-        );
-
-        if (interaction.isModalSubmit()) {
-            const new_age = parseInt(interaction.fields.getTextInputValue('minimum_age_input'));
-            if (isNaN(new_age) || new_age < 0) {
-                this.warning = this.t('verification.settings.setverificationminimumage.invalid_age', { age: new_age });
-                await this.settingsUI(interaction);
-                return;
-            }
-
-            for (const verification of verifications) {
-                const remaining_time = verification.user_created_at.getTime() + new_age * 86400000;
-                verification.remaining_time = new Date(remaining_time);
-                await this.db.save(Verification, verification);
-            }
-            verification_system!.minimum_days = new_age;
-            verification_system!.latest_action_from_user = user;
-            verification_system!.timestamp = new Date();
-            await this.db.save(VerificationSystem, verification_system!);
+        const new_age = parseInt(interaction.fields.getTextInputValue('minimum_age'));
+        if (isNaN(new_age) || new_age < 0) {
+            this.warning = this.t('verification.settings.setverificationminimumage.invalid_age', { age: new_age });
             await this.settingsUI(interaction);
-            this.log.send('debug', 'command.setting.modalsubmit.success', {
-                name: this.name,
-                guild: interaction.guild,
-            });
             return;
         }
-        await interaction.showModal(
-            new ModalBuilder()
-                .setCustomId('settings:verification:setverificationminimumage')
-                .setTitle(this.t('verification.settings.setverificationminimumage.pretty_name'))
-                .addComponents([minimum_age_input]),
-        );
+
+        for (const verification of verifications) {
+            const remaining_time = verification.user_created_at.getTime() + new_age * 86400000;
+            verification.remaining_time = new Date(remaining_time);
+            await this.db.save(Verification, verification);
+        }
+        verification_system!.minimum_days = new_age;
+        verification_system!.latest_action_from_user = user;
+        verification_system!.timestamp = new Date();
+        await this.db.save(VerificationSystem, verification_system!);
+        await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.modalsubmit.success', {
+            name: this.name,
+            guild: interaction.guild,
+        });
     }
     // ================================================================ //
 }
