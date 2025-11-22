@@ -129,6 +129,51 @@ export function SettingGenericSettingComponent(o: Partial<componentOptions>): Me
 }
 
 /**
+ * String select menu setting decorator to generate a string select menu component
+ * @param {object} o - The options for the string select menu setting
+ * @param {number} [o.options.min_values=1] - The minimum number of selections allowed
+ * @param {number} [o.options.max_values=1] - The maximum number of selections allowed
+ * @param {Array} o.options.values - An array of option configurations for the select menu
+ * @returns {MethodDecorator} A method decorator for the string select menu setting
+ */
+export function SettingStringSelectComponent(
+    o: Partial<componentOptions> & {
+        options?: {
+            min_values?: number;
+            max_values?: number;
+            values: { label: string; description?: string }[];
+        };
+    },
+): MethodDecorator {
+    return generateSettingComponent(o, (orig, { name, pretty_key, options }) => {
+        return async function(this, interaction, ...args: unknown[]) {
+            if (interaction.isStringSelectMenu() && args.length > 0) {
+                return await orig.apply(this, [interaction, ...args]);
+            } else if (interaction.isStringSelectMenu()) {
+                await interaction.update({
+                    components: [
+                        new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+                            new StringSelectMenuBuilder()
+                                .setCustomId(`settings:${name}:${pretty_key}`)
+                                .setPlaceholder(t(`${name}.settings.${pretty_key}.placeholder`))
+                                .setMinValues((options as typeof o).options?.min_values ?? 1)
+                                .setMaxValues((options as typeof o).options?.max_values ?? 1)
+                                .addOptions(
+                                    (options as typeof o).options?.values.map((val) => ({
+                                        label: val.label,
+                                        description: val.description,
+                                        value: `settings:${name}:${pretty_key}:${val.label}`,
+                                    })) ?? [],
+                                ),
+                        ),
+                    ],
+                });
+            };
+        };
+    });
+}
+
+/**
  * Channel select menu setting decorator to generate a channel select menu component
  * @param {object} o - The options for the channel select menu setting
  * @param {ChannelType[]} [o.options.channel_types] - The types of channels to include in the select menu
