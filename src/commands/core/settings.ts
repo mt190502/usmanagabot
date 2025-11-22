@@ -1,24 +1,27 @@
 import {
-    ActionRowBuilder,
     Colors,
     CommandInteraction,
     Interaction,
     MessageFlags,
     ModalSubmitInteraction,
     PermissionFlagsBits,
-    StringSelectMenuBuilder,
     StringSelectMenuInteraction,
     TextInputStyle,
 } from 'discord.js';
 import { CommandLoader } from '..';
 import { BotData } from '../../types/database/entities/bot';
-import { SettingGenericSettingComponent, SettingModalComponent } from '../../types/decorator/settingcomponents';
+import {
+    SettingGenericSettingComponent,
+    SettingModalComponent,
+    SettingStringSelectComponent,
+} from '../../types/decorator/settingcomponents';
 import { BaseCommand, CustomizableCommand } from '../../types/structure/command';
 
 class SettingsCommand extends BaseCommand {
     // ============================ HEADER ============================ //
     constructor() {
         super({ name: 'settings', is_admin_command: true });
+
         this.base_cmd_data!.setDefaultMemberPermissions(
             PermissionFlagsBits.BanMembers | PermissionFlagsBits.KickMembers,
         );
@@ -126,11 +129,16 @@ class BotSettings extends CustomizableCommand {
         return;
     }
 
-    @SettingGenericSettingComponent({
+    @SettingStringSelectComponent({
         database: BotData,
         database_key: 'random_status_interval',
         format_specifier: '%d',
         is_bot_owner_only: true,
+        options: {
+            values: Array.from({ length: 20 }, (p, i) => (i + 1) * 5).map((min) => ({
+                label: min.toString(),
+            })),
+        },
     })
     public async setRandomStatusInterval(interaction: StringSelectMenuInteraction, args: string): Promise<void> {
         this.log.send('debug', 'command.setting.selectmenu.start', { name: this.name, guild: interaction.guild });
@@ -138,31 +146,10 @@ class BotSettings extends CustomizableCommand {
             where: { id: 1 },
         }))!;
 
-        if (args) {
-            settings.random_status_interval = parseFloat(args);
-            await this.db.save(settings!);
-            await this.settingsUI(interaction);
-            this.log.send('debug', 'command.setting.selectmenu.success', { name: this.name, guild: interaction.guild });
-            return;
-        }
-
-        await interaction.update({
-            components: [
-                new ActionRowBuilder<StringSelectMenuBuilder>()
-                    .addComponents(
-                        new StringSelectMenuBuilder()
-                            .setCustomId('settings:botsettings:setrandomstatusinterval')
-                            .setPlaceholder(this.t('botsettings.settings.setrandomstatusinterval.placeholder'))
-                            .addOptions(
-                                [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60].map((min) => ({
-                                    label: min.toString(),
-                                    value: `settings:botsettings:setrandomstatusinterval:${min}`,
-                                })),
-                            ),
-                    )
-                    .toJSON(),
-            ],
-        });
+        settings.random_status_interval = parseFloat(args);
+        await this.db.save(settings!);
+        await this.settingsUI(interaction);
+        this.log.send('debug', 'command.setting.selectmenu.success', { name: this.name, guild: interaction.guild });
     }
 
     @SettingModalComponent({
