@@ -2,11 +2,18 @@ import {
     ActionRowBuilder,
     ChannelSelectMenuBuilder,
     ChannelType,
+    ModalActionRowComponentBuilder,
+    ModalBuilder,
+    ModalSubmitInteraction,
     RoleSelectMenuBuilder,
+    StringSelectMenuBuilder,
     StringSelectMenuInteraction,
+    TextInputBuilder,
+    TextInputStyle,
     UserSelectMenuBuilder,
 } from 'discord.js';
-import { ObjectLiteral } from 'typeorm';
+import { EntityTarget, ObjectLiteral } from 'typeorm';
+import { Database } from '../../services/database';
 import { Translator } from '../../services/translator';
 import { BaseCommand, CustomizableCommand } from '../structure/command';
 
@@ -29,9 +36,9 @@ type componentOptions = {
     pretty: string;
     description: string;
     format_specifier: string;
-    database: ObjectLiteral;
+    database: EntityTarget<ObjectLiteral>;
     database_key: string;
-    db_column_is_array: boolean;
+    db_column_is_array?: boolean;
     is_bot_owner_only: boolean;
     view_in_ui: boolean;
 };
@@ -39,13 +46,13 @@ type componentOptions = {
 /**
  * Descriptor type for setting component methods
  * @param {BaseCommand | CustomizableCommand} this - The command instance
- * @param {StringSelectMenuInteraction} interaction - The interaction object
+ * @param {ModalSubmitInteraction | StringSelectMenuInteraction} interaction - The interaction object
  * @param {...unknown[]} args - Additional arguments
  * @returns {Promise<void>} A promise that resolves when the method is complete
  */
 type descriptorType = (
     this: BaseCommand | CustomizableCommand,
-    interaction: StringSelectMenuInteraction,
+    interaction: ModalSubmitInteraction | StringSelectMenuInteraction,
     ...args: unknown[]
 ) => Promise<void>;
 
@@ -146,6 +153,7 @@ export function SettingChannelMenuComponent(
                 return await orig.apply(this, [interaction, ...args]);
             }
 
+            if (!interaction.isStringSelectMenu()) return;
             await interaction.update({
                 components: [
                     new ActionRowBuilder<ChannelSelectMenuBuilder>().addComponents(
@@ -190,6 +198,7 @@ export function SettingRoleSelectMenuComponent(
                 return await orig.apply(this, [interaction, ...args]);
             }
 
+            if (!interaction.isStringSelectMenu()) return;
             await interaction.update({
                 components: [
                     new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(
@@ -233,6 +242,7 @@ export function SettingUserSelectMenuComponent(
                 return await orig.apply(this, [interaction, ...args]);
             }
 
+            if (!interaction.isStringSelectMenu()) return;
             await interaction.update({
                 components: [
                     new ActionRowBuilder<UserSelectMenuBuilder>().addComponents(
@@ -249,6 +259,165 @@ export function SettingUserSelectMenuComponent(
                     ),
                 ],
             });
+        };
+    });
+}
+
+/**
+ * Modal setting decorator to generate a modal input component
+ * @param {object} o - The options for the modal setting
+ * @param {Array} o.inputs - An array of input configurations for the modal
+ * @param {boolean} [o.require_selectmenu] - Whether to show a StringSelectMenu before the modal
+ * @param {object} [o.select_menu] - Configuration for the select menu (if required)
+ * @param {boolean} [o.select_menu.enable=false] - Whether to enable the select menu
+ * @param {string} o.select_menu.label_key - The database key to use for option labels
+ * @param {string} o.select_menu.description_key - The database key to use for option descriptions
+ * @param {boolean} [o.select_menu.include_cancel=true] - Whether to include a cancel option
+ * @param {string} [o.modal_title] - Optional modal title override (defaults to display_name)
+ * @returns {MethodDecorator} A method decorator for the modal setting
+ */
+export function SettingModalComponent(
+    o: Partial<componentOptions> & {
+        require_selectmenu?: boolean;
+        select_menu?: {
+            enable: boolean;
+            label_key: string;
+            description_key: string;
+            include_cancel?: boolean;
+        };
+        inputs: ({
+            id: string;
+            style?: TextInputStyle;
+            required?: boolean;
+            placeholder?: string;
+            min_length?: number;
+            max_length?: number;
+        } & Partial<Pick<componentOptions, 'database' | 'database_key' | 'db_column_is_array'>>)[];
+    },
+): MethodDecorator {
+    return generateSettingComponent(o, (orig, { name, pretty_key, options }) => {
+        return async function(this, interaction, ...args: unknown[]) {
+            if (interaction.isModalSubmit()) {
+                if ((options as typeof o).require_selectmenu) {
+                    const custom_id_parts = interaction.customId.split(':');
+                    const selected_value = custom_id_parts[custom_id_parts.length - 1];
+                    return await orig.apply(this, [interaction, selected_value, ...args]);
+                }
+                return await orig.apply(this, [interaction, ...args]);
+            }
+            const inputs = (options as typeof o).inputs || [];
+            if (inputs.length < 1 || inputs.length > 5) {
+                throw new Error(`SettingModalComponent: inputs array must contain 1-5 items, got ${inputs.length}`);
+            }
+
+            const enable_select_menu = (options as typeof o).select_menu?.enable;
+            const config = (options as typeof o).select_menu;
+
+            const fetchItems = () =>
+                Database.dbManager.find(o.database!, {
+                    where: o.is_bot_owner_only ? { id: 1 } : { from_guild: { gid: BigInt(interaction.guildId!) } },
+                });
+
+            const buildTextInput = (input: typeof o.inputs[number], value?: string) => {
+                const ti = new TextInputBuilder()
+                    .setCustomId(input.id)
+                    .setLabel(t(`${name}.settings.${pretty_key}.parameters.${input.id}`))
+                    .setPlaceholder(t(`${name}.settings.${pretty_key}.placeholder.${input.id}`))
+                    .setStyle(input.style ?? TextInputStyle.Short)
+                    .setRequired(input.required ?? true);
+
+                if (value !== undefined) ti.setValue(String(value));
+                if (input.min_length !== undefined) ti.setMinLength(input.min_length);
+                if (input.max_length !== undefined) ti.setMaxLength(input.max_length);
+
+                return new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(ti);
+            };
+
+            if (enable_select_menu) {
+                if (interaction.isStringSelectMenu() && interaction.customId === `settings:${name}`) {
+                    const items = await fetchItems();
+
+                    const select_options = items.map((item) => ({
+                        label: String(item[config!.label_key]),
+                        description: config!.description_key ? String(item[config!.description_key]) : undefined,
+                        value: `settings:${name}:${pretty_key}:${String(item[config!.label_key])}`,
+                    }));
+
+                    if (config!.include_cancel !== false) {
+                        select_options.push({
+                            label: t('command.settings.cancel'),
+                            description: t('command.settings.cancel_description'),
+                            value: `settings:${name}`,
+                        });
+                    }
+
+                    await interaction.update({
+                        components: [
+                            new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+                                new StringSelectMenuBuilder()
+                                    .setCustomId(`settings:${name}:${pretty_key}`)
+                                    .setPlaceholder(t(`${name}.settings.${pretty_key}.placeholder`))
+                                    .addOptions(select_options),
+                            ),
+                        ],
+                    });
+                    return;
+                }
+
+                if (
+                    interaction.isStringSelectMenu() &&
+                    interaction.customId.startsWith(`settings:${name}:${pretty_key}`)
+                ) {
+                    const selected_value = interaction.values[0].split(':').pop()!;
+                    const items = await fetchItems();
+                    const selected_item = items.find((x) => String(x[config!.label_key]) === selected_value);
+
+                    const components = inputs.map((input) =>
+                        buildTextInput(input, input.database_key ? selected_item?.[input.database_key] : undefined),
+                    );
+
+                    await interaction.showModal(
+                        new ModalBuilder()
+                            .setCustomId(`settings:${name}:${pretty_key}:${selected_value}`)
+                            .setTitle(t(`${name}.settings.${pretty_key}.title`, { name: selected_value }))
+                            .addComponents(components),
+                    );
+                    return;
+                }
+            }
+
+            const components = [];
+            for (const input of inputs) {
+                let value;
+
+                if (o.database || input.database) {
+                    const db = input.database ?? o.database!;
+                    const key = input.database_key ?? o.database_key!;
+
+                    if (o.db_column_is_array || input.db_column_is_array) {
+                        const items = await Database.dbManager.find(db, {
+                            where: o.is_bot_owner_only ? { id: 1 } : { from_guild: { gid: interaction.guild?.id } },
+                        });
+
+                        value = items.map((e) => e[key]).join(', ');
+                    } else {
+                        const item = await Database.dbManager.findOne(db, {
+                            where: o.is_bot_owner_only ? { id: 1 } : { from_guild: { gid: interaction.guild?.id } },
+                        });
+
+                        value = item?.[key] ?? input.placeholder ?? '';
+                    }
+                }
+
+                components.push(buildTextInput(input, value));
+            }
+
+            await interaction.showModal(
+                new ModalBuilder()
+                    .setCustomId(`settings:${name}:${pretty_key}`)
+                    .setTitle(t(`${name}.settings.${pretty_key}.pretty_name`))
+                    .addComponents(components),
+            );
         };
     });
 }
