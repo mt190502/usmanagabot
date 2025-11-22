@@ -194,9 +194,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
-    public async setNotificationChannel(
-        interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
-    ): Promise<void> {
+    public async setNotificationChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const earthquake = await this.db.findOne(Earthquake, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },

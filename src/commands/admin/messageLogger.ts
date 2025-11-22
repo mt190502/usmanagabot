@@ -28,16 +28,17 @@ import { CustomizableCommand } from '../../types/structure/command';
 export default class MessageLoggerCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({
-            name: 'message_logger',
-            is_admin_command: true,
-        });
+        super({ name: 'message_logger', is_admin_command: true });
+
         this.base_cmd_data = new SlashCommandBuilder()
             .setName(this.name)
             .setDescription(this.description)
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
             .addStringOption((option) =>
-                option.setName('message_id').setDescription(this.t('message_logger.parameters.message_id')!).setRequired(true),
+                option
+                    .setName('message_id')
+                    .setDescription(this.t('message_logger.parameters.message_id')!)
+                    .setRequired(true),
             ) as SlashCommandBuilder;
         this.push_cmd_data = new ContextMenuCommandBuilder()
             .setName(this.pretty_name)
@@ -349,7 +350,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
-    public async setLogChannel(interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction): Promise<void> {
+    public async setLogChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const msg_logger = (await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
@@ -392,9 +393,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             max_values: 25,
         },
     })
-    public async manageIgnoredChannels(
-        interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
-    ): Promise<void> {
+    public async manageIgnoredChannels(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const msg_logger = await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },

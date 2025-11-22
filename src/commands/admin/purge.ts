@@ -17,10 +17,8 @@ export default class PurgeCommand extends BaseCommand {
     // ============================ HEADER ============================ //
     private static target: Message<boolean>;
     constructor() {
-        super({
-            name: 'purge',
-            is_admin_command: true,
-        });
+        super({ name: 'purge', is_admin_command: true });
+
         (this.base_cmd_data as SlashCommandBuilder)
             .addStringOption((o) =>
                 o.setName('message_id').setRequired(true).setDescription(this.t('purge.parameters.message_id')),

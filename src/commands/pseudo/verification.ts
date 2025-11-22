@@ -182,9 +182,7 @@ export default class VerificationCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
-    public async setTargetChannel(
-        interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
-    ): Promise<void> {
+    public async setTargetChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const verification_system = (await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
@@ -209,9 +207,7 @@ export default class VerificationCommand extends CustomizableCommand {
         database_key: 'role_id',
         format_specifier: '<@&%s>',
     })
-    public async setVerificationRole(
-        interaction: StringSelectMenuInteraction | RoleSelectMenuInteraction,
-    ): Promise<void> {
+    public async setVerificationRole(interaction: RoleSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.role.start', { name: this.name, guild: interaction.guild });
         const verification_system = await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },

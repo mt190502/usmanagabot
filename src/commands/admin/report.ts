@@ -5,6 +5,7 @@ import {
     Colors,
     EmbedBuilder,
     MessageFlags,
+    RoleSelectMenuInteraction,
     SlashCommandBuilder,
     StringSelectMenuInteraction,
     TextChannel,
@@ -22,10 +23,8 @@ import { CustomizableCommand } from '../../types/structure/command';
 export default class ReportCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({
-            name: 'report',
-            cooldown: 10,
-        });
+        super({ name: 'report', cooldown: 10 });
+
         (this.base_cmd_data as SlashCommandBuilder)
             .addUserOption((option) =>
                 option.setName('user').setDescription(this.t('report.parameters.user')).setRequired(true),
@@ -234,7 +233,7 @@ export default class ReportCommand extends CustomizableCommand {
             max_values: 1,
         },
     })
-    public async changeModeratorRole(interaction: StringSelectMenuInteraction): Promise<void> {
+    public async changeModeratorRole(interaction: RoleSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.role.start', { name: this.name, guild: interaction.guild });
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },

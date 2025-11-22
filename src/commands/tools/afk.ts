@@ -15,6 +15,7 @@ export default class AFKCommand extends BaseCommand {
     // ============================ HEADER ============================ //
     constructor() {
         super({ name: 'afk', cooldown: 10 });
+
         (this.base_cmd_data as SlashCommandBuilder).addStringOption((option) =>
             option.setName('reason').setDescription(this.t('afk.parameters.reason')).setRequired(true),
         );

@@ -5,6 +5,7 @@ export default class RandomizerCommand extends BaseCommand {
     // =========================== HEADER ============================ //
     constructor() {
         super({ name: 'randomizer', cooldown: 5 });
+
         (this.base_cmd_data as SlashCommandBuilder)
             .addStringOption((option) =>
                 option.setName('item_1').setDescription(this.t('randomizer.parameters.1')).setRequired(true),

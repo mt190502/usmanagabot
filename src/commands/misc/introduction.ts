@@ -403,9 +403,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
-    public async changeTargetChannel(
-        interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
-    ): Promise<void> {
+    public async changeTargetChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const introduction = await this.db.findOne(Introduction, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },

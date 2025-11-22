@@ -200,7 +200,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         },
         view_in_ui: false,
     })
-    public async addChannel(interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction): Promise<void> {
+    public async addChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.channelrestrict.addchannel.start', {
             name: this.name,
             guild: interaction.guild,
@@ -320,7 +320,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
-    public async removeChannel(interaction: ChannelSelectMenuInteraction | StringSelectMenuInteraction): Promise<void> {
+    public async removeChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.channelrestrict.removechannel.start', { guild: interaction.guild });
         const restricts = await this.db.find(ChannelRestricts, {
             where: { from_guild: { gid: BigInt(interaction.guild!.id) } },
@@ -359,9 +359,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
-    public async changeModNotifierChannel(
-        interaction: StringSelectMenuInteraction | ChannelSelectMenuInteraction,
-    ): Promise<void> {
+    public async changeModNotifierChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.channelrestrict.changenotifierchannel.start', { guild: interaction.guild });
         const restrict = await this.db.findOne(ChannelRestrictSystem, {
             where: { from_guild: { gid: BigInt(interaction.guild!.id) } },

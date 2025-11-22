@@ -91,7 +91,7 @@ export default class AutoroleCommand extends CustomizableCommand {
         database_key: 'role_id',
         format_specifier: '<@&%s>',
     })
-    public async changeRole(interaction: StringSelectMenuInteraction | RoleSelectMenuInteraction): Promise<void> {
+    public async changeRole(interaction: RoleSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.role.start', { name: this.name, guild: interaction.guild });
         const autorole = await this.db.findOne(Autorole, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
