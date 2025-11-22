@@ -2,6 +2,7 @@ import { Awaitable, ClientEvents } from 'discord.js';
 import { Config } from '../../services/config';
 import { Database } from '../../services/database';
 import { Logger } from '../../services/logger';
+import { Translator } from '../../services/translator';
 import { DatabaseManager } from './database';
 
 /**
@@ -85,6 +86,20 @@ export abstract class BaseEvent<T extends keyof ClientEvents> {
      */
     protected get db(): DatabaseManager {
         return Database.dbManager;
+    }
+
+    /**
+     * Translate a command string using the commands localization category.
+     * This method provides localization support for user-facing messages in commands.
+     *
+     * @protected
+     * @param {string} key Localization key from the commands category (e.g., 'purge.warning.title')
+     * @param {Record<string, unknown>} [replacements] Optional placeholder replacements for dynamic values
+     * @returns {string} Translated message in the current language
+     */
+    protected t(key: string, replacements?: Record<string, unknown>): string {
+        const translator = Translator.getInstance();
+        return translator.querySync('commands', key, replacements);
     }
     // ================================================================ //
 }

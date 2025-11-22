@@ -118,7 +118,7 @@ export default class InteractionEvent extends BaseEvent<Events.InteractionCreate
                 if (now < expire) {
                     const left = ((expire - now) / 1000).toFixed();
                     interaction.reply({
-                        content: `Please wait ${left} second(s) before reusing the \`${command.name}\` command.`,
+                        content: this.t('event.interaction.cooldown', { command: command.name, left }),
                         flags: MessageFlags.Ephemeral,
                     });
                     return;
