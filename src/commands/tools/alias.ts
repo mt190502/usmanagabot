@@ -98,7 +98,6 @@ export default class AliasCommand extends CustomizableCommand {
                         .setName('alias_name')
                         .setDescription(this.t('parameters.name'))
                         .setRequired(true)
-                        .setChoices(...choices.sort((a, b) => a.name.localeCompare(b.name))),
                 ),
         );
 
@@ -111,7 +110,6 @@ export default class AliasCommand extends CustomizableCommand {
                         .setName('alias_name')
                         .setDescription(this.t('parameters.name'))
                         .setRequired(true)
-                        .setChoices(...choices.sort((a, b) => a.name.localeCompare(b.name))),
                 )
                 .addStringOption((option) =>
                     option
@@ -206,7 +204,6 @@ export default class AliasCommand extends CustomizableCommand {
         }))!;
         new_alias.from_guild = (await this.db.getGuild(BigInt(interaction.guildId!)))!;
         await this.db.save(Aliases, new_alias);
-        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await interaction.reply({
             content: this.t('add.success', { alias: alias_name }),
             flags: MessageFlags.Ephemeral,
@@ -249,7 +246,6 @@ export default class AliasCommand extends CustomizableCommand {
         }
 
         await this.db.remove(Aliases, alias);
-        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await interaction.reply({
             content: this.t('remove.success', { alias: alias_name }),
             flags: MessageFlags.Ephemeral,
@@ -387,7 +383,6 @@ export default class AliasCommand extends CustomizableCommand {
         if (consists_only_of_word !== null) alias.consists_only_of_word = consists_only_of_word;
         if (use_regex !== null) alias.use_regex = use_regex;
         await this.db.save(Aliases, alias);
-        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
         await interaction.reply({
             content: this.t('modify.success', { alias: alias_name }),
             flags: MessageFlags.Ephemeral,
