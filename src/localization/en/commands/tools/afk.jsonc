@@ -12,12 +12,14 @@
             "already_afk": "You are already AFK.",
             "role_hierarchy_error": "**Warning:** I cannot change your nickname (possibly due to role hierarchy).",
         },
-        "onmessagecreate": {
-            "afk_info": "User is Currently AFK",
-            "afk_reason": "**Reason:** {reason}",
-            "dm_description": "Below is a list of messages that mentioned you while you were AFK:\n{message_list}",
-            "mentions": "You were mentioned **{length}** times while AFK. I've sent the message links via DM.",
-            "no_longer_afk": "You are no longer AFK.",
+        "events": {
+            "onmessagecreate": {
+                "afk_info": "User is Currently AFK",
+                "afk_reason": "**Reason:** {reason}",
+                "dm_description": "Below is a list of messages that mentioned you while you were AFK:\n{message_list}",
+                "mentions": "You were mentioned **{length}** times while AFK. I've sent the message links via DM.",
+                "no_longer_afk": "You are no longer AFK.",
+            },
         },
     },
 }

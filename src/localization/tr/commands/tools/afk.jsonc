@@ -12,12 +12,14 @@
             "already_afk": "Zaten AFK durumundasınız.",
             "role_hierarchy_error": "**Uyarı:** Takma adınızı değiştiremiyorum (rol hiyerarşisi nedeniyle olabilir).",
         },
-        "onmessagecreate": {
-            "afk_info": "Kullanıcı Şu Anda AFK Durumunda",
-            "afk_reason": "**Sebep:** {reason}",
-            "dm_description": "Aşağıda, siz AFK durumundayken size atıfta bulunan mesajların listesi bulunmaktadır:\n{message_list}",
-            "mentions": "Siz AFK durumundayken **{length}** kez etiketlendiniz. Mesaj linklerini DM üzerinden ilettim.",
-            "no_longer_afk": "Artık AFK değilsiniz.",
+        "events": {
+            "onmessagecreate": {
+                "afk_info": "Kullanıcı Şu Anda AFK Durumunda",
+                "afk_reason": "**Sebep:** {reason}",
+                "dm_description": "Aşağıda, siz AFK durumundayken size atıfta bulunan mesajların listesi bulunmaktadır:\n{message_list}",
+                "mentions": "Siz AFK durumundayken **{length}** kez etiketlendiniz. Mesaj linklerini DM üzerinden ilettim.",
+                "no_longer_afk": "Artık AFK değilsiniz.",
+            },
         },
     },
 }
