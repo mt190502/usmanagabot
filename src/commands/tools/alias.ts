@@ -19,7 +19,7 @@ import { CustomizableCommand } from '../../types/structure/command';
 export default class AliasCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
-        super({ name: 'alias', is_admin_command: true });
+        super({ name: 'alias', is_admin_command: true, aliases: ['alias_list'] });
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
@@ -50,6 +50,10 @@ export default class AliasCommand extends CustomizableCommand {
             .setName(this.name)
             .setDescription(this.t('description'))
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
+
+        this.push_cmd_data = new SlashCommandBuilder()
+            .setName('alias_list')
+            .setDescription(this.t('subcommands.list.description'));
 
         (this.base_cmd_data as SlashCommandBuilder).addSubcommand((subcommand) =>
             subcommand
@@ -136,10 +140,6 @@ export default class AliasCommand extends CustomizableCommand {
                     option.setName('use_regex').setDescription(this.t('parameters.useregex')).setRequired(false),
                 ),
         );
-
-        (this.base_cmd_data as SlashCommandBuilder).addSubcommand((subcommand) =>
-            subcommand.setName('list').setDescription(this.t('subcommands.list.description')),
-        );
     }
     // ================================================================ //
 
@@ -150,7 +150,12 @@ export default class AliasCommand extends CustomizableCommand {
             guild: interaction.guild,
             user: interaction.user,
         });
-        this[interaction.options.getSubcommand() as 'add' | 'remove' | 'modify' | 'list'](interaction);
+        if (interaction.commandName === 'alias_list') {
+            await this.list(interaction);
+        } else {
+            await this[interaction.options.getSubcommand() as 'add' | 'remove' | 'modify'](interaction);
+        }
+
         this.log.send('debug', 'command.execute.success', {
             name: this.name,
             guild: interaction.guild,
@@ -293,6 +298,7 @@ export default class AliasCommand extends CustomizableCommand {
                     namespace: 'command' as const,
                 })),
             items_per_page: 5,
+            enable_select_menu_descriptions: false,
         });
 
         if (interaction.isButton()) {

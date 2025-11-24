@@ -145,6 +145,7 @@ export abstract class BaseCommand {
         this.is_bot_owner_command = options.is_bot_owner_command ?? false;
         this.help = this.t(options.help ?? 'help') ?? 'No help provided.';
         this.cooldown = options.cooldown ?? 0;
+        this.aliases = options.aliases;
         this.main_command_data = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
     }
     // ================================================================ //
@@ -233,6 +234,9 @@ export abstract class BaseCommand {
      * @param {SlashCommandBuilder | ContextMenuCommandBuilder} data - The command data to add.
      */
     public set push_cmd_data(data: SlashCommandBuilder | ContextMenuCommandBuilder) {
+        for (const cmd_data of this.extra_command_data) {
+            if (cmd_data.name === data.name) return;
+        }
         this.extra_command_data.add(data);
     }
     // ================================================================ //

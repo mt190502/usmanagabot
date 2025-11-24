@@ -33,6 +33,7 @@ interface pageItem {
         items: { name: string; pretty_name: string; description: string; namespace: 'command' | 'settings' }[];
         items_per_page: number;
         select_menu_placeholder?: string;
+        enable_select_menu_descriptions?: boolean;
     };
 }
 
@@ -95,7 +96,7 @@ export class Paginator {
         components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[];
     } {
         const { current_page, config } = pagination_state;
-        const { title, color, items_per_page, select_menu_placeholder } = config;
+        const { title, color, items_per_page, select_menu_placeholder, enable_select_menu_descriptions } = config;
 
         const post = new EmbedBuilder();
         const button_row = new ActionRowBuilder<ButtonBuilder>();
@@ -129,8 +130,9 @@ export class Paginator {
             description += `**${item.pretty_name}**\n${item.description}\n\n`;
             string_select_menu.addOptions({
                 label: item.pretty_name,
-                description:
-                    item.description?.substring(0, 97) + (item.description?.length >= 100 ? '...' : '') || '<missing>',
+                description: enable_select_menu_descriptions
+                    ? item.description?.substring(0, 97) + (item.description?.length >= 100 ? '...' : '') || '<missing>'
+                    : undefined,
                 value:
                     item.namespace === 'settings'
                         ? `settings:${item.name}`
@@ -185,6 +187,7 @@ export class Paginator {
                     items: o.items,
                     items_per_page,
                     select_menu_placeholder: o.select_menu_placeholder,
+                    enable_select_menu_descriptions: o.enable_select_menu_descriptions ?? true,
                 },
             };
             Paginator.page_states.set(state_key, pagination_state);
@@ -195,6 +198,7 @@ export class Paginator {
                 items: o.items,
                 items_per_page,
                 select_menu_placeholder: o.select_menu_placeholder,
+                enable_select_menu_descriptions: o.enable_select_menu_descriptions ?? true,
             };
         }
 
