@@ -134,7 +134,12 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
             }
             await message.delete();
 
-            await author.send({ embeds: [post] });
+            await author.send({ embeds: [post] }).catch(() => {
+                this.log.send('warn', 'command.execute.could_not_notify_user', {
+                    guild: message.guild,
+                    user: author,
+                });
+            });
             if (msg_logger && restrict.mod_notifier_channel_id) {
                 await timers.setTimeout(500);
                 const logged = await this.db.findOne(Messages, {

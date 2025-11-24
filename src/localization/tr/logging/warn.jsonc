@@ -25,6 +25,9 @@
                 "addchannel": {
                     "exists": "\"{guild}\" sunucusundaki \"{channel}\" kanalı zaten kısıtlama sistemine eklenmiş.",
                 },
+                "execute": {
+                    "could_not_notify_user": "\"{guild}\" sunucusundaki \"{channel}\" kanalında mesaj silinmesi hakkında \"{user}\" kullanıcısına bildirim gönderilemedi.",
+                },
                 "removechannel": {
                     "not_found": "\"{guild}\" sunucusundaki \"{channel}\" kanalı kısıtlama sisteminde bulunamadı.",
                 },

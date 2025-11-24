@@ -25,6 +25,9 @@
                 "addchannel": {
                     "exists": "Channel \"{channel}\" on server \"{guild}\" has already been added to the restriction system.",
                 },
+                "execute": {
+                    "could_not_notify_user": "Could not notify user \"{user}\" about message deletion in channel \"{channel}\" on server \"{guild}\".",
+                },
                 "removechannel": {
                     "not_found": "Channel \"{channel}\" on server \"{guild}\" was not found in the restriction system.",
                 },
