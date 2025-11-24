@@ -96,8 +96,14 @@ export default class BotSettings extends CustomizableCommand {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const settings = await this.db.findOne(BotData, { where: { id: 1 } });
 
-        const statuses = interaction.fields.getTextInputValue('bot_random_statuses');
-        settings!.random_statuses = statuses.split(',').map((s) => s.trim());
+        const statuses = interaction.fields.getTextInputValue('bot_random_statuses').split(',').map((s) => s.trim());
+
+        if (statuses.length === 0 || statuses.some(s => s.length === 0)) {
+            await this.settingsUI(interaction);
+            return;
+        }
+
+        settings!.random_statuses = statuses;
         await this.db.save(settings!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.modalsubmit.success', {
