@@ -97,7 +97,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             diff_timestamp >= 3600 &&
             last_introduction_submit_from_user.hourly_submit_count === introduction!.daily_submit_limit
         ) {
-            const msg = this.t('introduction.execute.rate_limited', {
+            const msg = this.t('execute.rate_limited', {
                 date: `<t:${Math.floor(end_timestamp)}:F>`,
             });
             post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
@@ -121,7 +121,7 @@ export default class IntroductionCommand extends CustomizableCommand {
 
         if (!introduction!.is_enabled || !introduction!.channel_id) {
             post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                .setDescription(this.t('introduction.execute.not_configured'))
+                .setDescription(this.t('execute.not_configured'))
                 .setColor(Colors.Red);
             await interaction.reply({
                 embeds: [post],
@@ -134,7 +134,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         const user_roles = interaction
             .guild!.members.cache.get(interaction.user.id)!
             .roles.cache.sort((a, b) => b.position - a.position);
-        const data: string[] = [`**__${this.t('introduction.execute.header', { user: interaction.user.username })}__**\n`];
+        const data: string[] = [`**__${this.t('execute.header', { user: interaction.user.username })}__**\n`];
 
         let values = 0;
         for (let i = 1; i <= 8; i++) {
@@ -154,7 +154,7 @@ export default class IntroductionCommand extends CustomizableCommand {
 
         if (values === 0) {
             post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                .setDescription(this.t('introduction.execute.validation_failed'))
+                .setDescription(this.t('execute.validation_failed'))
                 .setColor(Colors.Red);
             await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
             this.log.send('debug', 'command.introduction.execute.validation.failed', {
@@ -165,17 +165,17 @@ export default class IntroductionCommand extends CustomizableCommand {
         }
 
         data.push(
-            `\n**__${this.t('introduction.execute.account_info')}__**\n`,
-            `**${this.t('introduction.execute.username')}**: ${interaction.user.username}\n`,
-            `**${this.t('introduction.execute.nickname')}**: <@!${interaction.user.id}>\n`,
-            `**${this.t('introduction.execute.id')}**: ${interaction.user.id}\n`,
-            `**${this.t('introduction.execute.created_at')}**: <t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>\n`,
-            `**${this.t('introduction.execute.joined_at')}**: <t:${Math.floor(interaction.guild!.members.cache.get(interaction.user.id)!.joinedTimestamp! / 1000)}:R>\n`,
-            `**${this.t('introduction.execute.roles')}**: ${
+            `\n**__${this.t('execute.account_info')}__**\n`,
+            `**${this.t('execute.username')}**: ${interaction.user.username}\n`,
+            `**${this.t('execute.nickname')}**: <@!${interaction.user.id}>\n`,
+            `**${this.t('execute.id')}**: ${interaction.user.id}\n`,
+            `**${this.t('execute.created_at')}**: <t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>\n`,
+            `**${this.t('execute.joined_at')}**: <t:${Math.floor(interaction.guild!.members.cache.get(interaction.user.id)!.joinedTimestamp! / 1000)}:R>\n`,
+            `**${this.t('execute.roles')}**: ${
                 user_roles
                     .filter((r) => r.name !== '@everyone')
                     .map((r) => `<@&${r.id}>`)
-                    .join(', ') || this.t('introduction.execute.no_roles')
+                    .join(', ') || this.t('execute.no_roles')
             }\n`,
         );
 
@@ -185,7 +185,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             .setColor(color || 'Random')
             .setThumbnail(interaction.user.displayAvatarURL())
             .setTimestamp();
-        if (last_submit_timestamp) embed.setFooter({ text: this.t('introduction.execute.updated') });
+        if (last_submit_timestamp) embed.setFooter({ text: this.t('execute.updated') });
 
         const target_channel = interaction.guild!.channels.cache.get(introduction!.channel_id) as TextChannel;
         const publish = await target_channel.send({ content: `<@${interaction.user.id}>`, embeds: [embed] });
@@ -217,7 +217,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         post.setTitle(`:white_check_mark: ${this.t('command.execute.success')}`)
             .setColor(Colors.Green)
             .setDescription(
-                this.t('introduction.execute.submission_successful', {
+                this.t('execute.submission_successful', {
                     remaining: introduction!.daily_submit_limit - last_introduction_submit_from_user.hourly_submit_count,
                     url: publish.url,
                 }),
@@ -327,7 +327,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         }
         for (const column of parsed) {
             if (name_set.has(column.name)) {
-                this.warning = this.t('introduction.settings.customizecolumns.duplicated', { column: column.name });
+                this.warning = this.t('settings.customizecolumns.duplicated', { column: column.name });
                 this.log.send('warn', 'command.introduction.setting.validation.failed', {
                     guild: interaction.guild,
                     user: interaction.user,
@@ -376,8 +376,8 @@ export default class IntroductionCommand extends CustomizableCommand {
         const limit_value = interaction.fields.getTextInputValue('daily_limit');
         const limit = parseInt(limit_value, 10);
         if (isNaN(limit) || limit < 1 || limit > 100) {
-            this.warning = this.t('introduction.settings.setdailysubmissionlimit.limit_range');
-            this.log.send('warn', 'command.introduction.setting.validation.failed', {
+            this.warning = this.t('settings.setdailysubmissionlimit.limit_range');
+            this.log.send('warn', 'command.introduction.settings.validation_failed', {
                 guild: interaction.guild,
                 user: interaction.user,
             });

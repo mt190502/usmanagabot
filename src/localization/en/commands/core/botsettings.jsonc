@@ -1,0 +1,29 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "botsettings": {
+        "pretty_name": "Bot",
+        "description": "Manages bot general settings.",
+        "help": "Manages bot general settings.\n\n**Usage:**\n- Accessible via the `/settings` command from the settings menu.\n- Only the bot owner can view these settings.",
+        "settings": {
+            "managerandomstatuses": {
+                "description": "Manages the bot's random status messages.",
+                "display_name": "Random Status Messages",
+                "pretty_name": "Manage Random Status Messages",
+                "parameters": {
+                    "bot_random_statuses": "Random Status Messages (comma-separated)",
+                },
+            },
+            "setrandomstatusinterval": {
+                "description": "Determines how often the bot will change its status messages.",
+                "display_name": "Random Status Change Interval (minutes)",
+                "placeholder": "Select status change interval",
+                "pretty_name": "Random Status Change Interval",
+            },
+            "togglerandomstatus": {
+                "description": "Enables or disables the bot's random status messages.",
+                "display_name": "Random Status Messages Status",
+                "pretty_name": "Enable Random Status Messages",
+            },
+        },
+    },
+}

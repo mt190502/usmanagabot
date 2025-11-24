@@ -71,7 +71,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         }
 
         const post = new EmbedBuilder()
-            .setTitle(`:no_entry: ${this.t('channel_restrict.execute.message_deleted')}`)
+            .setTitle(`:no_entry: ${this.t('execute.message_deleted')}`)
             .setColor(Colors.Red);
         const guild_id = message.guild!.id;
         const message_id = message.id;
@@ -119,7 +119,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
 
         if (is_restricted) {
             post.setDescription(
-                this.t('channel_restrict.execute.message_deleted_description', {
+                this.t('execute.message_deleted_description', {
                     channel: `<#${channel_id}>`,
                     restrictions: channel.restricts.map((r) => RestrictType[r]).join(', '),
                 }),
@@ -153,10 +153,10 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                     .setThumbnail(author.displayAvatarURL())
                     .setTimestamp();
                 mod_post.setDescription(
-                    this.t('channel_restrict.execute.admin_post', {
+                    this.t('execute.admin_post', {
                         channel_id,
                         message_url: logged?.logged_message_id
-                            ? `Message URL: https://discord.com/channels/${guild_id}/${msg_logger.channel_id}/${logged.logged_message_id}`
+                            ? `https://discord.com/channels/${guild_id}/${msg_logger.channel_id}/${logged.logged_message_id}`
                             : '-',
                         restrictions: channel.restricts.map((r) => RestrictType[r]).join(', '),
                     }),
@@ -211,7 +211,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
         if (restricts.find((channel) => channel.channel_id === interaction.values[0])) {
-            this.warning = this.t('channel_restrict.settings.addchannel.already_added', { channel: `<#${interaction.values[0]}>` });
+            this.warning = this.t('settings.addchannel.already_added', { channel: `<#${interaction.values[0]}>` });
             this.log.send('warn', 'command.channelrestrict.addchannel.exists', {
                 guild: interaction.guild,
                 channel_id: interaction.values[0],
@@ -266,8 +266,8 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                     new ActionRowBuilder()
                         .addComponents(
                             new StringSelectMenuBuilder()
-                                .setCustomId('settings:channelrestrict:definechannelrestrictions')
-                                .setPlaceholder(this.t('channel_restrict.settings.definechannelrestrictions.restricts.placeholder'))
+                                .setCustomId(`settings:${this.name}:definechannelrestrictions`)
+                                .setPlaceholder(this.t('settings.definechannelrestrictions.restricts.placeholder'))
                                 .setMaxValues(Object.keys(RestrictType).filter((key) => !isNaN(Number(key))).length)
                                 .addOptions(
                                     ...Object.values(RestrictType)
@@ -275,7 +275,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                                         .map((restrict) => ({
                                             label: RestrictType[restrict],
                                             description: Object.keys(RestrictType)[restrict - 1],
-                                            value: `settings:channel_restrict:definechannelrestrictions:${args[0]}:${restrict}`,
+                                            value: `settings:${this.name}:definechannelrestrictions:${args[0]}:${restrict}`,
                                             default: restricts
                                                 .find((c) => BigInt(c.channel_id) === BigInt(args[0]))
                                                 ?.restricts.includes(restrict),
@@ -291,20 +291,20 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                     new ActionRowBuilder()
                         .addComponents(
                             new StringSelectMenuBuilder()
-                                .setCustomId('settings:channelrestrict:definechannelrestrictions')
-                                .setPlaceholder(this.t('channel_restrict.settings.definechannelrestrictions.channels.placeholder'))
+                                .setCustomId(`settings:${this.name}:definechannelrestrictions`)
+                                .setPlaceholder(this.t('settings.definechannelrestrictions.channels.placeholder'))
                                 .addOptions(
                                     ...restricts.map((channel) => ({
                                         label: interaction.guild!.channels.cache.get(channel.channel_id)!.name,
                                         description: channel.restricts.length
                                             ? channel.restricts.map((r) => RestrictType[r]).join(', ')
                                             : '-',
-                                        value: `settings:channel_restrict:definechannelrestrictions:${channel.channel_id}`,
+                                        value: `settings:${this.name}:definechannelrestrictions:${channel.channel_id}`,
                                     })),
                                     {
-                                        label: this.t('channel_restrict.settings.definechannelrestrictions.back'),
-                                        description: this.t('channel_restrict.settings.definechannelrestrictions.back_description'),
-                                        value: 'settings:channelrestrict',
+                                        label: this.t('command.settings.cancel.display_name'),
+                                        description: this.t('command.settings.cancel.description'),
+                                        value: `settings:${this.name}`,
                                     },
                                 ),
                         )
@@ -332,7 +332,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
 
         const selected = restricts.find((channel) => channel.channel_id === interaction.values[0]);
         if (!selected) {
-            this.warning = this.t('channel_restrict.settings.removechannel.not_found', { channel: `<#${interaction.values[0]}>` });
+            this.warning = this.t('settings.removechannel.not_found', { channel: `<#${interaction.values[0]}>` });
             this.log.send('warn', 'command.channelrestrict.removechannel.not_found', {
                 guild: interaction.guild,
                 channel_id: interaction.values[0],

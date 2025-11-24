@@ -1,0 +1,21 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "autorole": {
+        "pretty_name": "Otomatik Rol",
+        "description": "Yeni katılan kullanıcılara otomatik olarak rol atar.",
+        "help": "Yeni katılan kullanıcılara otomatik olarak rol atar.",
+        "settings": {
+            "changerole": {
+                "description": "Yeni katılan kullanıcılara atanacak rolü değiştirir.",
+                "display_name": "Rol",
+                "placeholder": "Atanacak rolü seçin",
+                "pretty_name": "Atanacak Rol",
+                "role_hierarchy_error": "Seçilen rol, botun en yüksek rolünden üstte. Lütfen farklı bir rol seçin.",
+            },
+            "toggle": {
+                "description": "Sunucuda otomatik rol sistemini etkinleştirir veya devre dışı bırakır.",
+                "pretty_name": "Otomatik Rol Aktifliği",
+            },
+        },
+    },
+}

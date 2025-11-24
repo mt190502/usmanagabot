@@ -18,7 +18,7 @@ export default class UserInformationCommand extends BaseCommand {
     constructor() {
         super({ name: 'user_information', cooldown: 5 });
         (this.base_cmd_data as SlashCommandBuilder).addUserOption((option) =>
-            option.setName('user').setDescription(this.t('user_information.parameters.user')).setRequired(false),
+            option.setName('user').setDescription(this.t('parameters.user')).setRequired(false),
         );
         this.push_cmd_data = new ContextMenuCommandBuilder()
             .setName(this.pretty_name)
@@ -48,7 +48,7 @@ export default class UserInformationCommand extends BaseCommand {
         if (!interaction.guild!.members.cache.get(user.id)) {
             const post = new EmbedBuilder()
                 .setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                .setDescription(this.t('user_information.execute.user_not_found_in_guild', { user: user.username }))
+                .setDescription(this.t('execute.user_not_found_in_guild', { user: user.username }))
                 .setColor(Colors.Yellow);
             await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
             this.log.send('warn', 'command.user_information.execute.user_not_found', {
@@ -77,7 +77,7 @@ export default class UserInformationCommand extends BaseCommand {
                 where: { from_user: { uid: BigInt(user.id) }, from_guild: { gid: BigInt(interaction.guild!.id) } },
             });
             if (last_introduction_submit) {
-                data.push(`**__${this.t('introduction.execute.header', { user: interaction.user.username })}__**\n`);
+                data.push(`**__${this.t('execute.header', { user: interaction.user.username })}__**\n`);
                 for (let i = 1; i <= 8; i++) {
                     const key = introduction[`col${i}` as keyof Introduction];
                     if (Array.isArray(key)) {
@@ -93,17 +93,17 @@ export default class UserInformationCommand extends BaseCommand {
         }
 
         data.push(
-            `\n**__${this.t('introduction.execute.account_info')}__**\n`,
-            `**${this.t('introduction.execute.username')}**: ${interaction.user.username}\n`,
-            `**${this.t('introduction.execute.nickname')}**: <@!${interaction.user.id}>\n`,
-            `**${this.t('introduction.execute.id')}**: ${interaction.user.id}\n`,
-            `**${this.t('introduction.execute.created_at')}**: <t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>\n`,
-            `**${this.t('introduction.execute.joined_at')}**: <t:${Math.floor(interaction.guild!.members.cache.get(interaction.user.id)!.joinedTimestamp! / 1000)}:R>\n`,
-            `**${this.t('introduction.execute.roles')}**: ${
+            `\n**__${this.t('execute.account_info')}__**\n`,
+            `**${this.t('execute.username')}**: ${interaction.user.username}\n`,
+            `**${this.t('execute.nickname')}**: <@!${interaction.user.id}>\n`,
+            `**${this.t('execute.id')}**: ${interaction.user.id}\n`,
+            `**${this.t('execute.created_at')}**: <t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>\n`,
+            `**${this.t('execute.joined_at')}**: <t:${Math.floor(interaction.guild!.members.cache.get(interaction.user.id)!.joinedTimestamp! / 1000)}:R>\n`,
+            `**${this.t('execute.roles')}**: ${
                 user_roles!
                     .filter((r) => r.name !== '@everyone')
                     .map((r) => `<@&${r.id}>`)
-                    .join(', ') || this.t('introduction.execute.no_roles')
+                    .join(', ') || this.t('execute.no_roles')
             }\n`,
         );
 

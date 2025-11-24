@@ -1,0 +1,29 @@
+{
+    "$schema": "../../../types/structure/schemas/logging.json",
+    "error": {
+        "command": {
+            "readCommandFiles": {
+                "database_metadata_missing": "Database metadata is missing, cannot read command files.",
+            },
+            "registerGuilds": {
+                "database_save_failed": "Error occurred while saving servers to database: {message}",
+                "no_guilds_found": "No servers found where the bot is added.",
+            },
+            "RESTCommandLoader": {
+                "failed": "REST command loader failed for server \"{guild}\": \"{message}\"",
+            },
+        },
+        "services": {
+            "config": {
+                "parse": {
+                    "failed": "Error occurred while parsing configuration file: {message}",
+                },
+            },
+            "database": {
+                "init": {
+                    "failed": "Error occurred while initializing database service: {message}",
+                },
+            },
+        },
+    },
+}

@@ -21,7 +21,7 @@ export default class PurgeCommand extends BaseCommand {
 
         (this.base_cmd_data as SlashCommandBuilder)
             .addStringOption((o) =>
-                o.setName('message_id').setRequired(true).setDescription(this.t('purge.parameters.message_id')),
+                o.setName('message_id').setRequired(true).setDescription(this.t('parameters.message_id')),
             )
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
         this.push_cmd_data = new ContextMenuCommandBuilder()
@@ -89,7 +89,7 @@ export default class PurgeCommand extends BaseCommand {
                 });
             } catch (err) {
                 post.setTitle(`:octagonal_sign: ${this.t('command.execute.error')}`)
-                    .setDescription(this.t('purge.execute.error', { error: (err as Error).message }))
+                    .setDescription(this.t('execute.error', { error: (err as Error).message }))
                     .setColor(Colors.Red);
                 await interaction.update({ embeds: [post], components: [] });
                 this.log.send('warn', 'command.purge.execute.delete.failed', {
@@ -105,7 +105,7 @@ export default class PurgeCommand extends BaseCommand {
             selected_count++;
 
             post.setTitle(`:white_check_mark: ${this.t('command.execute.success')}`)
-                .setDescription(this.t('purge.execute.success', { count: selected_count }))
+                .setDescription(this.t('execute.success', { count: selected_count }))
                 .setColor(Colors.Green);
             await interaction.update({ embeds: [post], components: [] });
             this.log.send('debug', 'command.execute.success', {
@@ -125,7 +125,7 @@ export default class PurgeCommand extends BaseCommand {
                     .replaceAll(/(\s|<|>|@|&|!)/g, '');
                 if (!message_id) {
                     post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                        .setDescription(this.t('purge.execute.message_id_required'))
+                        .setDescription(this.t('execute.message_id_required'))
                         .setColor(Colors.Yellow);
                     await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
                     return;
@@ -134,7 +134,7 @@ export default class PurgeCommand extends BaseCommand {
                     PurgeCommand.target = await interaction.channel!.messages.fetch(message_id);
                 } catch (err) {
                     post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                        .setDescription(this.t('purge.execute.message_not_found_in_channel'))
+                        .setDescription(this.t('execute.message_not_found_in_channel'))
                         .setColor(Colors.Yellow);
                     await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
                     this.log.send('warn', 'command.purge.execute.delete.failed', {

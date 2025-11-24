@@ -218,7 +218,7 @@ export default class VerificationCommand extends CustomizableCommand {
         const requested_role = server_roles.get(interaction.values[0])!;
 
         if (requested_role.position >= bot_role.position) {
-            this.warning = this.t('verification.settings.setverificationrole.role_hierarchy_error');
+            this.warning = this.t('settings.setverificationrole.role_hierarchy_error');
             await this.settingsUI(interaction);
             return;
         }
@@ -291,7 +291,7 @@ export default class VerificationCommand extends CustomizableCommand {
 
         const new_age = parseInt(interaction.fields.getTextInputValue('minimum_age'));
         if (isNaN(new_age) || new_age < 0) {
-            this.warning = this.t('verification.settings.setverificationminimumage.invalid_age', { age: new_age });
+            this.warning = this.t('settings.setverificationminimumage.invalid_age', { age: new_age });
             await this.settingsUI(interaction);
             return;
         }

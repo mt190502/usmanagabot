@@ -17,7 +17,7 @@ export default class AFKCommand extends BaseCommand {
         super({ name: 'afk', cooldown: 10 });
 
         (this.base_cmd_data as SlashCommandBuilder).addStringOption((option) =>
-            option.setName('reason').setDescription(this.t('afk.parameters.reason')).setRequired(true),
+            option.setName('reason').setDescription(this.t('parameters.reason')).setRequired(true),
         );
     }
     // ================================================================ //
@@ -37,7 +37,7 @@ export default class AFKCommand extends BaseCommand {
         const post = new EmbedBuilder();
 
         if (user_afk) {
-            post.setTitle(`:warning: ${this.t('afk.execute.already_afk')}`).setColor(Colors.Yellow);
+            post.setTitle(`:warning: ${this.t('execute.already_afk')}`).setColor(Colors.Yellow);
             await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
             return;
         }
@@ -48,9 +48,9 @@ export default class AFKCommand extends BaseCommand {
         afk.message = reason;
         await this.db.save(afk);
 
-        post.setTitle(`:white_check_mark: ${this.t('afk.execute.afk_success')}`).setColor(Colors.Green);
+        post.setTitle(`:white_check_mark: ${this.t('execute.afk_success')}`).setColor(Colors.Green);
         if (!member.manageable) {
-            post.setDescription(`:warning: ${this.t('afk.execute.role_hierarchy_error')}`);
+            post.setDescription(`:warning: ${this.t('execute.role_hierarchy_error')}`);
             this.log.send('warn', 'command.afk.execute.nickname_change_failed', {
                 guild: interaction.guild,
                 user: interaction.user,
@@ -81,11 +81,11 @@ export default class AFKCommand extends BaseCommand {
         if (user_afk) {
             const post = new EmbedBuilder();
             if (member.manageable) await member?.setNickname(member.nickname!.replaceAll('[AFK]', ''));
-            post.setTitle(`:white_check_mark: ${this.t('afk.onmessagecreate.no_longer_afk')}`).setColor(Colors.Green);
+            post.setTitle(`:white_check_mark: ${this.t('onmessagecreate.no_longer_afk')}`).setColor(Colors.Green);
             if (user_afk.mentions.length > 0) {
-                post.setDescription(this.t('afk.onmessagecreate.mentions', { length: user_afk.mentions.length }));
+                post.setDescription(this.t('onmessagecreate.mentions', { length: user_afk.mentions.length }));
                 await message.author.send({
-                    content: this.t('afk.onmessagecreate.dm_description', {
+                    content: this.t('onmessagecreate.dm_description', {
                         message_list: user_afk.mentions.join('\n'),
                     }),
                 });
@@ -99,10 +99,10 @@ export default class AFKCommand extends BaseCommand {
             });
             if (mentioned_user_afk) {
                 const post = new EmbedBuilder();
-                post.setTitle(`:warning: ${this.t('afk.onmessagecreate.afk_info')}`).setColor(Colors.Yellow);
+                post.setTitle(`:warning: ${this.t('onmessagecreate.afk_info')}`).setColor(Colors.Yellow);
                 if (mentioned_user_afk.message) {
                     post.setDescription(
-                        `**${this.t('afk.onmessagecreate.afk_reason', { reason: mentioned_user_afk.message })}**`,
+                        `**${this.t('onmessagecreate.afk_reason', { reason: mentioned_user_afk.message })}**`,
                     );
                 }
                 await message.reply({

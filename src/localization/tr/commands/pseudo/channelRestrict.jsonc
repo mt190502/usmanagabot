@@ -1,0 +1,48 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "channel_restrict": {
+        "pretty_name": "Kanal Kısıtlama",
+        "description": "Belirli kanallarda belirli içerik türlerini kısıtlar.",
+        "help": "Belirli kanallarda belirli içerik türlerini kısıtlar.",
+        "execute": {
+            "admin_post": "<#{channel_id}> kanalında bir mesaj, kanal kısıtlama kurallarına uymadığı için silindi.\nMesaj URL'si: {message_url}\nKısıtlamalar: {restrictions}",
+            "message_deleted_description": "{channel} kanalındaki mesajınız, kanal kısıtlama kurallarına uymadığı için silindi.\nİzin verilen içerik türleri: {restrictions}",
+            "message_deleted": "Mesajınız Silindi!",
+        },
+        "settings": {
+            "addchannel": {
+                "already_added": "{channel} kanalı zaten kısıtlama sistemine eklenmiş.",
+                "description": "Kanal kısıtlama sistemine yeni bir kanal ekler.",
+                "placeholder": "Kısıtlama sistemine eklenecek kanalı seçin",
+                "pretty_name": "Kanal Ekle",
+            },
+            "changemodnotifierchannel": {
+                "description": "Kanal kısıtlama bildirimlerinin gönderileceği kanalı değiştirir.",
+                "display_name": "Bildirim Kanalı",
+                "placeholder": "Bildirim kanalı seçin",
+                "pretty_name": "Bildirim Kanalını Değiştir",
+            },
+            "definechannelrestrictions": {
+                "channels": {
+                    "placeholder": "Kısıtlamaları tanımlamak istediğiniz kanalı seçin",
+                },
+                "description": "Belirli bir kanal için kısıtlamaları tanımlar.",
+                "display_name": "Kısıtlanmış Kanallar",
+                "pretty_name": "Kanal Kısıtlamalarını Tanımla",
+                "restricts": {
+                    "placeholder": "Kanal için uygulanacak kısıtlamaları seçin",
+                },
+            },
+            "removechannel": {
+                "description": "Kanal kısıtlama sisteminden bir kanalı kaldırır.",
+                "not_found": "{channel} kanalı kısıtlama sisteminde bulunamadı.",
+                "placeholder": "Kısıtlama sisteminden kaldırılacak kanalı seçin",
+                "pretty_name": "Kanal Kaldır",
+            },
+            "toggle": {
+                "description": "Sunucuda kanal kısıtlama sistemini etkinleştirir veya devre dışı bırakır.",
+                "pretty_name": "Kanal Kısıtlama Aktifliği",
+            },
+        },
+    },
+}

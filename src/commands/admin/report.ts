@@ -27,15 +27,15 @@ export default class ReportCommand extends CustomizableCommand {
 
         (this.base_cmd_data as SlashCommandBuilder)
             .addUserOption((option) =>
-                option.setName('user').setDescription(this.t('report.parameters.user')).setRequired(true),
+                option.setName('user').setDescription(this.t('parameters.user')).setRequired(true),
             )
             .addStringOption((option) =>
-                option.setName('reason').setDescription(this.t('report.parameters.reason')).setRequired(true),
+                option.setName('reason').setDescription(this.t('parameters.reason')).setRequired(true),
             )
             .addStringOption((option) =>
                 option
                     .setName('message_url')
-                    .setDescription(this.t('report.parameters.message_url_list'))
+                    .setDescription(this.t('parameters.message_url_list'))
                     .setRequired(false),
             );
     }
@@ -87,7 +87,7 @@ export default class ReportCommand extends CustomizableCommand {
         if (!report?.channel_id) {
             user_post
                 .setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                .setDescription(this.t('report.execute.command_not_configured'))
+                .setDescription(this.t('execute.command_not_configured'))
                 .setColor(Colors.Red);
             await interaction.reply({ embeds: [user_post], flags: MessageFlags.Ephemeral });
             this.log.send('warn', 'command.configuration.missing', { name: this.name, guild: interaction.guild });
@@ -101,7 +101,7 @@ export default class ReportCommand extends CustomizableCommand {
                 if (!pattern.test(url)) {
                     user_post
                         .setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                        .setDescription(this.t('report.execute.invalid_url', { url }))
+                        .setDescription(this.t('execute.invalid_url', { url }))
                         .setColor(Colors.Red);
                     await interaction.reply({ embeds: [user_post], flags: MessageFlags.Ephemeral });
                     this.log.send('warn', 'command.report.execute.invalid_url', {
@@ -116,7 +116,7 @@ export default class ReportCommand extends CustomizableCommand {
             if (!message_in_database) {
                 user_post
                     .setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                    .setDescription(this.t('report.execute.message_not_found'))
+                    .setDescription(this.t('execute.message_not_found'))
                     .setColor(Colors.Red);
                 await interaction.reply({
                     embeds: [user_post],
@@ -139,7 +139,7 @@ export default class ReportCommand extends CustomizableCommand {
             .setThumbnail(user.displayAvatarURL())
             .setTimestamp()
             .setDescription(
-                this.t('report.admin_report_description', {
+                this.t('execute.admin_report_description', {
                     username: user.username,
                     user_id: user.id,
                     reason,
@@ -156,7 +156,7 @@ export default class ReportCommand extends CustomizableCommand {
             .setTitle(`:white_check_mark: ${this.t('command.execute.success')}`)
             .setColor(Colors.Green)
             .setDescription(
-                this.t('report.execute.user_reported_description', {
+                this.t('execute.user_reported_description', {
                     user: user.username,
                     reason: reason,
                 }),

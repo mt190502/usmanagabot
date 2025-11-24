@@ -1,0 +1,80 @@
+{
+    "$schema": "../../../types/structure/schemas/logging.json",
+    "warn": {
+        "command": {
+            "afk": {
+                "execute": {
+                    "nickname_change_failed": "\"AFK\" command failed to change username for user \"{user}\" on server \"{guild}\".",
+                },
+            },
+            "alias": {
+                "add": {
+                    "alias_exists": "Alias \"{alias}\" attempted to be created by user \"{user}\" on server \"{guild}\" already exists.",
+                },
+                "modify": {
+                    "alias_not_found": "Alias \"{alias}\" attempted to be modified by user \"{user}\" on server \"{guild}\" was not found.",
+                },
+                "list": {
+                    "no_aliases": "Alias list queried by user \"{user}\" for server \"{guild}\" is empty.",
+                },
+                "remove": {
+                    "alias_not_found": "Alias \"{alias}\" attempted to be deleted by user \"{user}\" on server \"{guild}\" was not found.",
+                },
+            },
+            "channelrestrict": {
+                "addchannel": {
+                    "exists": "Channel \"{channel}\" on server \"{guild}\" has already been added to the restriction system.",
+                },
+                "removechannel": {
+                    "not_found": "Channel \"{channel}\" on server \"{guild}\" was not found in the restriction system.",
+                },
+            },
+            "configuration": {
+                "missing": "Command \"{name}\" configurations are missing for server \"{guild}\".",
+            },
+            "earthquake": {
+                "settings": {
+                    "invalid_url": "Invalid Seismic Portal API URL provided by user \"{user}\" on server \"{guild}\": \"{url}\".",
+                },
+            },
+            "introduction": {
+                "execute": {
+                    "rate_limited": "Daily \"Introduction\" command limit reached for user \"{user}\" on server \"{guild}\".",
+                    "validation_failed": "\"Introduction\" command input validation failed for user \"{user}\" on server \"{guild}\".",
+                },
+                "settings": {
+                    "validation_failed": "\"Introduction\" command setting validation failed for user \"{user}\" on server \"{guild}\".",
+                },
+            },
+            "purge": {
+                "execute": {
+                    "delete": {
+                        "failed": "Message deletion process failed in channel \"{channel}\" for user \"{user}\" on server \"{guild}\": {message}",
+                    },
+                },
+            },
+            "report": {
+                "execute": {
+                    "invalid_url": "Invalid message URL shared by user \"{user}\" on server \"{guild}\": {url}.",
+                    "message_not_found": "Message to report not found for user \"{user}\" on server \"{guild}\".",
+                },
+            },
+            "search": {
+                "addengine": {
+                    "duplicate_engine": "Search engine \"{name}\" attempted to be added by user \"{user}\" on server \"{guild}\" already exists.",
+                },
+            },
+            "user_information": {
+                "execute": {
+                    "user_not_found": "User with ID \"{id}\" requested by user \"{user}\" on server \"{guild}\" was not found.",
+                },
+            },
+            "messagelogger": {
+                "execute": {
+                    "invalid_input": "Invalid message ID or URL provided by user \"{user}\" on server \"{guild}\": \"{input}\".",
+                    "message_not_found": "Message not found in logger for user \"{user}\" on server \"{guild}\": \"{message_id}\".",
+                },
+            },
+        },
+    },
+}

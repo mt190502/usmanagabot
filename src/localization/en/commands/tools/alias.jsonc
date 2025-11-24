@@ -1,0 +1,57 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "alias": {
+        "pretty_name": "Alias System",
+        "description": "Creates and manages various aliases.",
+        "help": "Creates and manages various aliases.\n\n**Usage:**\n- `/alias add <name> <content> <options>` - Creates a new alias.\n- `/alias list` - Lists existing aliases.\n- `/alias modify <name> <content?> <options?>` - Modifies an existing alias.\n- `/alias remove <name>` - Removes an existing alias.",
+        "add": {
+            "alias_exists": "Alias \"{alias}\" already exists. Please choose a different name.",
+            "success": "Alias \"{alias}\" successfully created.",
+        },
+        "alias_not_found": "Alias \"{alias}\" not found.",
+        "handlepageitem": {
+            "casesensitive": "Case Sensitivity",
+            "content": "Content",
+            "messageconsistsonlyofword": "Message Must Consist Only of This Word",
+            "name": "Name",
+            "useregex": "Use Regular Expression (Regex)",
+        },
+        "list": {
+            "no_aliases": "No aliases defined on this server.",
+            "title": "Alias List",
+        },
+        "modify": {
+            "success": "Alias \"{alias_name}\" successfully updated.",
+        },
+        "parameters": {
+            "casesensitive": "Case sensitivity",
+            "content": "Alias content ({variables})",
+            "messageconsistsonlyofword": "Message must consist only of this word",
+            "name": "Alias name",
+            "useregex": "Content will be processed as a regular expression (regex)",
+        },
+        "remove": {
+            "success": "Alias \"{alias}\" successfully removed.",
+        },
+        "settings": {
+            "toggle": {
+                "description": "Enables or disables the alias system on the server.",
+                "pretty_name": "Alias System Status",
+            },
+        },
+        "subcommands": {
+            "add": {
+                "description": "Add alias",
+            },
+            "list": {
+                "description": "List aliases",
+            },
+            "modify": {
+                "description": "Modify alias",
+            },
+            "remove": {
+                "description": "Remove alias",
+            },
+        },
+    },
+}

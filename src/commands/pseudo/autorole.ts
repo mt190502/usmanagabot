@@ -102,7 +102,7 @@ export default class AutoroleCommand extends CustomizableCommand {
         const requested_role = server_roles.get(interaction.values[0])!;
 
         if (requested_role.position >= bot_role.position) {
-            this.warning = this.t('autorole.settings.changerole.role_hierarchy_error');
+            this.warning = this.t('settings.changerole.role_hierarchy_error');
             await this.settingsUI(interaction);
             return;
         }

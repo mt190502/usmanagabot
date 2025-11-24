@@ -20,7 +20,7 @@ export default class PingCommand extends BaseCommand {
             guild: interaction.guild,
             user: interaction.user,
         });
-        const msg = await interaction.reply(this.t('ping.execute.measuring'));
+        const msg = await interaction.reply(this.t('execute.measuring'));
         let ping = interaction.client.ws.ping;
         while (ping === -1) {
             ping = interaction.client.ws.ping;

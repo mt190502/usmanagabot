@@ -1,0 +1,51 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "message_logger": {
+        "pretty_name": "Message Logger",
+        "description": "Logs the content and attachments of the specified message.",
+        "help": "Manages the message logging system for the server.\n\n**Usage:**\n- `/message_logger <message_id|message_url>`: Returns the logged link of the specified message.\n- You can also right-click on a message and select **Apps > Message Logger** to log a message.",
+        "parameters": {
+            "message_id": "Message ID or URL",
+        },
+        "execute": {
+            "invalid_input_description": "The provided value is not a valid message ID or URL: {input}",
+            "invalid_input": "Invalid Input",
+            "message_found_description": "Message with ID `{message_id}` found: https://discord.com/channels/{guild_id}/{channel_id}/{message_in_logger}",
+            "message_found": "Message Found",
+            "message_not_found_description": "Message with ID `{message_id}` has not been logged.",
+            "message_not_found": "Message Not Found",
+        },
+        "events": {
+            "onmessagecreate": {
+                "reply": "Reply",
+                "stickers": "Stickers",
+            },
+            "onmessagedelete": {
+                "deleted_message": "Deleted Message",
+            },
+            "onmessageupdate": {
+                "new_attachments": "New Attachments",
+                "new_message": "New Message",
+                "updated_message": "Updated Message",
+            },
+        },
+        "settings": {
+            "manageignoredchannels": {
+                "description": "Manages channels that the message logger system will ignore.",
+                "display_name": "Ignored Channels",
+                "placeholder": "Select channels to ignore for message logging",
+                "pretty_name": "Manage Ignored Channels",
+            },
+            "setlogchannel": {
+                "description": "Sets the channel where message logs will be sent.",
+                "display_name": "Log Channel",
+                "placeholder": "Select a channel for message logging",
+                "pretty_name": "Set Log Channel",
+            },
+            "toggle": {
+                "description": "Enables or disables the message logger system on the server.",
+                "pretty_name": "Message Logger Status",
+            },
+        },
+    },
+}

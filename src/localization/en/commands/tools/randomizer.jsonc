@@ -1,0 +1,16 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "randomizer": {
+        "pretty_name": "Randomizer",
+        "description": "Makes a random selection from the specified options.",
+        "help": "Makes a random selection from the specified options.\n\n**Usage:**\n- `/randomizer <option1> <option2> [option3] ...` - Randomly selects one of the specified options.\n\n**Examples:**\n- `/randomizer apple banana strawberry` - Randomly selects one of 'apple', 'banana', or 'strawberry'.",
+        "parameters": {
+            "first": "First parameter to choose from",
+            "second": "Second parameter to choose from",
+            "other": "Other parameters to choose from",
+        },
+        "execute": {
+            "result": "My choice: {result}",
+        },
+    },
+}

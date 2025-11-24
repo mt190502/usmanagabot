@@ -1,0 +1,56 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "earthquake": {
+        "pretty_name": "Earthquake Notifier",
+        "description": "Receives notifications about earthquakes occurring in the specified region.",
+        "help": "Receives notifications about earthquakes occurring in the specified region.",
+        "execute": {
+            "coordinates": "Coordinates",
+            "id": "ID",
+            "link": "Link",
+            "location": "Location",
+            "magnitude": "Magnitude",
+            "other_earthquakes": "For Other Earthquakes",
+            "source": "Source",
+            "time": "Time",
+            "title": "New Earthquake Alert!",
+        },
+        "settings": {
+            "setmagnitudelimit": {
+                "description": "Sets the minimum earthquake magnitude to receive notifications.",
+                "display_name": "Magnitude Limit",
+                "placeholder": "Select minimum earthquake magnitude",
+                "pretty_name": "Magnitude Limit",
+            },
+            "setnotificationchannel": {
+                "description": "Sets the channel where earthquake notifications will be sent.",
+                "display_name": "Notification Channel",
+                "placeholder": "Select earthquake notification channel",
+                "pretty_name": "Notification Channel",
+            },
+            "setregioncode": {
+                "description": "Sets the region code for earthquake notification location information.",
+                "display_name": "Region Code (api-bdc.net)",
+                "placeholder": "Enter region code (e.g., en, tr)",
+                "pretty_name": "Region Code (api-bdc.net)",
+                "parameters": {
+                    "region_code": "Region Code",
+                },
+            },
+            "setseismicportalapiurl": {
+                "description": "Sets the Seismic Portal API URL to use.",
+                "display_name": "Seismic Portal API URL",
+                "placeholder": "Enter Seismic Portal API URL",
+                "pretty_name": "Seismic Portal API URL",
+                "invalid_url": "An invalid Seismic Portal API URL was provided.",
+                "parameters": {
+                    "seismicportal_api_url": "Seismic Portal API URL",
+                },
+            },
+            "toggle": {
+                "description": "Enables or disables the earthquake notifier system on the server.",
+                "pretty_name": "Earthquake Notifier Status",
+            },
+        },
+    },
+}

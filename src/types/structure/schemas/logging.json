@@ -1,0 +1,60 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "logging.json",
+    "title": "Logging Translations",
+    "description": "Translation strings for logging messages",
+    "type": "object",
+    "properties": {
+        "$schema": { "type": "string" },
+        "debug": {
+            "type": "object",
+            "properties": {
+                "command": { "type": "object" },
+                "event": { "type": "object" },
+                "services": { "type": "object" },
+                "system": { "type": "object" }
+            },
+            "additionalProperties": true
+        },
+        "error": {
+            "type": "object",
+            "properties": {
+                "command": { "type": "object" },
+                "event": { "type": "object" },
+                "services": { "type": "object" },
+                "system": { "type": "object" }
+            },
+            "additionalProperties": true
+        },
+        "info": {
+            "type": "object",
+            "properties": {
+                "command": { "type": "object" },
+                "event": { "type": "object" },
+                "services": { "type": "object" },
+                "system": { "type": "object" }
+            },
+            "additionalProperties": true
+        },
+        "log": {
+            "type": "object",
+            "properties": {
+                "command": { "type": "object" },
+                "event": { "type": "object" },
+                "services": { "type": "object" },
+                "system": { "type": "object" }
+            },
+            "additionalProperties": true
+        },
+        "warn": {
+            "type": "object",
+            "properties": {
+                "command": { "type": "object" },
+                "event": { "type": "object" },
+                "services": { "type": "object" },
+                "system": { "type": "object" }
+            },
+            "additionalProperties": true
+        }
+    }
+}

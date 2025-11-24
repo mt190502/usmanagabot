@@ -1,0 +1,42 @@
+{
+    "$schema": "../../types/structure/schemas/common.json",
+    "command": {
+        "execute": {
+            "cancel": "Cancel",
+            "error": "Error",
+            "false": "No",
+            "ok": "OK",
+            "success": "Success",
+            "true": "Yes",
+            "warning": "Warning",
+        },
+        "settings": {
+            "cancel": {
+                "display_name": "Cancel",
+                "description": "Cancel the current operation."
+            },
+            "toggle": {
+                "display_name": "Active"
+            },
+            "view_in_edit_mode": "View in Edit Mode",
+        }
+    },
+    "event": {
+        "interaction": {
+            "cooldown": "Please wait {left} seconds before using the {command} command again."
+        }
+    },
+    "paginator": {
+        "previous": "Previous",
+        "next": "Next",
+        "back": "Back",
+        "select": "Select an item from the list",
+        "page_status": "Page {current_page} / {total_pages}"
+    },
+    "question": {
+        "cancelled_description": "Operation cancelled by user.",
+        "cancelled": "Operation cancelled.",
+        "please_wait": "Please wait...",
+        "processing": "Processing..."
+    },
+}

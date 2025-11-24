@@ -1,0 +1,14 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "common.json",
+    "title": "Common Translations",
+    "description": "Shared translation strings used across the application",
+    "type": "object",
+    "properties": {
+        "$schema": { "type": "string" },
+        "command": { "type": "object" },
+        "event": { "type": "object" },
+        "paginator": { "type": "object" },
+        "question": { "type": "object" }
+    }
+}

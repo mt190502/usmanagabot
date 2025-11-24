@@ -1,0 +1,46 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "verification": {
+        "pretty_name": "Doğrulama Sistemi",
+        "description": "Sunucuya yeni katılan kullanıcıları doğrular.",
+        "help": "Sunucuya yeni katılan kullanıcıların hesap yaşlarını kontrol eder ve limit altında olanlara belirli bir rol atar.",
+        "settings": {
+            "settargetchannel": {
+                "description": "Doğrulama mesajlarının gönderileceği kanalı ayarlar.",
+                "display_name": "Hedef Kanal",
+                "placeholder": "Doğrulama kanalı seçin",
+                "pretty_name": "Hedef Kanalı Ayarla",
+            },
+            "setverificationminimumage": {
+                "description": "Kullanıcıların hesap yaşları için minimum gereksinimi ayarlar.",
+                "display_name": "Minimum Hesap Yaşı (gün)",
+                "invalid_age": "Geçersiz yaş değeri: {age}. Lütfen pozitif bir sayı girin.",
+                "placeholder": "Minimum hesap yaşını gün cinsinden girin",
+                "pretty_name": "Minimum Hesap Yaşını Ayarla",
+                "parameters": {
+                    "minimum_age": "Minimum Hesap Yaşı (gün)",
+                },
+            },
+            "setverificationrole": {
+                "description": "Doğrulanmamış kullanıcılara atanacak rolü ayarlar.",
+                "display_name": "Doğrulama Rolü",
+                "placeholder": "Doğrulama rolünü seçin",
+                "pretty_name": "Doğrulama Rolünü Ayarla",
+                "role_hierarchy_error": "Seçilen rol, bot rolünden üstte. Lütfen farklı bir rol seçin.",
+            },
+            "setverificationsystemmessage": {
+                "description": "Doğrulama sistemi mesajını özelleştirir.",
+                "display_name": "Doğrulama Mesajı",
+                "placeholder": "Doğrulama mesajını girin (Kullanılabilir değişkenler: {variables})",
+                "pretty_name": "Doğrulama Mesajını Ayarla",
+                "parameters": {
+                    "verification_message": "Doğrulama Mesajı",
+                },
+            },
+            "toggle": {
+                "description": "Sunucuda doğrulama sistemini etkinleştirir veya devre dışı bırakır.",
+                "pretty_name": "Doğrulama Sistemi Aktifliği",
+            },
+        },
+    },
+}

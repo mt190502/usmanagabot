@@ -93,7 +93,7 @@ function generateSettingComponent(
                     ? t('command.settings.toggle.display_name')
                     : t(o.display_name ?? `${name}.settings.${pretty_key}.display_name`),
             description: t(o.description ?? `${name}.settings.${pretty_key}.description`),
-            format_specifier: o.format_specifier ?? t('settings.view_in_edit_mode'),
+            format_specifier: o.format_specifier ?? t('command.settings.view_in_edit_mode'),
             db_column_is_array: o.db_column_is_array ?? false,
             is_bot_owner_only: o.is_bot_owner_only ?? false,
             view_in_ui: o.view_in_ui ?? true,
@@ -367,7 +367,7 @@ export function SettingModalComponent(
                 const ti = new TextInputBuilder()
                     .setCustomId(input.id)
                     .setLabel(t(`${name}.settings.${pretty_key}.parameters.${input.id}`))
-                    .setPlaceholder(t(`${name}.settings.${pretty_key}.placeholder.${input.id}`))
+                    .setPlaceholder(t(`${name}.settings.${pretty_key}.parameters.${input.id}`))
                     .setStyle(input.style ?? TextInputStyle.Short)
                     .setRequired(input.required ?? true);
 
@@ -390,8 +390,8 @@ export function SettingModalComponent(
 
                     if (config!.include_cancel !== false) {
                         select_options.push({
-                            label: t('command.settings.cancel'),
-                            description: t('command.settings.cancel_description'),
+                            label: t('command.settings.cancel.display_name'),
+                            description: t('command.settings.cancel.description'),
                             value: `settings:${name}`,
                         });
                     }

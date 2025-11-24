@@ -1,0 +1,11 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "ping": {
+        "pretty_name": "Ping",
+        "description": "Measures the bot's response time.",
+        "help": "Measures the bot's response time.\n\n**Usage:**\n- `/ping` - Returns the bot's latency in milliseconds.\n\n**Example Output:**\n```plain\nPong! 🏓\n123ms\n```",
+        "execute": {
+            "measuring": "Measuring latency...",
+        },
+    },
+}

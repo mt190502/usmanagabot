@@ -1,0 +1,16 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "settings": {
+        "pretty_name": "Settings",
+        "description": "Manages command settings.",
+        "help": "Manages settings for a specific command.\n\n**Usage:**\n- `/settings` - Opens an interactive menu to manage settings.",
+        "execute": {
+            "back_to_main_menu_description": "Return to the main settings menu.",
+            "back_to_main_menu": "Back to Main Menu",
+            "last_modified_by": "Last interaction made by {user} on {date}.",
+            "not_set": "Not Set",
+            "placeholder": "Select an option...",
+            "title": "{command} Settings",
+        },
+    },
+}

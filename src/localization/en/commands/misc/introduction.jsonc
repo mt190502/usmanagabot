@@ -1,0 +1,63 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "introduction": {
+        "pretty_name": "Introduction",
+        "description": "Creates and manages user introduction information.",
+        "help": "Creates user-specific introduction information\n\n**Usage:**\n- `/introduction <parameters>` - Creates or updates introduction information.\n\n**Examples:**\n- `/introduction os:linux de:gnome` - Sets introduction information to 'os:linux de:gnome'.\n - `/introduction car:peugeot bike:yamaha` - Sets introduction information to 'car:peugeot bike:yamaha'.",
+        "execute": {
+            "account_info": "Account Information",
+            "created_at": "Account Created",
+            "header": "About {user}",
+            "id": "ID",
+            "joined_at": "Joined Server",
+            "nickname": "Nickname",
+            "no_roles": "No Roles",
+            "not_configured": "Introduction system is not properly configured. Please contact the server administrator.",
+            "rate_limited": "Daily introduction command limit reached. Please wait until {date}.",
+            "roles": "Roles",
+            "submission_successful": "Introduction successfully submitted.\nYou have **{remaining}** submissions remaining for today.\nIntroduction URL: {url}",
+            "updated": "Introduction Updated",
+            "username": "Username",
+            "validation_failed": "Please provide at least one value.",
+        },
+        "settings": {
+            "changetargetchannel": {
+                "description": "Changes the channel where introduction posts will be sent.",
+                "display_name": "Target Channel",
+                "placeholder": "Select target introduction channel",
+                "pretty_name": "Change Target Channel",
+            },
+            "customizecolumns": {
+                "description": "Customizes the names and descriptions of introduction command columns.",
+                "duplicated": "Column name {column} cannot be used more than once.",
+                "parameters": {
+                    "column_names_placeholder": "- name: key\n   value: value\n(maximum 8 columns)",
+                    "column_names": "Column Names",
+                },
+                "pretty_name": "Customize Columns",
+            },
+            "customizecommand": {
+                "description": "Customizes the name and description of the introduction command for this server.",
+                "parameters": {
+                    "cmd_desc": "Command Description",
+                    "cmd_name": "Command Name",
+                },
+                "pretty_name": "Customize Introduction Command",
+            },
+            "setdailysubmissionlimit": {
+                "description": "Sets the daily submission limit for users' introductions.",
+                "display_name": "Daily Submission Limit",
+                "limit_range": "Limit must be between 1 and 100.",
+                "parameters": {
+                    "label": "Daily Submission Limit (1-100)",
+                    "daily_limit": "Daily Submission Limit",
+                },
+                "pretty_name": "Set Daily Submission Limit",
+            },
+            "toggle": {
+                "description": "Enables or disables the introduction command on the server.",
+                "pretty_name": "Introduction Command Status",
+            },
+        },
+    },
+}

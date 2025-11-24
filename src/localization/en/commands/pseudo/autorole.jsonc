@@ -1,0 +1,21 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "autorole": {
+        "pretty_name": "Auto Role",
+        "description": "Automatically assigns roles to newly joined users.",
+        "help": "Automatically assigns roles to newly joined users.",
+        "settings": {
+            "changerole": {
+                "description": "Changes the role to be assigned to newly joined users.",
+                "display_name": "Role",
+                "placeholder": "Select role to assign",
+                "pretty_name": "Role to Assign",
+                "role_hierarchy_error": "The selected role is above the bot's highest role. Please select a different role.",
+            },
+            "toggle": {
+                "description": "Enables or disables the auto role system on the server.",
+                "pretty_name": "Auto Role Status",
+            },
+        },
+    },
+}

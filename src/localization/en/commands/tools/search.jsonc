@@ -1,0 +1,45 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "search": {
+        "pretty_name": "Search Command",
+        "description": "Searches for the specified term and returns results.",
+        "help": "Returns a search link for the specified term.\n\n**Usage:**\n- `/search <engine> <query>` - Searches for the query in the specified search engine.\n\n**Examples:**\n- `/search engine:Google query:Rice Pudding Recipe` - Searches for 'Rice Pudding Recipe' on Google.\n- `/search engine:DuckDuckGo query:Best programming languages` - Searches for 'Best programming languages' on DuckDuckGo.",
+        "parameters": {
+            "engine_name": "Search Engine Name",
+            "engine_url": "Search Engine URL",
+            "engine": "Search engine (e.g., Google, DuckDuckGo)",
+            "query": "Search query",
+        },
+        "settings": {
+            "addengine": {
+                "description": "Adds a new search engine.",
+                "duplicate_engine": "Search engine \"{name}\" already exists.",
+                "pretty_name": "Add Search Engine",
+                "parameters": {
+                    "engine_name": "Search engine name",
+                    "engine_url": "Search engine URL",
+                },
+            },
+            "editengine": {
+                "parameters": {
+                    "engine_name": "Search engine name",
+                    "engine_url": "Search engine URL",
+                },
+                "description": "Edits an existing search engine.",
+                "display_name": "Search Engines",
+                "placeholder": "Select search engine to edit",
+                "pretty_name": "Edit Search Engine",
+                "title": "Edit Search Engine: {name}",
+            },
+            "removeengine": {
+                "description": "Removes an existing search engine.",
+                "placeholder": "Select search engine to remove",
+                "pretty_name": "Remove Search Engine",
+            },
+            "toggle": {
+                "description": "Enables or disables the search command on the server.",
+                "pretty_name": "Search Command Status",
+            },
+        },
+    },
+}

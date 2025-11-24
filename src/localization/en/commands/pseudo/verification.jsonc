@@ -1,0 +1,46 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "verification": {
+        "pretty_name": "Verification System",
+        "description": "Verifies newly joined users to the server.",
+        "help": "Checks the account age of newly joined users and assigns a specific role to those below the limit.",
+        "settings": {
+            "settargetchannel": {
+                "description": "Sets the channel where verification messages will be sent.",
+                "display_name": "Target Channel",
+                "placeholder": "Select verification channel",
+                "pretty_name": "Set Target Channel",
+            },
+            "setverificationminimumage": {
+                "description": "Sets the minimum requirement for users' account age.",
+                "display_name": "Minimum Account Age (days)",
+                "invalid_age": "Invalid age value: {age}. Please enter a positive number.",
+                "placeholder": "Enter minimum account age in days",
+                "pretty_name": "Set Minimum Account Age",
+                "parameters": {
+                    "minimum_age": "Minimum Account Age (days)",
+                },
+            },
+            "setverificationrole": {
+                "description": "Sets the role to be assigned to unverified users.",
+                "display_name": "Verification Role",
+                "placeholder": "Select verification role",
+                "pretty_name": "Set Verification Role",
+                "role_hierarchy_error": "The selected role is above the bot role. Please select a different role.",
+            },
+            "setverificationsystemmessage": {
+                "description": "Customizes the verification system message.",
+                "display_name": "Verification Message",
+                "placeholder": "Enter verification message (Available variables: {variables})",
+                "pretty_name": "Set Verification Message",
+                "parameters": {
+                    "verification_message": "Verification Message",
+                },
+            },
+            "toggle": {
+                "description": "Enables or disables the verification system on the server.",
+                "pretty_name": "Verification System Status",
+            },
+        },
+    },
+}

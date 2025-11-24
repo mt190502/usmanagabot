@@ -8,13 +8,13 @@ export default class RandomizerCommand extends BaseCommand {
 
         (this.base_cmd_data as SlashCommandBuilder)
             .addStringOption((option) =>
-                option.setName('item_1').setDescription(this.t('randomizer.parameters.1')).setRequired(true),
+                option.setName('item_1').setDescription(this.t('parameters.first')).setRequired(true),
             )
             .addStringOption((option) =>
-                option.setName('item_2').setDescription(this.t('randomizer.parameters.2')).setRequired(true),
+                option.setName('item_2').setDescription(this.t('parameters.second')).setRequired(true),
             )
             .addStringOption((option) =>
-                option.setName('extra_items').setDescription(this.t('randomizer.parameters.other')).setRequired(false),
+                option.setName('extra_items').setDescription(this.t('parameters.other')).setRequired(false),
             );
     }
     // ================================================================ //
@@ -36,7 +36,7 @@ export default class RandomizerCommand extends BaseCommand {
 
         const random = choices[Math.floor(Math.random() * choices.length)];
         await interaction.reply({
-            content: this.t('randomizer.execute.result', { result: random }),
+            content: this.t('execute.result', { result: random }),
             allowedMentions: { parse: [] },
         });
         this.log.send('debug', 'command.execute.success', {

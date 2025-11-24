@@ -44,7 +44,7 @@ export default class HelpCommand extends BaseCommand {
             )
             .sort((a, b) => a[1].pretty_name.localeCompare(b[1].pretty_name));
         const payload = await this.paginator.generatePage(interaction.guild!.id, interaction.user.id, this.name, {
-            title: `:information_source: ${this.t('help.execute.main_title')}`,
+            title: `:information_source: ${this.t('execute.main_title')}`,
             color: 0x00ffff,
             items: commands.map(([, cmd]) => ({
                 name: cmd.name,
@@ -90,7 +90,7 @@ export default class HelpCommand extends BaseCommand {
             ...(CommandLoader.BotCommands.get('global')?.entries() || []),
         ].find(([, cmd]) => cmd.name === item_name)![1];
         const payload = await this.paginator.viewPage(interaction.guild!.id, interaction.user.id, this.name, {
-            title: `:information_source: ${this.t('help.execute.command_title', { command: command.pretty_name })}`,
+            title: `:information_source: ${this.t('execute.command_title', { command: command.pretty_name })}`,
             color: 0x00ffff,
             description: command.help || '<missing>',
         });

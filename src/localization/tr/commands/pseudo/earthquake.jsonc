@@ -1,0 +1,56 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "earthquake": {
+        "pretty_name": "Deprem Bildirici",
+        "description": "Belirtilen bölgede meydana gelen depremler hakkında bildirimler alır.",
+        "help": "Belirtilen bölgede meydana gelen depremler hakkında bildirimler alır.",
+        "execute": {
+            "coordinates": "Koordinatlar",
+            "id": "Kimlik",
+            "link": "Bağlantı",
+            "location": "Konum",
+            "magnitude": "Büyüklük",
+            "other_earthquakes": "Diğer Depremler İçin",
+            "source": "Kaynak",
+            "time": "Zaman",
+            "title": "Yeni Deprem Uyarısı!",
+        },
+        "settings": {
+            "setmagnitudelimit": {
+                "description": "Bildirim almak için minimum deprem büyüklüğünü ayarlar.",
+                "display_name": "Büyüklük Limiti",
+                "placeholder": "Minimum deprem büyüklüğünü seçin",
+                "pretty_name": "Büyüklük Limiti",
+            },
+            "setnotificationchannel": {
+                "description": "Deprem bildirimlerinin gönderileceği kanalı ayarlar.",
+                "display_name": "Bildirim Kanalı",
+                "placeholder": "Deprem bildirim kanalı seçin",
+                "pretty_name": "Bildirim Kanalı",
+            },
+            "setregioncode": {
+                "description": "Deprem bildirimleri konum bilgisi için bölge kodunu ayarlar.",
+                "display_name": "Bölge Kodu (api-bdc.net)",
+                "placeholder": "Bölge kodunu girin (örneğin: en, tr)",
+                "pretty_name": "Bölge Kodu (api-bdc.net)",
+                "parameters": {
+                    "region_code": "Bölge Kodu",
+                },
+            },
+            "setseismicportalapiurl": {
+                "description": "Kullanılacak Seismic Portal API URL'sini ayarlar.",
+                "display_name": "Seismic Portal API URL'si",
+                "placeholder": "Seismic Portal API URL'sini girin",
+                "pretty_name": "Seismic Portal API URL'si",
+                "invalid_url": "Geçersiz Seismic Portal API URL'si sağlandı.",
+                "parameters": {
+                    "seismicportal_api_url": "Seismic Portal API URL'si",
+                },
+            },
+            "toggle": {
+                "description": "Sunucuda deprem bildirici sistemini etkinleştirir veya devre dışı bırakır.",
+                "pretty_name": "Deprem Bildirici Aktifliği",
+            },
+        },
+    },
+}

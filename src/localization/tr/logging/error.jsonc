@@ -1,0 +1,29 @@
+{
+    "$schema": "../../../types/structure/schemas/logging.json",
+    "error": {
+        "command": {
+            "readCommandFiles": {
+                "database_metadata_missing": "Veritabanı meta verisi eksik, komut dosyaları okunamıyor.",
+            },
+            "registerGuilds": {
+                "database_save_failed": "Sunucular veritabanına kaydedilirken hata oluştu: {message}",
+                "no_guilds_found": "Botun ekli olduğu sunucu bulunamadı.",
+            },
+            "RESTCommandLoader": {
+                "failed": "REST komut yükleyici, \"{guild}\" sunucusu için başarısız oldu: \"{message}\"",
+            },
+        },
+        "services": {
+            "config": {
+                "parse": {
+                    "failed": "Yapılandırma dosyası ayrıştırılırken hata oluştu: {message}",
+                },
+            },
+            "database": {
+                "init": {
+                    "failed": "Veritabanı servisi başlatılırken hata oluştu: {message}",
+                },
+            },
+        },
+    },
+}

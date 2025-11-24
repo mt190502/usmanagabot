@@ -1,0 +1,45 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "search": {
+        "pretty_name": "Arama Komutu",
+        "description": "Belirtilen terim için arama yapar ve sonuçları döndürür.",
+        "help": "Belirtilen terim için arama linki döndürür.\n\n**Kullanım:**\n- `/search <motor> <sorgu>` - Belirtilen arama motorunda sorgu için arama yapar.\n\n**Örnekler:**\n- `/search engine:Google query:Sütlaç Tarifi` - Google'da 'Sütlaç Tarifi' için arama yapar.\n- `/search engine:DuckDuckGo query:En iyi programlama dilleri` - DuckDuckGo'da 'En iyi programlama dilleri' için arama yapar.",
+        "parameters": {
+            "engine_name": "Arama Motoru Adı",
+            "engine_url": "Arama Motoru URL'si",
+            "engine": "Arama motoru (örneğin: Google, DuckDuckGo)",
+            "query": "Arama sorgusu",
+        },
+        "settings": {
+            "addengine": {
+                "description": "Yeni bir arama motoru ekler.",
+                "duplicate_engine": "\"{name}\" arama motoru zaten mevcut.",
+                "pretty_name": "Arama Motoru Ekle",
+                "parameters": {
+                    "engine_name": "Arama motoru adı",
+                    "engine_url": "Arama motoru URL'si",
+                },
+            },
+            "editengine": {
+                "parameters": {
+                    "engine_name": "Arama motoru adı",
+                    "engine_url": "Arama motoru URL'si",
+                },
+                "description": "Mevcut bir arama motorunu düzenler.",
+                "display_name": "Arama Motorları",
+                "placeholder": "Düzenlenecek arama motorunu seçin",
+                "pretty_name": "Arama Motorunu Düzenle",
+                "title": "Arama Motorunu Düzenle: {name}",
+            },
+            "removeengine": {
+                "description": "Mevcut bir arama motorunu kaldırır.",
+                "placeholder": "Kaldırılacak arama motorunu seçin",
+                "pretty_name": "Arama Motorunu Kaldır",
+            },
+            "toggle": {
+                "description": "Sunucuda arama komutunu etkinleştirir veya devre dışı bırakır.",
+                "pretty_name": "Arama Komutu Aktifliği",
+            },
+        },
+    },
+}

@@ -1,0 +1,28 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "user_information": {
+        "pretty_name": "User Information",
+        "description": "Retrieves information about the specified user.",
+        "help": "Retrieves detailed information about the specified user.\n\n**Usage:**\n- `/user_information <user>` - Gets information about the specified user.\n\n**Examples:**\n- `/user_information @User1` - Gets information about @User1.\n- You can also right-click on a user's profile or message and select **Apps > User Information** to get user information.",
+        "parameters": {
+            "user": "Target user",
+        },
+        "execute": {
+            "account_info": "Account Information",
+            "created_at": "Account Created",
+            "header": "About {user}",
+            "id": "ID",
+            "joined_at": "Joined Server",
+            "nickname": "Nickname",
+            "no_roles": "No Roles",
+            "not_configured": "Introduction system is not properly configured. Please contact the server administrator.",
+            "rate_limited": "Daily introduction command limit reached. Please wait until {date}.",
+            "roles": "Roles",
+            "submission_successful": "Introduction successfully submitted.\nYou have **{remaining}** submissions remaining for today.\nIntroduction URL: {url}",
+            "updated": "Introduction Updated",
+            "user_not_found_in_guild": "User {user} was not found on this server.",
+            "username": "Username",
+            "validation_failed": "Please provide at least one value.",
+        },
+    },
+}

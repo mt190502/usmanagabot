@@ -1,0 +1,42 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "report": {
+        "pretty_name": "Rapor Sistemi",
+        "description": "Belirtilen mesajı moderatörlere rapor eder.",
+        "help": "Belirtilen mesajı moderatörlere raporlar.\n\n**Kullanım:**\n- `/report <kullanıcı> <sebep> [mesaj_url_listesi]` - Belirtilen kullanıcıyı ve sebebi moderatörlere raporlar. İsteğe bağlı olarak, bağlam sağlamak için bir veya daha fazla mesaj URL'si ekleyebilirsiniz.\n\n**Örnekler:**\n- `/report user:@Kullanıcı1 reason:Spam message_url:https://discord.com/channels/987654321098765432/123456789012345678/234567890123456789` - @Kullanıcı1'i spam nedeniyle raporlar ve belirtilen mesaj URL'sini bağlam olarak ekler.",
+        "parameters": {
+            "message_url_list": "Raporla ilgili mesaj URL'leri (virgülle ayrılmış)",
+            "reason": "Rapor sebebi",
+            "user": "Rapor edilecek kullanıcı",
+        },
+        "execute": {
+            "admin_report_description": ":mag: **Rapor**: {username} (ID {user_id})\n:page_facing_up: **Sebep**: {reason}\n:envelope: **Mesajlar**: {message_urls}\n:triangular_flag_on_post: **Kanal**: <#{channel_id}>",
+            "command_not_configured": "Rapor komutu yapılandırılmamış. Lütfen bir yönetici ile iletişime geçin.",
+            "invalid_url": "Geçersiz mesaj URL'si: {url}",
+            "message_not_found": "Kullanıcıya ait son mesaj alınamadı. Lütfen bir mesaj URL'si sağlayın.",
+            "user_reported_description": "**Kullanıcı**: {user} başarıyla rapor edildi.\n**Sebep**: {reason}",
+        },
+        "settings": {
+            "changemoderatorrole": {
+                "description": "Raporları alacak moderatör rolünü değiştirir.",
+                "display_name": "Moderatör Rolü",
+                "placeholder": "Moderatör rolü seçin",
+                "pretty_name": "Moderatör Rolünü Değiştir",
+            },
+            "changetargetchannel": {
+                "description": "Rapor bildirimlerinin gönderileceği kanalı değiştirir.",
+                "display_name": "Hedef Kanal",
+                "placeholder": "Rapor kanalı seçin",
+                "pretty_name": "Hedef Kanalı Değiştir",
+            },
+            "removemoderatorrole": {
+                "description": "Raporları alacak moderatör rolünü kaldırır.",
+                "pretty_name": "Moderatör Rolünü Kaldır",
+            },
+            "toggle": {
+                "description": "Sunucuda rapor sistemini etkinleştirir veya devre dışı bırakır.",
+                "pretty_name": "Rapor Sistemi Aktifliği",
+            },
+        },
+    },
+}

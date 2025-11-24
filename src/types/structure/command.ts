@@ -139,11 +139,11 @@ export abstract class BaseCommand {
     constructor(options: Partial<BaseCommand> & { name: string }) {
         this.enabled = options.enabled ?? true;
         this.name = options.name;
-        this.pretty_name = this.t(options.pretty_name ?? `${this.name}.pretty_name`) ?? 'No pretty name provided.';
-        this.description = this.t(options.description ?? `${this.name}.description`) ?? 'No description provided.';
+        this.pretty_name = this.t(options.pretty_name ?? 'pretty_name') ?? 'No pretty name provided.';
+        this.description = this.t(options.description ?? 'description') ?? 'No description provided.';
         this.is_admin_command = options.is_admin_command ?? false;
         this.is_bot_owner_command = options.is_bot_owner_command ?? false;
-        this.help = this.t(options.help ?? `${this.name}.help`) ?? 'No help provided.';
+        this.help = this.t(options.help ?? 'help') ?? 'No help provided.';
         this.cooldown = options.cooldown ?? 0;
         this.main_command_data = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
     }
@@ -274,8 +274,8 @@ export abstract class CustomizableCommand extends BaseCommand {
      */
     public async settingsUI(interaction: BaseInteraction | CommandInteraction): Promise<void> {
         const subsettings = Reflect.getMetadata('custom:settings', this.constructor);
-        const ui = new EmbedBuilder().setTitle(`:gear: ${this.t('settings.title', { command: this.pretty_name })}`);
-        const menu = new StringSelectMenuBuilder().setCustomId(`settings:${this.name}`);
+        const ui = new EmbedBuilder().setTitle(`:gear: ${this.t('settings.execute.title', { command: this.pretty_name })}`);
+        const menu = new StringSelectMenuBuilder().setCustomId(`settings:${this.name}`).setPlaceholder(this.t('settings.execute.placeholder'));
 
         if (this.warning) {
             ui.setColor(Colors.Yellow);
@@ -327,22 +327,22 @@ export abstract class CustomizableCommand extends BaseCommand {
                 let value;
                 if (typeof row === 'boolean') {
                     value = row
-                        ? `:green_circle: ${this.t('settings.true')}`
-                        : `:red_circle: ${this.t('settings.false')}`;
+                        ? `:green_circle: ${this.t('command.execute.true')}`
+                        : `:red_circle: ${this.t('command.execute.false')}`;
                 } else if (setting.db_column_is_array) {
                     value = setting.database_key
                         ? Array.isArray(row) && row.length > 0
                             ? row.length == 1 && row[0] === null
-                                ? `:orange_circle: ${this.t('settings.not_set')}`
+                                ? `:orange_circle: ${this.t('settings.execute.not_set')}`
                                 : row.map((val) => format(setting.format_specifier, val)).join(', ')
-                            : `:orange_circle: ${this.t('settings.not_set')}`
-                        : this.t('settings.view_in_edit_mode');
+                            : `:orange_circle: ${this.t('settings.execute.not_set')}`
+                        : this.t('settings.execute.view_in_edit_mode');
                 } else {
                     value = setting.database_key
                         ? row
                             ? format(setting.format_specifier, row ?? '')
-                            : `:orange_circle: ${this.t('settings.not_set')}`
-                        : this.t('settings.view_in_edit_mode');
+                            : `:orange_circle: ${this.t('settings.execute.not_set')}`
+                        : this.t('settings.execute.view_in_edit_mode');
                 }
                 ui.addFields({
                     name: setting.display_name,
@@ -356,8 +356,8 @@ export abstract class CustomizableCommand extends BaseCommand {
             });
         }
         menu.addOptions({
-            label: this.t('settings.back_to_main_menu'),
-            description: this.t('settings.back_to_main_menu_description'),
+            label: this.t('settings.execute.back_to_main_menu'),
+            description: this.t('settings.execute.back_to_main_menu_description'),
             value: 'command:settings',
         });
 
@@ -384,9 +384,9 @@ export abstract class CustomizableCommand extends BaseCommand {
                 ui.addFields({ name: '\u00A0', value: '' });
                 ui.setFooter({
                     iconURL: user ? user.displayAvatarURL() : undefined,
-                    text: this.t('settings.last_modified_by', {
-                        user: user ? user.tag : this.t('settings.unknown_user'),
-                        date: date ? date : this.t('settings.unknown_date'),
+                    text: this.t('settings.execute.last_modified_by', {
+                        user: user ? user.tag : this.t('settings.execute.unknown_user'),
+                        date: date ? date : this.t('settings.execute.unknown_date'),
                     }),
                 });
             }

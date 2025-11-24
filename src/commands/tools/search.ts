@@ -54,7 +54,7 @@ export default class SearchCommand extends CustomizableCommand {
             data.addStringOption((o) =>
                 o
                     .setName('engine')
-                    .setDescription(this.t('search.parameters.engine'))
+                    .setDescription(this.t('parameters.engine'))
                     .setRequired(true)
                     .addChoices({ name: 'Google', value: 'https://google.com/search?q=' })
                     .addChoices({ name: 'DuckDuckGo', value: 'https://duckduckgo.com/?q=' }),
@@ -63,13 +63,13 @@ export default class SearchCommand extends CustomizableCommand {
             data.addStringOption((o) =>
                 o
                     .setName('engine')
-                    .setDescription(this.t('search.parameters.engine'))
+                    .setDescription(this.t('parameters.engine'))
                     .setRequired(true)
                     .addChoices(...engines.map((engine) => ({ name: engine.engine_name, value: engine.engine_url }))),
             );
         }
         data.addStringOption((option) =>
-            option.setName('query').setDescription(this.t('search.parameters.query')).setRequired(true),
+            option.setName('query').setDescription(this.t('parameters.query')).setRequired(true),
         );
         this.base_cmd_data = data;
         this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
@@ -146,7 +146,7 @@ export default class SearchCommand extends CustomizableCommand {
         const name = interaction.fields.getTextInputValue('engine_name');
         const url = interaction.fields.getTextInputValue('engine_url');
         if (engines.find((e) => e.engine_name.toLowerCase() === name.toLowerCase())) {
-            this.warning = this.t('search.settings.addengine.duplicate_engine', { name });
+            this.warning = this.t('settings.addengine.duplicate_engine', { name });
             this.log.send('warn', 'command.search.addengine.duplicate_engine', {
                 name: this.name,
                 guild: interaction.guild,
@@ -181,6 +181,7 @@ export default class SearchCommand extends CustomizableCommand {
             enable: true,
             label_key: 'engine_name',
             description_key: 'engine_url',
+            include_cancel: true,
         },
         inputs: [
             {
@@ -237,7 +238,7 @@ export default class SearchCommand extends CustomizableCommand {
                     new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                         new StringSelectMenuBuilder()
                             .setCustomId('settings:search:removeengine')
-                            .setPlaceholder(this.t('search.settings.removeengine.placeholder'))
+                            .setPlaceholder(this.t('settings.removeengine.placeholder'))
                             .addOptions(
                                 ...engines.map((engine) => ({
                                     label: engine.engine_name,
@@ -245,8 +246,8 @@ export default class SearchCommand extends CustomizableCommand {
                                     value: `settings:search:removeengine:${engine.engine_name}`,
                                 })),
                                 {
-                                    label: this.t('search.settings.cancel'),
-                                    description: this.t('search.settings.cancel_description'),
+                                    label: this.t('command.settings.cancel.display_name'),
+                                    description: this.t('command.settings.cancel.description'),
                                     value: 'settings:search',
                                 },
                             ),

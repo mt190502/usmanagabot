@@ -1,0 +1,44 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "command.json",
+    "title": "Command Translations",
+    "description": "Translation strings for a specific command",
+    "type": "object",
+    "patternProperties": {
+        "^[a-z_]+$": {
+            "type": "object",
+            "properties": {
+                "$schema": { "type": "string" },
+                "description": { "type": "string" },
+                "pretty_name": { "type": "string" },
+                "help": { "type": "string" },
+                "parameters": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^[a-zA-Z0-9_]+$": { "type": ["object", "string"] }
+                    }
+                },
+                "execute": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^[a-zA-Z0-9_]+$": { "type": ["object", "string"] }
+                    }
+                },
+                "events": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^[a-zA-Z0-9_]+$": { "type": ["object", "string"] }
+                    }
+                },
+                "settings": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^[a-zA-Z0-9_]+$": { "type": ["object", "string"] }
+                    }
+                }
+            },
+            "required": ["description", "pretty_name", "help"],
+            "additionalProperties": true
+        }
+    }
+}

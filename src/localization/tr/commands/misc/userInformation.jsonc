@@ -1,0 +1,28 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "user_information": {
+        "pretty_name": "Kullanıcı Bilgisi",
+        "description": "Belirtilen kullanıcı hakkında bilgileri alır.",
+        "help": "Belirtilen kullanıcı hakkında detaylı bilgileri alır.\n\n**Kullanım:**\n- `/user_information <kullanıcı>` - Belirtilen kullanıcı hakkında bilgi alır.\n\n**Örnekler:**\n- `/user_information @Kullanıcı1` - @Kullanıcı1 hakkında bilgi alır.\n- Kullanıcı profiline veya mesajına sağ tıklayıp **Uygulamalar > Kullanıcı Bilgisi** seçeneğini kullanarak da kullanıcı bilgisi alabilirsiniz.",
+        "parameters": {
+            "user": "Hedef kullanıcı",
+        },
+        "execute": {
+            "account_info": "Hesap Bilgileri",
+            "created_at": "Hesap Oluşturulma Tarihi",
+            "header": "{user} Hakkında",
+            "id": "ID",
+            "joined_at": "Sunucuya Katılma Tarihi",
+            "nickname": "Takma Ad",
+            "no_roles": "Rol Yok",
+            "not_configured": "Tanıtım sistemi düzgün bir şekilde ayarlanmamış. Lütfen sunucu yöneticisi ile iletişime geçin.",
+            "rate_limited": "Günlük tanıtım komutu limitine ulaşıldı. Lütfen {date} tarihine kadar bekleyin.",
+            "roles": "Roller",
+            "submission_successful": "Tanıtım başarıyla gönderildi.\nBugün için **{remaining}** gönderim hakkınız kaldı.\nTanıtım URL'si: {url}",
+            "updated": "Tanıtım Güncellendi",
+            "user_not_found_in_guild": "{user} kullanıcısı bu sunucuda bulunamadı.",
+            "username": "Kullanıcı Adı",
+            "validation_failed": "Lütfen en az bir değer sağlayın.",
+        },
+    },
+}

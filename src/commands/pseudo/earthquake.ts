@@ -85,46 +85,46 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
                 ).locality;
 
                 const post = new EmbedBuilder();
-                post.setTitle(`:warning: ${this.t('earthquake.execute.title')}`);
+                post.setTitle(`:warning: ${this.t('execute.title')}`);
                 post.setColor(Colors.Yellow);
                 post.setTimestamp();
                 post.addFields(
                     {
-                        name: this.t('earthquake.execute.time'),
+                        name: this.t('execute.time'),
                         value: new Date(eq.properties.time).toLocaleString(),
                         inline: true,
                     },
                     {
-                        name: this.t('earthquake.execute.id'),
+                        name: this.t('execute.id'),
                         value: eq.id,
                         inline: true,
                     },
                     {
-                        name: this.t('earthquake.execute.location'),
+                        name: this.t('execute.location'),
                         value: geo_translate || 'Unknown',
                         inline: true,
                     },
                     {
-                        name: this.t('earthquake.execute.source'),
+                        name: this.t('execute.source'),
                         value: eq.properties.auth,
                         inline: true,
                     },
                     {
-                        name: this.t('earthquake.execute.magnitude'),
+                        name: this.t('execute.magnitude'),
                         value: eq.properties.mag.toString(),
                         inline: true,
                     },
                     {
-                        name: this.t('earthquake.execute.coordinates'),
+                        name: this.t('execute.coordinates'),
                         value: `Latitude: ${eq.properties.lat}\nLongitude: ${eq.properties.lon}`,
                         inline: true,
                     },
                     {
-                        name: this.t('earthquake.execute.link'),
+                        name: this.t('execute.link'),
                         value: `https://www.seismicportal.eu/eventdetails.html?unid=${eq.id}`,
                     },
                     {
-                        name: this.t('earthquake.execute.other_earthquakes'),
+                        name: this.t('execute.other_earthquakes'),
                         value: 'https://deprem.core.xeome.dev',
                     },
                 );
@@ -241,7 +241,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
                     .addComponents(
                         new StringSelectMenuBuilder()
                             .setCustomId('settings:earthquake:setmagnitude')
-                            .setPlaceholder(this.t('earthquake.settings.setmagnitudelimit.placeholder'))
+                            .setPlaceholder(this.t('settings.setmagnitudelimit.placeholder'))
                             .addOptions(
                                 ['1.0', '1.5', '2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0'].map((magnitude) => ({
                                     label: magnitude,
@@ -275,6 +275,17 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
         const api_url = interaction.fields.getTextInputValue('seismicportal_api_url');
+        if (!api_url.match(/^https?:\/\/(www\.)?seismicportal\.eu\/fdsnws\/event\/1\/query.*/)) {
+            this.log.send('debug', 'command.earthquake.settings.invalid_url', {
+                guild: interaction.guild,
+                user: interaction.user,
+                url: api_url,
+            });
+            this.warning = this.t('settings.setseismicportalapiurl.invalid_url');
+            await this.settingsUI(interaction);
+            return;
+        }
+
         earthquake!.seismicportal_api_url = api_url;
         earthquake!.latest_action_from_user = user;
         earthquake!.timestamp = new Date();

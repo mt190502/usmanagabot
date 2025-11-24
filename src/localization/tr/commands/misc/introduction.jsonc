@@ -1,0 +1,63 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "introduction": {
+        "pretty_name": "Tanıtım",
+        "description": "Kullanıcı tanıtım bilgilerini oluşturur ve yönetir.",
+        "help": "Kullanıcıya özel tanıtım bilgilerini oluşturur\n\n**Kullanım:**\n- `/introduction <parametreler>` - Tanıtım bilgilerini oluşturur veya günceller.\n\n**Örnekler:**\n- `/introduction os:linux de:gnome` - Tanıtım bilgilerini 'os:linux de:gnome' olarak ayarlar.\n - `/introduction car:peugeot bike:yamaha` - Tanıtım bilgilerini 'car:peugeot bike:yamaha' olarak ayarlar.",
+        "execute": {
+            "account_info": "Hesap Bilgileri",
+            "created_at": "Hesap Oluşturulma Tarihi",
+            "header": "{user} Hakkında",
+            "id": "ID",
+            "joined_at": "Sunucuya Katılma Tarihi",
+            "nickname": "Takma Ad",
+            "no_roles": "Rol Yok",
+            "not_configured": "Tanıtım sistemi düzgün bir şekilde ayarlanmamış. Lütfen sunucu yöneticisi ile iletişime geçin.",
+            "rate_limited": "Günlük tanıtım komutu limitine ulaşıldı. Lütfen {date} tarihine kadar bekleyin.",
+            "roles": "Roller",
+            "submission_successful": "Tanıtım başarıyla gönderildi.\nBugün için **{remaining}** gönderim hakkınız kaldı.\nTanıtım URL'si: {url}",
+            "updated": "Tanıtım Güncellendi",
+            "username": "Kullanıcı Adı",
+            "validation_failed": "Lütfen en az bir değer sağlayın.",
+        },
+        "settings": {
+            "changetargetchannel": {
+                "description": "Tanıtım gönderilerinin gönderileceği kanalı değiştirir.",
+                "display_name": "Hedef Kanal",
+                "placeholder": "Hedef tanıtım kanalı seçin",
+                "pretty_name": "Hedef Kanalı Değiştir",
+            },
+            "customizecolumns": {
+                "description": "Tanıtım komutu sütunlarının adlarını ve açıklamalarını özelleştirir.",
+                "duplicated": "{column} sütun adı birden fazla kez kullanılamaz.",
+                "parameters": {
+                    "column_names_placeholder": "- name: anahtar\n   value: değer\n(maksimum 8 sütun)",
+                    "column_names": "Sütun Adları",
+                },
+                "pretty_name": "Sütunları Özelleştir",
+            },
+            "customizecommand": {
+                "description": "Bu sunucu için tanıtım komutunun adını ve açıklamasını özelleştirir.",
+                "parameters": {
+                    "cmd_desc": "Komut Açıklaması",
+                    "cmd_name": "Komut Adı",
+                },
+                "pretty_name": "Tanıtım Komutunu Özelleştir",
+            },
+            "setdailysubmissionlimit": {
+                "description": "Kullanıcıların günlük tanıtım gönderim limitini ayarlar.",
+                "display_name": "Günlük Gönderim Limiti",
+                "limit_range": "Limit 1 ile 100 arasında olmalıdır.",
+                "parameters": {
+                    "label": "Günlük Gönderim Limiti (1-100)",
+                    "daily_limit": "Günlük Gönderim Limiti",
+                },
+                "pretty_name": "Günlük Gönderim Limitini Ayarla",
+            },
+            "toggle": {
+                "description": "Sunucuda tanıtım komutunu etkinleştirir veya devre dışı bırakır.",
+                "pretty_name": "Tanıtım Komutu Aktifliği",
+            },
+        },
+    },
+}

@@ -1,0 +1,51 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "message_logger": {
+        "pretty_name": "Mesaj Günlüğü",
+        "description": "Belirtilen mesajın içeriğini ve eklerini günlüğe kaydeder.",
+        "help": "Bulunan sunucudaki mesaj günlüğü sistemini yönetir.\n\n**Kullanım:**\n- `/message_logger <message_id|message_url>`: Belirtilen mesajın kaydedilmiş linkini döndürür.\n- Bir mesajın üzerine sağ tıklayıp **Uygulamalar > Mesaj Günlüğü** seçeneğini kullanarak da mesaj günlüğü kaydı alabilirsiniz.",
+        "parameters": {
+            "message_id": "Mesaj ID'si veya URL'si",
+        },
+        "execute": {
+            "invalid_input_description": "Girilen değer geçerli bir mesaj ID'si veya URL'si değil: {input}",
+            "invalid_input": "Geçersiz Giriş",
+            "message_found_description": "`{message_id}` ID'sine sahip mesaj bulundu: https://discord.com/channels/{guild_id}/{channel_id}/{message_in_logger}",
+            "message_found": "Mesaj Bulundu",
+            "message_not_found_description": "`{message_id}` ID'sine sahip mesaj günlüğe kaydedilmemiş.",
+            "message_not_found": "Mesaj Bulunamadı",
+        },
+        "events": {
+            "onmessagecreate": {
+                "reply": "Alıntı",
+                "stickers": "Çıkartmalar",
+            },
+            "onmessagedelete": {
+                "deleted_message": "Silinen Mesaj",
+            },
+            "onmessageupdate": {
+                "new_attachments": "Yeni Ekler",
+                "new_message": "Yeni Mesaj",
+                "updated_message": "Güncellenen Mesaj",
+            },
+        },
+        "settings": {
+            "manageignoredchannels": {
+                "description": "Mesaj günlüğü sisteminin yoksayacağı kanalları yönetir.",
+                "display_name": "Yoksayılan Kanallar",
+                "placeholder": "Mesaj günlüğü için yoksayılacak kanalları seçin",
+                "pretty_name": "Yoksayılan Kanalları Yönet",
+            },
+            "setlogchannel": {
+                "description": "Mesaj günlüğü kayıtlarının gönderileceği kanalı ayarlar.",
+                "display_name": "Günlük Kanalı",
+                "placeholder": "Mesaj günlüğü için bir kanal seçin",
+                "pretty_name": "Günlük Kanalını Ayarla",
+            },
+            "toggle": {
+                "description": "Sunucuda mesaj günlüğü sistemini etkinleştirir veya devre dışı bırakır.",
+                "pretty_name": "Mesaj Günlüğü Aktifliği",
+            },
+        },
+    },
+}

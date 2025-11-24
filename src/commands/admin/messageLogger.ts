@@ -37,7 +37,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             .addStringOption((option) =>
                 option
                     .setName('message_id')
-                    .setDescription(this.t('message_logger.parameters.message_id')!)
+                    .setDescription(this.t('parameters.message_id')!)
                     .setRequired(true),
             ) as SlashCommandBuilder;
         this.push_cmd_data = new ContextMenuCommandBuilder()
@@ -88,8 +88,8 @@ export default class MessageLoggerCommand extends CustomizableCommand {
                 message_id = input;
             } else {
                 post.setColor(Colors.Yellow)
-                    .setTitle(`:warning: ${this.t('message_logger.execute.invalid_input')}`)
-                    .setDescription(this.t('message_logger.execute.invalid_input_description', { input })!);
+                    .setTitle(`:warning: ${this.t('execute.invalid_input')}`)
+                    .setDescription(this.t('execute.invalid_input_description', { input })!);
                 await interaction.reply({
                     embeds: [post],
                     flags: MessageFlags.Ephemeral,
@@ -108,8 +108,8 @@ export default class MessageLoggerCommand extends CustomizableCommand {
 
         if (!message_in_logger) {
             post.setColor(Colors.Yellow)
-                .setTitle(`:warning: ${this.t('message_logger.execute.message_not_found')}`)
-                .setDescription(this.t('message_logger.execute.message_not_found_description', { message_id })!);
+                .setTitle(`:warning: ${this.t('execute.message_not_found')}`)
+                .setDescription(this.t('execute.message_not_found_description', { message_id })!);
             await interaction.reply({
                 embeds: [post],
                 flags: MessageFlags.Ephemeral,
@@ -123,9 +123,9 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         }
 
         post.setColor(Colors.Green)
-            .setTitle(`:mag: ${this.t('message_logger.execute.message_found')}`)
+            .setTitle(`:mag: ${this.t('execute.message_found')}`)
             .setDescription(
-                this.t('message_logger.execute.message_found_description', {
+                this.t('execute.message_found_description', {
                     message_id,
                     guild_id: logger.from_guild.gid,
                     channel_id: logger.channel_id,
@@ -192,12 +192,12 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             const url = ref_message
                 ? `https://discord.com/channels/${ref_message.from_guild.gid}/${logger.channel_id}/${ref_message.logged_message_id}`
                 : `https://discord.com/channels/${message.guild!.id}/${message.channel.id}/${message.reference.messageId}`;
-            content += ` | [${this.t('message_logger.onmessagecreate.reply')}](${url})`;
+            content += ` | [${this.t('events.onmessagecreate.reply')}](${url})`;
         }
 
         if (message.stickers.size > 0) {
             content +=
-                ` | ${this.t('message_logger.onmessagecreate.stickers')}: ` +
+                ` | ${this.t('events.onmessagecreate.stickers')}: ` +
                 message.stickers.map((sticker) => sticker.url).join('\n');
             content += '\n';
         }
@@ -260,7 +260,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             where: { message_id: BigInt(message.id) },
         });
         const embed = new EmbedBuilder()
-            .setTitle(this.t('message_logger.onmessagedelete.deleted_message'))
+            .setTitle(this.t('events.onmessagedelete.deleted_message'))
             .setColor(Colors.Red)
             .setTimestamp();
         if (db_message?.logged_message_id) {
@@ -289,15 +289,15 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         await setTimeout(500);
 
         const embed = new EmbedBuilder()
-            .setTitle(this.t('message_logger.onmessageupdate.updated_message'))
+            .setTitle(this.t('events.onmessageupdate.updated_message'))
             .setColor(Colors.Yellow)
             .setTimestamp()
             .setDescription(
                 (new_message.content !== ''
-                    ? `**${this.t('message_logger.onmessageupdate.new_message')}:**\n${new_message.content}\n\n`
+                    ? `**${this.t('events.onmessageupdate.new_message')}:**\n${new_message.content}\n\n`
                     : '') +
                     (new_message.attachments.size > 0
-                        ? `**${this.t('message_logger.onmessageupdate.new_attachments')}:**\n${new_message.attachments.map((a) => a.url).join('\n')}`
+                        ? `**${this.t('events.onmessageupdate.new_attachments')}:**\n${new_message.attachments.map((a) => a.url).join('\n')}`
                         : ''),
             );
         const db_message = await this.db.findOne(Messages, {

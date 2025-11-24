@@ -1,0 +1,29 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "botsettings": {
+        "pretty_name": "Bot",
+        "description": "Bot genel ayarlarını yönetir.",
+        "help": "Bot genel ayarlarını yönetir.\n\n**Kullanım:**\n- Ayarlar menüsünden `/settings` komutu ile erişilebilir.\n- Sadece bot sahibi bu ayarları görebilir.",
+        "settings": {
+            "managerandomstatuses": {
+                "description": "Botun rastgele durum mesajlarını yönetir.",
+                "display_name": "Rastgele Durum Mesajları",
+                "pretty_name": "Rastgele Durum Mesajlarını Yönet",
+                "parameters": {
+                    "bot_random_statuses": "Rastgele Durum Mesajları (virgülle ayrılmış)",
+                },
+            },
+            "setrandomstatusinterval": {
+                "description": "Botun durum mesajlarını ne sıklıkla değiştireceğini belirler.",
+                "display_name": "Rastgele Durum Değiştirme Aralığı (dakika)",
+                "placeholder": "Durum değiştirme aralığını seçin",
+                "pretty_name": "Rastgele Durum Değiştirme Aralığı",
+            },
+            "togglerandomstatus": {
+                "description": "Botun rastgele durum mesajlarını etkinleştirir veya devre dışı bırakır.",
+                "display_name": "Rastgele Durum Mesajları Aktifliği",
+                "pretty_name": "Rastgele Durum Mesajlarını Etkinleştir",
+            },
+        },
+    },
+}

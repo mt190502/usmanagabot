@@ -1,0 +1,57 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "alias": {
+        "pretty_name": "Takma Ad Sistemi",
+        "description": "Çeşitli takma adlar oluşturur ve yönetir.",
+        "help": "Çeşitli takma adlar oluşturur ve yönetir.\n\n**Kullanım:**\n- `/alias add <isim> <içerik> <seçenekler>` - Yeni bir takma ad oluşturur.\n- `/alias list` - Mevcut takma adlarını listeler.\n- `/alias modify <name> <content?> <options?>` - Mevcut bir takma ad üzerinde değişiklik yapar.\n- `/alias remove <name>` - Mevcut bir takma adı kaldırır.",
+        "add": {
+            "alias_exists": "\"{alias}\" takma adı zaten mevcut. Lütfen farklı bir isim seçin.",
+            "success": "\"{alias}\" takma adı başarıyla oluşturuldu.",
+        },
+        "alias_not_found": "\"{alias}\" takma adı bulunamadı.",
+        "handlepageitem": {
+            "casesensitive": "Büyük/Küçük Harf Duyarlılığı",
+            "content": "İçerik",
+            "messageconsistsonlyofword": "Mesaj Sadece Bu Kelimeden Oluşmalı",
+            "name": "İsim",
+            "useregex": "Düzenli İfade (Regex) Kullanımı",
+        },
+        "list": {
+            "no_aliases": "Bu sunucuda tanımlanmış takma ad yok.",
+            "title": "Takma Ad Listesi",
+        },
+        "modify": {
+            "success": "\"{alias_name}\" takma adı başarıyla güncellendi.",
+        },
+        "parameters": {
+            "casesensitive": "Büyük/küçük harf duyarlılığı",
+            "content": "Takma ad içeriği ({variables})",
+            "messageconsistsonlyofword": "Mesaj sadece bu kelimeden oluşmalı",
+            "name": "Takma ad ismi",
+            "useregex": "İçerik bir düzenli ifade (regex) olarak işlenecek",
+        },
+        "remove": {
+            "success": "\"{alias}\" takma adı başarıyla kaldırıldı.",
+        },
+        "settings": {
+            "toggle": {
+                "description": "Sunucuda takma ad sistemini etkinleştirir veya devre dışı bırakır.",
+                "pretty_name": "Takma Ad Sistemi Aktifliği",
+            },
+        },
+        "subcommands": {
+            "add": {
+                "description": "Takma ad ekle",
+            },
+            "list": {
+                "description": "Takma adları listele",
+            },
+            "modify": {
+                "description": "Takma ad değiştir",
+            },
+            "remove": {
+                "description": "Takma ad kaldır",
+            },
+        },
+    },
+}
