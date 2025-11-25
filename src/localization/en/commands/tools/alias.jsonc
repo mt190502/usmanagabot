@@ -13,22 +13,22 @@
             "casesensitive": "Case Sensitivity",
             "content": "Content",
             "messageconsistsonlyofword": "Message Must Consist Only of This Word",
+            "messageincludesthisword": "Message Must Include This Word",
             "name": "Name",
-            "useregex": "Use Regular Expression (Regex)",
         },
         "list": {
             "no_aliases": "No aliases defined on this server.",
             "title": "Alias List",
         },
         "modify": {
-            "success": "Alias \"{alias_name}\" successfully updated.",
+            "success": "Alias \"{alias}\" successfully updated.",
         },
         "parameters": {
             "casesensitive": "Case sensitivity",
             "content": "Alias content ({variables})",
             "messageconsistsonlyofword": "Message must consist only of this word",
+            "messageincludesthisword": "Message must include this word",
             "name": "Alias name",
-            "useregex": "Content will be processed as a regular expression (regex)",
         },
         "remove": {
             "success": "Alias \"{alias}\" successfully removed.",

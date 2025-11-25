@@ -86,7 +86,10 @@ export default class AliasCommand extends CustomizableCommand {
                         .setRequired(false),
                 )
                 .addBooleanOption((option) =>
-                    option.setName('use_regex').setDescription(this.t('parameters.useregex')).setRequired(false),
+                    option
+                        .setName('message_includes_this_word')
+                        .setDescription(this.t('parameters.messageincludesthisword'))
+                        .setRequired(false),
                 ),
         );
         (this.base_cmd_data as SlashCommandBuilder).addSubcommand((subcommand) =>
@@ -94,10 +97,7 @@ export default class AliasCommand extends CustomizableCommand {
                 .setName('remove')
                 .setDescription(this.t('subcommands.remove.description'))
                 .addStringOption((option) =>
-                    option
-                        .setName('alias_name')
-                        .setDescription(this.t('parameters.name'))
-                        .setRequired(true)
+                    option.setName('alias_name').setDescription(this.t('parameters.name')).setRequired(true),
                 ),
         );
 
@@ -106,10 +106,7 @@ export default class AliasCommand extends CustomizableCommand {
                 .setName('modify')
                 .setDescription(this.t('subcommands.modify.description'))
                 .addStringOption((option) =>
-                    option
-                        .setName('alias_name')
-                        .setDescription(this.t('parameters.name'))
-                        .setRequired(true)
+                    option.setName('alias_name').setDescription(this.t('parameters.name')).setRequired(true),
                 )
                 .addStringOption((option) =>
                     option
@@ -135,7 +132,10 @@ export default class AliasCommand extends CustomizableCommand {
                         .setRequired(false),
                 )
                 .addBooleanOption((option) =>
-                    option.setName('use_regex').setDescription(this.t('parameters.useregex')).setRequired(false),
+                    option
+                        .setName('message_includes_this_word')
+                        .setDescription(this.t('parameters.messageincludesthisword'))
+                        .setRequired(false),
                 ),
         );
     }
@@ -176,7 +176,7 @@ export default class AliasCommand extends CustomizableCommand {
         const alias_content = interaction.options.getString('alias_content');
         const case_sensitive = interaction.options.getBoolean('case_sensitive') ?? false;
         const consists_only_of_word = interaction.options.getBoolean('message_consists_only_of_word') ?? false;
-        const use_regex = interaction.options.getBoolean('use_regex') ?? false;
+        const includes_this_word = interaction.options.getBoolean('message_includes_this_word') ?? false;
 
         const existing_alias = aliases.find((alias) => alias.name === alias_name);
         if (existing_alias) {
@@ -197,7 +197,7 @@ export default class AliasCommand extends CustomizableCommand {
         new_alias.content = alias_content!;
         new_alias.case_sensitive = case_sensitive;
         new_alias.consists_only_of_word = consists_only_of_word;
-        new_alias.use_regex = use_regex;
+        new_alias.includes_this_word = includes_this_word;
         new_alias.from_user = (await this.db.getUser(BigInt(interaction.user.id)))!;
         new_alias.from_channel = (await this.db.findOne(Channels, {
             where: { cid: BigInt(interaction.channelId) },
@@ -317,38 +317,6 @@ export default class AliasCommand extends CustomizableCommand {
         });
     }
 
-    @HandleAction('pageitem')
-    public async handlePageItem(interaction: ButtonInteraction, item_name: string): Promise<void> {
-        this.log.send('debug', 'command.handlePageItem.start', {
-            name: this.name,
-            guild: interaction.guild,
-            user: interaction.user,
-        });
-        const alias = await this.db.findOne(Aliases, {
-            where: { name: item_name, from_guild: { gid: BigInt(interaction.guild!.id) } },
-        });
-        const payload = await this.paginator.viewPage(interaction.guild!.id, interaction.user.id, this.name, {
-            title: `:notepad_spiral: ${alias!.name}`,
-            color: 0x00ffff,
-            description: `
-                **${this.t('handlepageitem.name')}:** \`${alias!.name}\`
-                **${this.t('handlepageitem.content')}:**\n\`\`\`${alias!.content}\`\`\`
-                **${this.t('handlepageitem.casesensitive')}:** ${alias!.case_sensitive ? `:green_circle: ${this.t('command.execute.true')}` : `:red_circle: ${this.t('command.execute.false')}`}
-                **${this.t('handlepageitem.messageconsistsonlyofword')}:** ${alias!.consists_only_of_word ? `:green_circle: ${this.t('command.execute.true')}` : `:red_circle: ${this.t('command.execute.false')}`}
-                **${this.t('handlepageitem.useregex')}:** ${alias!.use_regex ? `:green_circle: ${this.t('command.execute.true')}` : `:red_circle: ${this.t('command.execute.false')}`}
-            `,
-        });
-        await interaction.update({
-            embeds: payload.embeds,
-            components: payload.components,
-        });
-        this.log.send('debug', 'command.handlePageItem.success', {
-            name: this.name,
-            guild: interaction.guild,
-            user: interaction.user,
-        });
-    }
-
     private async modify(interaction: ChatInputCommandInteraction): Promise<void> {
         this.log.send('debug', 'command.execute.subcommand.start', {
             name: this.name,
@@ -360,7 +328,7 @@ export default class AliasCommand extends CustomizableCommand {
         const alias_content = interaction.options.getString('alias_content');
         const case_sensitive = interaction.options.getBoolean('case_sensitive');
         const consists_only_of_word = interaction.options.getBoolean('message_consists_only_of_word');
-        const use_regex = interaction.options.getBoolean('use_regex');
+        const includes_this_word = interaction.options.getBoolean('message_includes_this_word');
 
         const alias = await this.db.findOne(Aliases, {
             where: { name: alias_name, from_guild: { gid: BigInt(interaction.guildId!) } },
@@ -381,7 +349,7 @@ export default class AliasCommand extends CustomizableCommand {
         if (alias_content !== null && alias_content.length > 0) alias.content = alias_content;
         if (case_sensitive !== null) alias.case_sensitive = case_sensitive;
         if (consists_only_of_word !== null) alias.consists_only_of_word = consists_only_of_word;
-        if (use_regex !== null) alias.use_regex = use_regex;
+        if (includes_this_word !== null) alias.includes_this_word = includes_this_word;
         await this.db.save(Aliases, alias);
         await interaction.reply({
             content: this.t('modify.success', { alias: alias_name }),
@@ -392,6 +360,38 @@ export default class AliasCommand extends CustomizableCommand {
             guild: interaction.guild,
             user: interaction.user,
             subcommand: 'modify',
+        });
+    }
+
+    @HandleAction('pageitem')
+    public async handlePageItem(interaction: ButtonInteraction, item_name: string): Promise<void> {
+        this.log.send('debug', 'command.handlePageItem.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
+        const alias = await this.db.findOne(Aliases, {
+            where: { name: item_name, from_guild: { gid: BigInt(interaction.guild!.id) } },
+        });
+        const payload = await this.paginator.viewPage(interaction.guild!.id, interaction.user.id, this.name, {
+            title: `:notepad_spiral: ${alias!.name}`,
+            color: 0x00ffff,
+            description: `
+                **${this.t('handlepageitem.name')}:** \`${alias!.name}\`
+                **${this.t('handlepageitem.content')}:**\n\`\`\`${alias!.content}\`\`\`
+                **${this.t('handlepageitem.casesensitive')}:** ${alias!.case_sensitive ? `:green_circle: ${this.t('command.execute.true')}` : `:red_circle: ${this.t('command.execute.false')}`}
+                **${this.t('handlepageitem.messageconsistsonlyofword')}:** ${alias!.consists_only_of_word ? `:green_circle: ${this.t('command.execute.true')}` : `:red_circle: ${this.t('command.execute.false')}`}
+                **${this.t('handlepageitem.messageincludesthisword')}:** ${alias!.includes_this_word ? `:green_circle: ${this.t('command.execute.true')}` : `:red_circle: ${this.t('command.execute.false')}`}
+            `,
+        });
+        await interaction.update({
+            embeds: payload.embeds,
+            components: payload.components,
+        });
+        this.log.send('debug', 'command.handlePageItem.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
         });
     }
 
@@ -428,21 +428,12 @@ export default class AliasCommand extends CustomizableCommand {
                 message_content = message_content.toLowerCase();
                 alias_name = alias_name.toLowerCase();
             }
-
-            if (alias.use_regex) {
-                const regex = new RegExp(alias_name, alias.case_sensitive ? 'g' : 'gi');
-                if (alias.consists_only_of_word) {
-                    const word_boundary_regex = new RegExp(`^${regex.source}$`, regex.flags);
-                    match = word_boundary_regex.test(message_content);
-                } else {
-                    match = regex.test(message_content);
-                }
+            if (alias.includes_this_word) {
+                match = message_content.split(' ').includes(alias_name);
+            } else if (alias.consists_only_of_word) {
+                match = alias_name == message_content;
             } else {
-                if (alias.consists_only_of_word) {
-                    match = alias_name == message_content;
-                } else {
-                    match = message_content.includes(alias_name);
-                }
+                match = message_content.includes(alias_name);
             }
 
             if (match) {

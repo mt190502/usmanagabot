@@ -41,7 +41,7 @@ export class Aliases {
     consists_only_of_word!: boolean;
 
     @Column({ type: 'boolean', nullable: false, default: false })
-    use_regex!: boolean;
+    includes_this_word!: boolean;
 
     @ManyToOne(() => Users, { nullable: false, eager: true })
     @JoinColumn({ name: 'from_user', referencedColumnName: 'id' })

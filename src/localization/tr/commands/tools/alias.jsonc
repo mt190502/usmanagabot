@@ -13,22 +13,22 @@
             "casesensitive": "Büyük/Küçük Harf Duyarlılığı",
             "content": "İçerik",
             "messageconsistsonlyofword": "Mesaj Sadece Bu Kelimeden Oluşmalı",
+            "messageincludesthisword": "Mesaj Bu Kelimeyi İçermeli",
             "name": "İsim",
-            "useregex": "Düzenli İfade (Regex) Kullanımı",
         },
         "list": {
             "no_aliases": "Bu sunucuda tanımlanmış takma ad yok.",
             "title": "Takma Ad Listesi",
         },
         "modify": {
-            "success": "\"{alias_name}\" takma adı başarıyla güncellendi.",
+            "success": "\"{alias}\" takma adı başarıyla güncellendi.",
         },
         "parameters": {
             "casesensitive": "Büyük/küçük harf duyarlılığı",
             "content": "Takma ad içeriği ({variables})",
             "messageconsistsonlyofword": "Mesaj sadece bu kelimeden oluşmalı",
+            "messageincludesthisword": "Mesaj bu kelimeyi içermeli",
             "name": "Takma ad ismi",
-            "useregex": "İçerik bir düzenli ifade (regex) olarak işlenecek",
         },
         "remove": {
             "success": "\"{alias}\" takma adı başarıyla kaldırıldı.",
