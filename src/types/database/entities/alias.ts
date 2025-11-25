@@ -28,7 +28,7 @@ export class Aliases {
     @PrimaryGeneratedColumn({ type: 'smallint' })
     id!: number;
 
-    @Column({ type: 'varchar', length: 20, nullable: false })
+    @Column({ type: 'varchar', length: 100, nullable: false })
     name!: string;
 
     @Column({ type: 'varchar', length: 512, nullable: false })
