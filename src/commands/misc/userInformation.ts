@@ -11,8 +11,20 @@ import {
     User,
 } from 'discord.js';
 import { Introduction, IntroductionSubmit } from '../../types/database/entities/introduction';
+import { Log } from '../../types/decorator/log';
 import { BaseCommand } from '../../types/structure/command';
 
+/**
+ * Displays comprehensive information about a user.
+ *
+ * This command gathers and presents a user's profile information in an embed.
+ * It works as a slash command, a user context menu command, and a message context menu command.
+ *
+ * The information includes:
+ * - The user's latest introduction data, if the `introduction` command is configured.
+ * - Standard Discord account details (username, ID, creation date, server join date).
+ * - A list of the user's roles in the server.
+ */
 export default class UserInformationCommand extends BaseCommand {
     // ============================ HEADER ============================ //
     constructor() {
@@ -22,22 +34,29 @@ export default class UserInformationCommand extends BaseCommand {
         );
         this.push_cmd_data = new ContextMenuCommandBuilder()
             .setName(this.pretty_name)
+            .setNameLocalizations(this.getLocalizations('pretty_name'))
             .setType(ApplicationCommandType.Message);
         this.push_cmd_data = new ContextMenuCommandBuilder()
             .setName(this.pretty_name)
+            .setNameLocalizations(this.getLocalizations('pretty_name'))
             .setType(ApplicationCommandType.User);
     }
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
+    /**
+     * Executes the command to fetch and display user information.
+     *
+     * It determines the target user from the interaction (slash command option, context menu target,
+     * or the interacting user themselves). It then fetches their introduction data and account
+     * details, formats them into a single embed, and sends it as an ephemeral reply.
+     *
+     * @param interaction The interaction from the slash or context menu command.
+     */
+    @Log()
     public async execute(
         interaction: ChatInputCommandInteraction | MessageContextMenuCommandInteraction,
     ): Promise<void> {
-        this.log.send('debug', 'command.execute.start', {
-            name: this.name,
-            guild: interaction.guild,
-            user: interaction.user,
-        });
         let user: User;
         if (interaction.isMessageContextMenuCommand()) {
             user = interaction.targetMessage.author;
@@ -47,8 +66,8 @@ export default class UserInformationCommand extends BaseCommand {
 
         if (!interaction.guild!.members.cache.get(user.id)) {
             const post = new EmbedBuilder()
-                .setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                .setDescription(this.t('execute.user_not_found_in_guild', { user: user.username }))
+                .setTitle(`:warning: ${this.t('command.execute.warning', undefined, interaction)}`)
+                .setDescription(this.t('execute.user_not_found_in_guild', { user: user.username }, interaction))
                 .setColor(Colors.Yellow);
             await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
             this.log.send('warn', 'command.user_information.execute.user_not_found', {
@@ -77,7 +96,7 @@ export default class UserInformationCommand extends BaseCommand {
                 where: { from_user: { uid: BigInt(user.id) }, from_guild: { gid: BigInt(interaction.guild!.id) } },
             });
             if (last_introduction_submit) {
-                data.push(`**__${this.t('execute.header', { user: interaction.user.username })}__**\n`);
+                data.push(`**__${this.t('execute.header', { user: interaction.user.username }, interaction)}__**\n`);
                 for (let i = 1; i <= 8; i++) {
                     const key = introduction[`col${i}` as keyof Introduction];
                     if (Array.isArray(key)) {
@@ -93,17 +112,17 @@ export default class UserInformationCommand extends BaseCommand {
         }
 
         data.push(
-            `\n**__${this.t('execute.account_info')}__**\n`,
-            `**${this.t('execute.username')}**: ${interaction.user.username}\n`,
-            `**${this.t('execute.nickname')}**: <@!${interaction.user.id}>\n`,
-            `**${this.t('execute.id')}**: ${interaction.user.id}\n`,
-            `**${this.t('execute.created_at')}**: <t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>\n`,
-            `**${this.t('execute.joined_at')}**: <t:${Math.floor(interaction.guild!.members.cache.get(interaction.user.id)!.joinedTimestamp! / 1000)}:R>\n`,
-            `**${this.t('execute.roles')}**: ${
+            `\n**__${this.t('execute.account_info', undefined, interaction)}__**\n`,
+            `**${this.t('execute.username', undefined, interaction)}**: ${user.username}\n`,
+            `**${this.t('execute.nickname', undefined, interaction)}**: <@!${user.id}>\n`,
+            `**${this.t('execute.id', undefined, interaction)}**: ${user.id}\n`,
+            `**${this.t('execute.created_at', undefined, interaction)}**: <t:${Math.floor(user.createdTimestamp / 1000)}:R>\n`,
+            `**${this.t('execute.joined_at', undefined, interaction)}**: <t:${Math.floor(interaction.guild!.members.cache.get(user.id)!.joinedTimestamp! / 1000)}:R>\n`,
+            `**${this.t('execute.roles', undefined, interaction)}**: ${
                 user_roles!
                     .filter((r) => r.name !== '@everyone')
                     .map((r) => `<@&${r.id}>`)
-                    .join(', ') || this.t('execute.no_roles')
+                    .join(', ') || this.t('execute.no_roles', undefined, interaction)
             }\n`,
         );
 
@@ -115,11 +134,6 @@ export default class UserInformationCommand extends BaseCommand {
             .setTimestamp();
 
         await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
-        this.log.send('debug', 'command.execute.success', {
-            name: this.name,
-            guild: interaction.guild,
-            user: interaction.user,
-        });
     }
     // ================================================================ //
 }

@@ -1,5 +1,6 @@
 import {
     ActionRowBuilder,
+    BaseInteraction,
     ButtonBuilder,
     ButtonInteraction,
     ButtonStyle,
@@ -8,34 +9,59 @@ import {
     ContextMenuCommandInteraction,
     EmbedBuilder,
     InteractionReplyOptions,
+    Message,
     StringSelectMenuInteraction,
+    ThreadChannel,
 } from 'discord.js';
 import { Translator } from '../../services/translator';
 import { InteractionResponseRegistry } from '../../utils/interactionRegistry';
 import { BaseCommand, CustomizableCommand } from '../structure/command';
 
-/** ***************************************************************************
- * Base options for the CommandQuestionPrompt decorator.
- * ****************************************************************************/
-
 /**
- * Translate a command string using the commands localization category.
- * This method provides localization support for user-facing messages in commands.
- *
- * @protected
- * @param {string} key Localization key from the commands category (e.g., 'purge.warning.title')
- * @param {Record<string, unknown>} [replacements] Optional placeholder replacements for dynamic values
- * @returns {string} Translated message in the current language
+ * This module provides the `@CommandQuestionPrompt` decorator, which wraps a command
+ * method to require user confirmation via buttons before execution.
  */
-function t(key: string, replacements?: Record<string, unknown>): string {
-    const translator = Translator.getInstance();
-    return translator.querySync('commands', key, replacements);
-}
-/** ************************************************************************** */
 
 /**
- * Decorator for command methods that require a confirmation prompt before execution.
- * @param o Configuration options for the confirmation prompt.
+ * A local helper function for translating strings within this module.
+ * @internal
+ */
+function t<T extends BaseInteraction | Message | ThreadChannel | bigint | string>(
+    key: string,
+    replacements?: Record<string, unknown>,
+    id?: T,
+): string {
+    let guild_id: bigint | undefined;
+    if (typeof id === 'string') {
+        guild_id = BigInt(id);
+    } else if (typeof id === 'bigint') {
+        guild_id = id;
+    } else if (id?.guildId) {
+        guild_id = BigInt(id.guildId);
+    }
+
+    return Translator.querySync(
+        'commands',
+        key,
+        replacements,
+        guild_id
+    );
+}
+
+/**
+ * A method decorator that intercepts a command's execution to ask the user for confirmation.
+ *
+ * It presents the user with a prompt and "OK" / "Cancel" buttons. The original
+ * command method is only executed if the user clicks "OK". The interaction response
+ * is managed via the `InteractionResponseRegistry` to ensure messages can be edited correctly.
+ *
+ * @param {object} o Configuration options for the confirmation prompt.
+ * @param {string} o.title The localization key for the prompt's title.
+ * @param {string} o.message The localization key for the prompt's message.
+ * @param {string} o.ok_label The localization key for the confirmation button's label.
+ * @param {string} o.cancel_label The localization key for the cancellation button's label.
+ * @param {InteractionReplyOptions['flags']} [o.flags] Optional flags for the reply (e.g., `MessageFlags.Ephemeral`).
+ * @param {object[]} [o.extra_buttons] An array of extra custom buttons to add to the prompt.
  */
 export function CommandQuestionPrompt(o: {
     title: string;
@@ -68,14 +94,14 @@ export function CommandQuestionPrompt(o: {
             );
 
             const post = new EmbedBuilder()
-                .setTitle(`:warning: ${t(o.title)}`)
-                .setDescription(t(o.message))
+                .setTitle(`:warning: ${t(o.title, undefined, interaction)}`)
+                .setDescription(t(o.message, undefined, interaction))
                 .setColor(Colors.Yellow);
 
             if (interaction.isButton()) {
                 if (interaction.customId.endsWith(':ok')) {
-                    post.setTitle(`:hourglass_flowing_sand: ${t('question.processing')}`)
-                        .setDescription(t('question.please_wait'))
+                    post.setTitle(`:hourglass_flowing_sand: ${t('question.processing', undefined, interaction)}`)
+                        .setDescription(t('question.please_wait', undefined, interaction))
                         .setColor(Colors.Blue);
 
                     const stored_response = InteractionResponseRegistry.get(registry_key);
@@ -92,8 +118,8 @@ export function CommandQuestionPrompt(o: {
                     await orig.apply(this, [interaction, ...args]);
                     InteractionResponseRegistry.delete(registry_key);
                 } else if (interaction.customId.endsWith(':cancel')) {
-                    post.setTitle(`:x: ${t('question.cancelled')}`)
-                        .setDescription(t('question.cancelled_description'))
+                    post.setTitle(`:x: ${t('question.cancelled', undefined, interaction)}`)
+                        .setDescription(t('question.cancelled_description', undefined, interaction))
                         .setColor(Colors.Red);
                     await interaction.update({ components: [], embeds: [post] });
                     InteractionResponseRegistry.delete(registry_key);
@@ -105,18 +131,18 @@ export function CommandQuestionPrompt(o: {
             const ok_btn = new ButtonBuilder()
                 .setCustomId(`command:${name}:${property_key.toString().toLowerCase()}:ok`)
                 .setEmoji('✅')
-                .setLabel(t(o.ok_label))
+                .setLabel(t(o.ok_label, undefined, interaction))
                 .setStyle(ButtonStyle.Success);
             const cancel_btn = new ButtonBuilder()
                 .setCustomId(`command:${name}:${property_key.toString().toLowerCase()}:cancel`)
                 .setEmoji('❌')
-                .setLabel(t(o.cancel_label))
+                .setLabel(t(o.cancel_label, undefined, interaction))
                 .setStyle(ButtonStyle.Danger);
             const extra = o.extra_buttons
                 ? o.extra_buttons.map((b) =>
                     new ButtonBuilder()
                         .setCustomId(`command:${name}:${property_key.toString().toLowerCase()}:${b.key}`)
-                        .setLabel(t(b.label))
+                        .setLabel(t(b.label, undefined, interaction))
                         .setEmoji(b.emoji ?? '')
                         .setStyle(b.style ?? ButtonStyle.Primary),
                 )

@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "randomizer": {
+        "name": "randomizer",
         "pretty_name": "Randomizer",
         "description": "Makes a random selection from the specified options.",
         "help": "Makes a random selection from the specified options.\n\n**Usage:**\n- `/randomizer <option1> <option2> [option3] ...` - Randomly selects one of the specified options.\n\n**Examples:**\n- `/randomizer apple banana strawberry` - Randomly selects one of 'apple', 'banana', or 'strawberry'.",

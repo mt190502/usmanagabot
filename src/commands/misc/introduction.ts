@@ -16,6 +16,7 @@ import 'reflect-metadata';
 import yaml from 'yaml';
 import { CommandLoader } from '..';
 import { Introduction, IntroductionSubmit } from '../../types/database/entities/introduction';
+import { Log } from '../../types/decorator/log';
 import {
     SettingChannelMenuComponent,
     SettingGenericSettingComponent,
@@ -23,6 +24,21 @@ import {
 } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
+/**
+ * A highly customizable command for server member introductions.
+ *
+ * This command allows administrators to create a dynamic `/introduction` command where they can
+ * define up to 8 custom questions (columns) for users to answer. The command name and description
+ * are also customizable.
+ *
+ * Features:
+ * - Dynamically generates slash command options based on YAML configuration.
+ * - Stores user submissions and displays them in a designated channel.
+ * - Automatically deletes a user's previous introduction post when they submit a new one.
+ * - Includes rate-limiting to prevent spam.
+ * - Fully configurable via the `/settings` command, with modals for customizing the command name,
+ *   description, questions, and submission limits.
+ */
 export default class IntroductionCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
@@ -37,39 +53,40 @@ export default class IntroductionCommand extends CustomizableCommand {
         if (!introduction) {
             const new_settings = new Introduction();
             new_settings.is_enabled = false;
-            new_settings.cmd_name = this.name;
-            new_settings.cmd_desc = this.description;
             new_settings.from_guild = guild!;
             new_settings.latest_action_from_user = system_user!;
             introduction = await this.db.save(new_settings);
             this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
         }
         this.enabled = introduction.is_enabled;
-        const data: SlashCommandBuilder = new SlashCommandBuilder().setName(this.name);
-        data.setDescription(introduction.cmd_desc || this.description).setNameLocalization(
-            guild!.country,
-            introduction.cmd_name,
-        );
         for (let i = 1; i <= 8; i++) {
             const column_name = `col${i}`;
             const [opt_name, opt_value] = (introduction[column_name as keyof Introduction] as [string, string]) || [];
             if (!opt_name && !opt_value) continue;
-            data.addStringOption((option) =>
+            (this.base_cmd_data as SlashCommandBuilder).addStringOption((option) =>
                 option.setName(opt_name || `col${i}`).setDescription(opt_value || `<missing> ${i}`),
             );
         }
-        this.base_cmd_data = data;
         this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
     }
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
+    /**
+     * Executes the introduction submission process.
+     *
+     * This method handles the logic when a user runs the command. It performs:
+     * 1. Rate-limiting checks based on daily submission limits.
+     * 2. Validation to ensure the command is configured and the user provides at least one answer.
+     * 3. Gathers all provided answers and formats them into an embed.
+     * 4. Appends standard user account information (creation date, join date, roles).
+     * 5. Posts the new introduction to the designated channel and deletes the user's previous one.
+     * 6. Saves the submission details to the database for future use (e.g., re-populating fields).
+     *
+     * @param interaction The `ChatInputCommandInteraction` from the user.
+     */
+    @Log()
     public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-        this.log.send('debug', 'command.execute.start', {
-            name: this.name,
-            guild: interaction.guild,
-            user: interaction.user,
-        });
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
         const user = await this.db.getUser(BigInt(interaction.user.id));
         const introduction = await this.db.findOne(Introduction, {
@@ -97,10 +114,14 @@ export default class IntroductionCommand extends CustomizableCommand {
             diff_timestamp >= 3600 &&
             last_introduction_submit_from_user.hourly_submit_count === introduction!.daily_submit_limit
         ) {
-            const msg = this.t('execute.rate_limited', {
-                date: `<t:${Math.floor(end_timestamp)}:F>`,
-            });
-            post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
+            const msg = this.t(
+                'execute.rate_limited',
+                {
+                    date: `<t:${Math.floor(end_timestamp)}:F>`,
+                },
+                interaction,
+            );
+            post.setTitle(`:warning: ${this.t('command.execute.warning', undefined, interaction)}`)
                 .setDescription(msg)
                 .setColor(Colors.Red);
             await interaction.reply({
@@ -120,8 +141,8 @@ export default class IntroductionCommand extends CustomizableCommand {
                 : last_introduction_submit_from_user.hourly_submit_count + 1;
 
         if (!introduction!.is_enabled || !introduction!.channel_id) {
-            post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                .setDescription(this.t('execute.not_configured'))
+            post.setTitle(`:warning: ${this.t('command.execute.warning', undefined, interaction)}`)
+                .setDescription(this.t('execute.not_configured', undefined, interaction))
                 .setColor(Colors.Red);
             await interaction.reply({
                 embeds: [post],
@@ -134,7 +155,9 @@ export default class IntroductionCommand extends CustomizableCommand {
         const user_roles = interaction
             .guild!.members.cache.get(interaction.user.id)!
             .roles.cache.sort((a, b) => b.position - a.position);
-        const data: string[] = [`**__${this.t('execute.header', { user: interaction.user.username })}__**\n`];
+        const data: string[] = [
+            `**__${this.t('execute.header', { user: interaction.user.username }, interaction)}__**\n`,
+        ];
 
         let values = 0;
         for (let i = 1; i <= 8; i++) {
@@ -153,8 +176,8 @@ export default class IntroductionCommand extends CustomizableCommand {
         }
 
         if (values === 0) {
-            post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                .setDescription(this.t('execute.validation_failed'))
+            post.setTitle(`:warning: ${this.t('command.execute.warning', undefined, interaction)}`)
+                .setDescription(this.t('execute.validation_failed', undefined, interaction))
                 .setColor(Colors.Red);
             await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
             this.log.send('debug', 'command.introduction.execute.validation.failed', {
@@ -165,17 +188,17 @@ export default class IntroductionCommand extends CustomizableCommand {
         }
 
         data.push(
-            `\n**__${this.t('execute.account_info')}__**\n`,
-            `**${this.t('execute.username')}**: ${interaction.user.username}\n`,
-            `**${this.t('execute.nickname')}**: <@!${interaction.user.id}>\n`,
-            `**${this.t('execute.id')}**: ${interaction.user.id}\n`,
-            `**${this.t('execute.created_at')}**: <t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>\n`,
-            `**${this.t('execute.joined_at')}**: <t:${Math.floor(interaction.guild!.members.cache.get(interaction.user.id)!.joinedTimestamp! / 1000)}:R>\n`,
-            `**${this.t('execute.roles')}**: ${
+            `\n**__${this.t('execute.account_info', undefined, interaction)}__**\n`,
+            `**${this.t('execute.username', undefined, interaction)}**: ${interaction.user.username}\n`,
+            `**${this.t('execute.nickname', undefined, interaction)}**: <@!${interaction.user.id}>\n`,
+            `**${this.t('execute.id', undefined, interaction)}**: ${interaction.user.id}\n`,
+            `**${this.t('execute.created_at', undefined, interaction)}**: <t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>\n`,
+            `**${this.t('execute.joined_at', undefined, interaction)}**: <t:${Math.floor(interaction.guild!.members.cache.get(interaction.user.id)!.joinedTimestamp! / 1000)}:R>\n`,
+            `**${this.t('execute.roles', undefined, interaction)}**: ${
                 user_roles
                     .filter((r) => r.name !== '@everyone')
                     .map((r) => `<@&${r.id}>`)
-                    .join(', ') || this.t('execute.no_roles')
+                    .join(', ') || this.t('execute.no_roles', undefined, interaction)
             }\n`,
         );
 
@@ -185,7 +208,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             .setColor(color || 'Random')
             .setThumbnail(interaction.user.displayAvatarURL())
             .setTimestamp();
-        if (last_submit_timestamp) embed.setFooter({ text: this.t('execute.updated') });
+        if (last_submit_timestamp) embed.setFooter({ text: this.t('execute.updated', undefined, interaction) });
 
         const target_channel = interaction.guild!.channels.cache.get(introduction!.channel_id) as TextChannel;
         const publish = await target_channel.send({ content: `<@${interaction.user.id}>`, embeds: [embed] });
@@ -214,32 +237,37 @@ export default class IntroductionCommand extends CustomizableCommand {
         last_introduction_submit_from_user.from_guild = guild!;
         await this.db.save(last_introduction_submit_from_user);
 
-        post.setTitle(`:white_check_mark: ${this.t('command.execute.success')}`)
+        post.setTitle(`:white_check_mark: ${this.t('command.execute.success', undefined, interaction)}`)
             .setColor(Colors.Green)
             .setDescription(
-                this.t('execute.submission_successful', {
-                    remaining: introduction!.daily_submit_limit - last_introduction_submit_from_user.hourly_submit_count,
-                    url: publish.url,
-                }),
+                this.t(
+                    'execute.submission_successful',
+                    {
+                        remaining:
+                            introduction!.daily_submit_limit - last_introduction_submit_from_user.hourly_submit_count,
+                        url: publish.url,
+                    },
+                    interaction,
+                ),
             );
         await interaction.reply({
             embeds: [post],
             flags: MessageFlags.Ephemeral,
         });
-        this.log.send('debug', 'command.execute.success', {
-            name: this.name,
-            guild: interaction.guild,
-            user: interaction.user,
-        });
     }
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
+    /**
+     * Toggles the introduction system on or off for the guild.
+     * @param interaction The interaction from the settings UI.
+     */
     @SettingGenericSettingComponent({
         database: Introduction,
         database_key: 'is_enabled',
         format_specifier: '%s',
     })
+    @Log()
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const introduction = await this.db.findOne(Introduction, {
@@ -252,7 +280,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         introduction!.timestamp = new Date();
         this.enabled = introduction!.is_enabled;
         await this.db.save(Introduction, introduction!);
-        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+        CommandLoader.RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.toggle.success', {
             name: this.name,
@@ -261,45 +289,15 @@ export default class IntroductionCommand extends CustomizableCommand {
         });
     }
 
-    @SettingModalComponent({
-        view_in_ui: false,
-        database: Introduction,
-        inputs: [
-            {
-                id: 'cmd_name',
-                database_key: 'cmd_name',
-                style: TextInputStyle.Short,
-                max_length: 25,
-            },
-            {
-                id: 'cmd_desc',
-                database_key: 'cmd_desc',
-                style: TextInputStyle.Paragraph,
-            },
-        ],
-    })
-    public async customizeCommand(interaction: ModalSubmitInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
-        const introduction = await this.db.findOne(Introduction, {
-            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
-        });
-        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
-
-        const new_cmd_name = interaction.fields.getTextInputValue('cmd_name');
-        const new_cmd_desc = interaction.fields.getTextInputValue('cmd_desc');
-        if (new_cmd_name) introduction!.cmd_name = new_cmd_name;
-        if (new_cmd_desc) introduction!.cmd_desc = new_cmd_desc;
-        introduction!.latest_action_from_user = user;
-        introduction!.timestamp = new Date();
-        await this.db.save(Introduction, introduction!);
-        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
-        await interaction.deferUpdate();
-        this.log.send('debug', 'command.setting.modalsubmit.success', {
-            name: this.name,
-            guild: interaction.guild,
-        });
-    }
-
+    /**
+     * Customizes the questions (columns) for the introduction command.
+     *
+     * This setting opens a modal where an administrator can provide a YAML-formatted
+     * string to define the slash command options. It validates against duplicate names
+     * and rebuilds the command with the new structure.
+     *
+     * @param interaction The interaction from the modal submission.
+     */
     @SettingModalComponent({
         view_in_ui: false,
         database: Introduction,
@@ -312,6 +310,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             },
         ],
     })
+    @Log()
     public async customizeColumns(interaction: ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const introduction = await this.db.findOne(Introduction, {
@@ -327,7 +326,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         }
         for (const column of parsed) {
             if (name_set.has(column.name)) {
-                this.warning = this.t('settings.customizecolumns.duplicated', { column: column.name });
+                this.warning = this.t('settings.customizecolumns.duplicated', { column: column.name }, interaction);
                 this.log.send('warn', 'command.introduction.setting.validation.failed', {
                     guild: interaction.guild,
                     user: interaction.user,
@@ -345,7 +344,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         introduction!.latest_action_from_user = user;
         introduction!.timestamp = new Date();
         await this.db.save(Introduction, introduction!);
-        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+        CommandLoader.RESTCommandLoader(this, interaction.guildId!);
         await interaction.deferUpdate();
         this.log.send('debug', 'command.setting.modalsubmit.success', {
             name: this.name,
@@ -353,6 +352,11 @@ export default class IntroductionCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Sets the daily submission limit for the introduction command.
+     * This prevents users from spamming introduction updates.
+     * @param interaction The interaction from the modal submission.
+     */
     @SettingModalComponent({
         database: Introduction,
         database_key: 'daily_submit_limit',
@@ -366,6 +370,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             },
         ],
     })
+    @Log()
     public async setDailySubmissionLimit(interaction: ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const introduction = await this.db.findOne(Introduction, {
@@ -376,7 +381,7 @@ export default class IntroductionCommand extends CustomizableCommand {
         const limit_value = interaction.fields.getTextInputValue('daily_limit');
         const limit = parseInt(limit_value, 10);
         if (isNaN(limit) || limit < 1 || limit > 100) {
-            this.warning = this.t('settings.setdailysubmissionlimit.limit_range');
+            this.warning = this.t('settings.setdailysubmissionlimit.limit_range', undefined, interaction);
             this.log.send('warn', 'command.introduction.settings.validation_failed', {
                 guild: interaction.guild,
                 user: interaction.user,
@@ -395,6 +400,10 @@ export default class IntroductionCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Sets the channel where completed introductions will be posted.
+     * @param interaction The interaction from the settings UI.
+     */
     @SettingChannelMenuComponent({
         database: Introduction,
         database_key: 'channel_id',
@@ -403,6 +412,7 @@ export default class IntroductionCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
+    @Log()
     public async changeTargetChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const introduction = await this.db.findOne(Introduction, {

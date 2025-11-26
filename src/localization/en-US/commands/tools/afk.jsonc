@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "afk": {
+        "name": "afk",
         "pretty_name": "AFK System",
         "description": "Manages users' AFK (Away From Keyboard) status.",
         "help": "Manages users' AFK (Away From Keyboard) status.\n\n**Usage:**\n- `/afk <reason>` - Sets your AFK status with a specific reason.\n\n**Examples:**\n- `/afk reason:Taking a short break` - Sets your AFK status to 'Taking a short break'.",

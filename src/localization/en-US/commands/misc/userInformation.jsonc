@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "user_information": {
+        "name": "user_information",
         "pretty_name": "User Information",
         "description": "Retrieves information about the specified user.",
         "help": "Retrieves detailed information about the specified user.\n\n**Usage:**\n- `/user_information <user>` - Gets information about the specified user.\n\n**Examples:**\n- `/user_information @User1` - Gets information about @User1.\n- You can also right-click on a user's profile or message and select **Apps > User Information** to get user information.",

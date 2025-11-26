@@ -19,7 +19,19 @@ import { Messages } from '../../types/database/entities/messages';
 import { ChainEvent } from '../../types/decorator/chainevent';
 import { SettingChannelMenuComponent, SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
+import { Log } from '../../types/decorator/log';
 
+/**
+ * A pseudo-command that restricts the types of content allowed in specified channels.
+ *
+ * This command is triggered by `MessageCreate` and `ThreadCreate` events.
+ * It can delete messages or threads that contain disallowed content types such as images, videos, links, etc.
+ * The system is highly configurable through the settings UI, allowing administrators to:
+ * - Enable or disable the system.
+ * - Add or remove channels from the restriction list.
+ * - Define which content types are allowed for each specific channel.
+ * - Set a moderator notification channel to log deleted content.
+ */
 export default class ChannelRestrictCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
@@ -46,8 +58,16 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
+    /**
+     * Executes the channel restriction logic upon a new message or thread creation.
+     * This method is decorated with `@ChainEvent` to listen for both `MessageCreate` and `ThreadCreate` events.
+     * It determines the content type of the incoming message/thread and checks it against the defined restrictions for that channel.
+     * If the content is not allowed, it deletes the message/thread, notifies the author via DM, and logs the action to a moderator channel if configured.
+     * @param message The `Message` or `ThreadChannel` that triggered the event.
+     */
     @ChainEvent({ type: Events.MessageCreate })
     @ChainEvent({ type: Events.ThreadCreate })
+    @Log()
     public async execute(message: Message<true> | ThreadChannel): Promise<void> {
         if (!message.guild || (message instanceof Message && message.author.bot)) return;
         this.log.send('debug', 'command.event.trigger.start', {
@@ -71,7 +91,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         }
 
         const post = new EmbedBuilder()
-            .setTitle(`:no_entry: ${this.t('execute.message_deleted')}`)
+            .setTitle(`:no_entry: ${this.t('execute.message_deleted', undefined, message)}`)
             .setColor(Colors.Red);
         const guild_id = message.guild!.id;
         const message_id = message.id;
@@ -79,7 +99,6 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         let channel_id: string;
         let channel: ChannelRestricts;
         let [is_image, is_video, is_sticker, is_text, is_link, is_thread] = [
-            false,
             false,
             false,
             false,
@@ -119,10 +138,14 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
 
         if (is_restricted) {
             post.setDescription(
-                this.t('execute.message_deleted_description', {
-                    channel: `<#${channel_id}>`,
-                    restrictions: channel.restricts.map((r) => RestrictType[r]).join(', '),
-                }),
+                this.t(
+                    'execute.message_deleted_description',
+                    {
+                        channel: `<#${channel_id}>`,
+                        restrictions: channel.restricts.map((r) => RestrictType[r]).join(', '),
+                    },
+                    message,
+                ),
             );
 
             if (message.type === MessageType.ThreadCreated) {
@@ -158,13 +181,17 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                     .setThumbnail(author.displayAvatarURL())
                     .setTimestamp();
                 mod_post.setDescription(
-                    this.t('execute.admin_post', {
-                        channel_id,
-                        message_url: logged?.logged_message_id
-                            ? `https://discord.com/channels/${guild_id}/${msg_logger.channel_id}/${logged.logged_message_id}`
-                            : '-',
-                        restrictions: channel.restricts.map((r) => RestrictType[r]).join(', '),
-                    }),
+                    this.t(
+                        'execute.admin_post',
+                        {
+                            channel_id,
+                            message_url: logged?.logged_message_id
+                                ? `https://discord.com/channels/${guild_id}/${msg_logger.channel_id}/${logged.logged_message_id}`
+                                : '-',
+                            restrictions: channel.restricts.map((r) => RestrictType[r]).join(', '),
+                        },
+                        message,
+                    ),
                 );
                 if (target && 'send' in target) await target.send({ embeds: [mod_post] });
             }
@@ -174,11 +201,16 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
+    /**
+     * Toggles the channel restriction system on or off for the guild.
+     * @param interaction The interaction from the settings select menu.
+     */
     @SettingGenericSettingComponent({
         database: ChannelRestrictSystem,
         database_key: 'is_enabled',
         format_specifier: '%s',
     })
+    @Log()
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const restrict = await this.db.findOne(ChannelRestrictSystem, {
@@ -199,12 +231,18 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Adds a new channel to the restriction list.
+     * This is triggered from the "Add Channel" button in the settings UI.
+     * @param interaction The interaction from the channel select menu.
+     */
     @SettingChannelMenuComponent({
         options: {
             channel_types: [ChannelType.GuildText],
         },
         view_in_ui: false,
     })
+    @Log()
     public async addChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.channelrestrict.addchannel.start', {
             name: this.name,
@@ -216,7 +254,11 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
         if (restricts.find((channel) => channel.channel_id === interaction.values[0])) {
-            this.warning = this.t('settings.addchannel.already_added', { channel: `<#${interaction.values[0]}>` });
+            this.warning = this.t(
+                'settings.addchannel.already_added',
+                { channel: `<#${interaction.values[0]}>` },
+                interaction,
+            );
             this.log.send('warn', 'command.channelrestrict.addchannel.exists', {
                 guild: interaction.guild,
                 channel_id: interaction.values[0],
@@ -237,12 +279,22 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Defines the specific content type restrictions for a channel.
+     * This is a multi-step process within the settings UI:
+     * 1. The user selects a channel from a list.
+     * 2. A new select menu is presented with all available `RestrictType` options.
+     * 3. The user selects the allowed content types, and this method saves the configuration.
+     * @param interaction The interaction from the string select menu.
+     * @param args Additional arguments passed from the interaction, typically containing the channel ID.
+     */
     @SettingGenericSettingComponent({
         database: ChannelRestricts,
         database_key: 'channel_id',
         format_specifier: '<#%s>',
         db_column_is_array: true,
     })
+    @Log()
     public async defineChannelRestrictions(interaction: StringSelectMenuInteraction, ...args: string[]): Promise<void> {
         this.log.send('debug', 'command.channelrestrict.definechannelrestrictions.start', { guild: interaction.guild });
         const restricts = await this.db.find(ChannelRestricts, {
@@ -272,7 +324,13 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                         .addComponents(
                             new StringSelectMenuBuilder()
                                 .setCustomId(`settings:${this.name}:definechannelrestrictions`)
-                                .setPlaceholder(this.t('settings.definechannelrestrictions.restricts.placeholder'))
+                                .setPlaceholder(
+                                    this.t(
+                                        'settings.definechannelrestrictions.restricts.placeholder',
+                                        undefined,
+                                        interaction,
+                                    ),
+                                )
                                 .setMaxValues(Object.keys(RestrictType).filter((key) => !isNaN(Number(key))).length)
                                 .addOptions(
                                     ...Object.values(RestrictType)
@@ -297,7 +355,13 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                         .addComponents(
                             new StringSelectMenuBuilder()
                                 .setCustomId(`settings:${this.name}:definechannelrestrictions`)
-                                .setPlaceholder(this.t('settings.definechannelrestrictions.channels.placeholder'))
+                                .setPlaceholder(
+                                    this.t(
+                                        'settings.definechannelrestrictions.channels.placeholder',
+                                        undefined,
+                                        interaction,
+                                    ),
+                                )
                                 .addOptions(
                                     ...restricts.map((channel) => ({
                                         label: interaction.guild!.channels.cache.get(channel.channel_id)!.name,
@@ -307,8 +371,12 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
                                         value: `settings:${this.name}:definechannelrestrictions:${channel.channel_id}`,
                                     })),
                                     {
-                                        label: this.t('command.settings.cancel.display_name'),
-                                        description: this.t('command.settings.cancel.description'),
+                                        label: this.t('command.settings.cancel.display_name', undefined, interaction),
+                                        description: this.t(
+                                            'command.settings.cancel.description',
+                                            undefined,
+                                            interaction,
+                                        ),
                                         value: `settings:${this.name}`,
                                     },
                                 ),
@@ -319,12 +387,18 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         }
     }
 
+    /**
+     * Removes a channel from the restriction list.
+     * This is triggered from the "Remove Channel" button in the settings UI.
+     * @param interaction The interaction from the channel select menu.
+     */
     @SettingChannelMenuComponent({
         view_in_ui: false,
         options: {
             channel_types: [ChannelType.GuildText],
         },
     })
+    @Log()
     public async removeChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.channelrestrict.removechannel.start', { guild: interaction.guild });
         const restricts = await this.db.find(ChannelRestricts, {
@@ -337,7 +411,11 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
 
         const selected = restricts.find((channel) => channel.channel_id === interaction.values[0]);
         if (!selected) {
-            this.warning = this.t('settings.removechannel.not_found', { channel: `<#${interaction.values[0]}>` });
+            this.warning = this.t(
+                'settings.removechannel.not_found',
+                { channel: `<#${interaction.values[0]}>` },
+                interaction,
+            );
             this.log.send('warn', 'command.channelrestrict.removechannel.not_found', {
                 guild: interaction.guild,
                 channel_id: interaction.values[0],
@@ -356,6 +434,10 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Changes the channel where moderator notifications for deleted content are sent.
+     * @param interaction The interaction from the channel select menu.
+     */
     @SettingChannelMenuComponent({
         database: ChannelRestrictSystem,
         database_key: 'mod_notifier_channel_id',
@@ -364,6 +446,7 @@ export default class ChannelRestrictCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
+    @Log()
     public async changeModNotifierChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.channelrestrict.changenotifierchannel.start', { guild: interaction.guild });
         const restrict = await this.db.findOne(ChannelRestrictSystem, {

@@ -20,7 +20,23 @@ import {
     SettingRoleSelectMenuComponent,
 } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
+import { Log } from '../../types/decorator/log';
 
+/**
+ * A pseudo-command that implements a verification system for new members.
+ *
+ * This system checks the account age of new members. If an account is newer than a configured minimum age,
+ * the member is assigned a temporary "verification" role and a notification is sent to a designated channel.
+ * A cron job runs periodically to check if these members have passed the minimum account age; if so,
+ * the verification role is removed.
+ *
+ * The command is highly configurable through the settings UI, allowing administrators to:
+ * - Enable or disable the verification system.
+ * - Set the channel for notifications.
+ * - Define the verification role.
+ * - Customize the notification message.
+ * - Set the minimum account age in days.
+ */
 export default class VerificationCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
@@ -47,6 +63,12 @@ export default class VerificationCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
+    /**
+     * A periodic cron job that checks the status of members currently in verification.
+     * This method runs every minute as defined by the `@Cron` decorator.
+     * It iterates through all tracked verifications and removes the verification role from members
+     * whose accounts have now reached the minimum required age.
+     */
     @Cron({ schedule: '* * * * *' })
     public async routineCheck(): Promise<void> {
         this.log.send('debug', 'command.cronjob.start', { name: 'routineCheck' });
@@ -72,12 +94,18 @@ export default class VerificationCommand extends CustomizableCommand {
         this.log.send('debug', 'command.cronjob.success', { name: 'routineCheck' });
     }
 
+    /**
+     * Prepares data related to a specific member for the verification process.
+     * This is a helper method called by the event handlers.
+     * @param member The guild member to prepare data for.
+     * @returns An object containing message placeholders, the verification system settings, and the member's verification status.
+     */
+    @Log()
     public async execute(member: GuildMember): Promise<{
         message: { key: string; value: string }[];
         verification_system: VerificationSystem;
         verification: Verification;
     }> {
-        this.log.send('debug', 'command.execute.start', { name: this.name, guild: member.guild, member: member });
         const guild = await this.db.getGuild(BigInt(member.guild.id));
         const user = await this.db.getUser(BigInt(member.id));
         const verification_system = (await this.db.findOne(VerificationSystem, { where: { from_guild: guild! } }))!;
@@ -90,11 +118,17 @@ export default class VerificationCommand extends CustomizableCommand {
             { key: '{{guild}}', value: member.guild.name },
             { key: '{{minimum_age}}', value: verification_system.minimum_days.toString() },
         ];
-        this.log.send('debug', 'command.execute.success', { name: this.name, guild: member.guild, member: member });
         return { message, verification_system, verification };
     }
 
+    /**
+     * Handles the `GuildMemberAdd` event.
+     * When a new member joins, it checks if their account is newer than the configured minimum age.
+     * If it is, the member is assigned the verification role, a notification is sent, and their status is tracked in the database.
+     * @param member The member who just joined.
+     */
     @ChainEvent({ type: Events.GuildMemberAdd })
+    @Log()
     public async onMemberAdd(member: GuildMember): Promise<void> {
         this.log.send('debug', 'command.event.trigger.start', {
             name: 'verification',
@@ -126,7 +160,13 @@ export default class VerificationCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Handles the `GuildMemberRemove` event.
+     * If a member who is currently under verification leaves the guild, their tracking record is removed from the database.
+     * @param member The member who just left.
+     */
     @ChainEvent({ type: Events.GuildMemberRemove })
+    @Log()
     public async onMemberRemove(member: GuildMember): Promise<void> {
         this.log.send('debug', 'command.event.trigger.start', {
             name: 'verification',
@@ -149,11 +189,16 @@ export default class VerificationCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
+    /**
+     * Toggles the verification system on or off for the guild.
+     * @param interaction The interaction from the settings select menu.
+     */
     @SettingGenericSettingComponent({
         database: VerificationSystem,
         database_key: 'is_enabled',
         format_specifier: '%s',
     })
+    @Log()
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const verification_system = await this.db.findOne(VerificationSystem, {
@@ -174,6 +219,10 @@ export default class VerificationCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Sets the channel where verification notifications will be sent.
+     * @param interaction The interaction from the channel select menu.
+     */
     @SettingChannelMenuComponent({
         database: VerificationSystem,
         database_key: 'channel_id',
@@ -182,6 +231,7 @@ export default class VerificationCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
+    @Log()
     public async setTargetChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const verification_system = (await this.db.findOne(VerificationSystem, {
@@ -202,11 +252,17 @@ export default class VerificationCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Sets the role to be temporarily assigned to members under verification.
+     * Validates that the role is assignable by the bot.
+     * @param interaction The interaction from the role select menu.
+     */
     @SettingRoleSelectMenuComponent({
         database: VerificationSystem,
         database_key: 'role_id',
         format_specifier: '<@&%s>',
     })
+    @Log()
     public async setVerificationRole(interaction: RoleSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.role.start', { name: this.name, guild: interaction.guild });
         const verification_system = await this.db.findOne(VerificationSystem, {
@@ -218,7 +274,7 @@ export default class VerificationCommand extends CustomizableCommand {
         const requested_role = server_roles.get(interaction.values[0])!;
 
         if (requested_role.position >= bot_role.position) {
-            this.warning = this.t('settings.setverificationrole.role_hierarchy_error');
+            this.warning = this.t('settings.setverificationrole.role_hierarchy_error', undefined, interaction);
             await this.settingsUI(interaction);
             return;
         }
@@ -234,6 +290,10 @@ export default class VerificationCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Sets the message that is sent to the notification channel when a new member is put into verification.
+     * @param interaction The interaction from the modal submission.
+     */
     @SettingModalComponent({
         database: VerificationSystem,
         database_key: 'message',
@@ -247,6 +307,7 @@ export default class VerificationCommand extends CustomizableCommand {
             },
         ],
     })
+    @Log()
     public async setVerificationSystemMessage(interaction: ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const verification_system = await this.db.findOne(VerificationSystem, {
@@ -266,6 +327,11 @@ export default class VerificationCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Sets the minimum number of days an account must exist to bypass verification.
+     * It also recalculates the remaining verification time for all currently tracked members.
+     * @param interaction The interaction from the modal submission.
+     */
     @SettingModalComponent({
         database: VerificationSystem,
         database_key: 'minimum_days',
@@ -279,6 +345,7 @@ export default class VerificationCommand extends CustomizableCommand {
             },
         ],
     })
+    @Log()
     public async setVerificationMinimumAge(interaction: ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const verification_system = await this.db.findOne(VerificationSystem, {
@@ -291,7 +358,7 @@ export default class VerificationCommand extends CustomizableCommand {
 
         const new_age = parseInt(interaction.fields.getTextInputValue('minimum_age'));
         if (isNaN(new_age) || new_age < 0) {
-            this.warning = this.t('settings.setverificationminimumage.invalid_age', { age: new_age });
+            this.warning = this.t('settings.setverificationminimumage.invalid_age', { age: new_age }, interaction);
             await this.settingsUI(interaction);
             return;
         }

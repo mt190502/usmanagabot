@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "introduction": {
+        "name": "tanitim",
         "pretty_name": "Tanıtım",
         "description": "Kullanıcı tanıtım bilgilerini oluşturur ve yönetir.",
         "help": "Kullanıcıya özel tanıtım bilgilerini oluşturur\n\n**Kullanım:**\n- `/introduction <parametreler>` - Tanıtım bilgilerini oluşturur veya günceller.\n\n**Örnekler:**\n- `/introduction os:linux de:gnome` - Tanıtım bilgilerini 'os:linux de:gnome' olarak ayarlar.\n - `/introduction car:peugeot bike:yamaha` - Tanıtım bilgilerini 'car:peugeot bike:yamaha' olarak ayarlar.",

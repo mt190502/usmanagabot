@@ -9,6 +9,7 @@
             "type": "object",
             "properties": {
                 "$schema": { "type": "string" },
+                "name": { "type": "string" },
                 "description": { "type": "string" },
                 "pretty_name": { "type": "string" },
                 "help": { "type": "string" },

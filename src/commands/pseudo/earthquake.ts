@@ -18,7 +18,23 @@ import {
     SettingModalComponent,
 } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
+import { Log } from '../../types/decorator/log';
 
+/**
+ * A pseudo-command that notifies a channel about recent earthquakes.
+ *
+ * This command uses a cron job to periodically fetch earthquake data from the Seismic Portal API.
+ * It filters earthquakes based on a configurable magnitude limit and sends a detailed notification
+ * to a designated channel for each new earthquake that meets the criteria.
+ * The location of the earthquake is reverse-geocoded to provide a human-readable locality.
+ *
+ * The command is highly configurable through the settings UI, allowing administrators to:
+ * - Enable or disable the notifier.
+ * - Set the notification channel.
+ * - Define the minimum magnitude for an earthquake to be reported.
+ * - Set the specific Seismic Portal API URL.
+ * - Specify a region code for reverse-geocoding.
+ */
 export default class EarthquakeNotifierCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
@@ -45,6 +61,13 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
+    /**
+     * Executes the earthquake notification cron job.
+     * This method runs every 5 minutes as defined by the `@Cron` decorator.
+     * It fetches data for all enabled guilds, checks for new earthquakes exceeding the magnitude limit,
+     * reverse-geocodes the location, and sends a notification embed to the configured channel.
+     * It also manages a log of delivered earthquakes to avoid duplicate notifications and prunes old logs.
+     */
     @Cron({ schedule: '*/5 * * * *' })
     public async execute(): Promise<void> {
         this.log.send('debug', 'command.cronjob.start', { name: 'execute' });
@@ -85,46 +108,46 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
                 ).locality;
 
                 const post = new EmbedBuilder();
-                post.setTitle(`:warning: ${this.t('execute.title')}`);
+                post.setTitle(`:warning: ${this.t('execute.title', undefined, guild.from_guild.gid)}`);
                 post.setColor(Colors.Yellow);
                 post.setTimestamp();
                 post.addFields(
                     {
-                        name: this.t('execute.time'),
+                        name: this.t('execute.time', undefined, guild.from_guild.gid),
                         value: new Date(eq.properties.time).toLocaleString(),
                         inline: true,
                     },
                     {
-                        name: this.t('execute.id'),
+                        name: this.t('execute.id', undefined, guild.from_guild.gid),
                         value: eq.id,
                         inline: true,
                     },
                     {
-                        name: this.t('execute.location'),
+                        name: this.t('execute.location', undefined, guild.from_guild.gid),
                         value: geo_translate || 'Unknown',
                         inline: true,
                     },
                     {
-                        name: this.t('execute.source'),
+                        name: this.t('execute.source', undefined, guild.from_guild.gid),
                         value: eq.properties.auth,
                         inline: true,
                     },
                     {
-                        name: this.t('execute.magnitude'),
+                        name: this.t('execute.magnitude', undefined, guild.from_guild.gid),
                         value: eq.properties.mag.toString(),
                         inline: true,
                     },
                     {
-                        name: this.t('execute.coordinates'),
-                        value: `Latitude: ${eq.properties.lat}\nLongitude: ${eq.properties.lon}`,
+                        name: this.t('execute.coordinates', undefined, guild.from_guild.gid),
+                        value: `Lat: ${eq.properties.lat}\nLon: ${eq.properties.lon}`,
                         inline: true,
                     },
                     {
-                        name: this.t('execute.link'),
+                        name: this.t('execute.link', undefined, guild.from_guild.gid),
                         value: `https://www.seismicportal.eu/eventdetails.html?unid=${eq.id}`,
                     },
                     {
-                        name: this.t('execute.other_earthquakes'),
+                        name: this.t('execute.other_earthquakes', undefined, guild.from_guild.gid),
                         value: 'https://deprem.core.xeome.dev',
                     },
                 );
@@ -161,11 +184,16 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
+    /**
+     * Toggles the earthquake notifier on or off for the guild.
+     * @param interaction The interaction from the settings select menu.
+     */
     @SettingGenericSettingComponent({
         database: Earthquake,
         database_key: 'is_enabled',
         format_specifier: '%s',
     })
+    @Log()
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const earthquake = await this.db.findOne(Earthquake, {
@@ -186,6 +214,10 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Sets the channel where earthquake notifications will be sent.
+     * @param interaction The interaction from the channel select menu.
+     */
     @SettingChannelMenuComponent({
         database: Earthquake,
         database_key: 'channel_id',
@@ -194,6 +226,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
+    @Log()
     public async setNotificationChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const earthquake = await this.db.findOne(Earthquake, {
@@ -213,11 +246,19 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Sets the minimum magnitude limit for reporting earthquakes.
+     * This is a two-step setting: first, it presents a select menu with magnitude options.
+     * Then, it saves the selected value.
+     * @param interaction The interaction from the string select menu.
+     * @param args The selected magnitude value.
+     */
     @SettingGenericSettingComponent({
         database: Earthquake,
         database_key: 'magnitude_limit',
         format_specifier: '%s',
     })
+    @Log()
     public async setMagnitudeLimit(interaction: StringSelectMenuInteraction, args: string): Promise<void> {
         this.log.send('debug', 'command.setting.selectmenu.start', { name: this.name, guild: interaction.guild });
         const earthquake = (await this.db.findOne(Earthquake, {
@@ -241,7 +282,13 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
                     .addComponents(
                         new StringSelectMenuBuilder()
                             .setCustomId('settings:earthquake:setmagnitude')
-                            .setPlaceholder(this.t('settings.setmagnitudelimit.placeholder'))
+                            .setPlaceholder(
+                                this.t(
+                                    'settings.setmagnitudelimit.placeholder',
+                                    undefined,
+                                    BigInt(interaction.guildId!),
+                                ),
+                            )
                             .addOptions(
                                 ['1.0', '1.5', '2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0'].map((magnitude) => ({
                                     label: magnitude,
@@ -254,6 +301,11 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Sets the API URL for the Seismic Portal.
+     * This method is triggered by a modal submission and validates the URL format.
+     * @param interaction The interaction from the modal submission.
+     */
     @SettingModalComponent({
         database: Earthquake,
         database_key: 'seismicportal_api_url',
@@ -267,6 +319,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
             },
         ],
     })
+    @Log()
     public async setSeismicportalApiUrl(interaction: ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const earthquake = await this.db.findOne(Earthquake, {
@@ -281,7 +334,11 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
                 user: interaction.user,
                 url: api_url,
             });
-            this.warning = this.t('settings.setseismicportalapiurl.invalid_url');
+            this.warning = this.t(
+                'settings.setseismicportalapiurl.invalid_url',
+                undefined,
+                BigInt(interaction.guildId!),
+            );
             await this.settingsUI(interaction);
             return;
         }
@@ -297,6 +354,11 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Sets the region code for reverse-geocoding.
+     * This method is triggered by a modal submission.
+     * @param interaction The interaction from the modal submission.
+     */
     @SettingModalComponent({
         database: Earthquake,
         database_key: 'region_code',
@@ -310,6 +372,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
             },
         ],
     })
+    @Log()
     public async setRegionCode(interaction: ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const earthquake = await this.db.findOne(Earthquake, {

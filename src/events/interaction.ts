@@ -4,7 +4,6 @@ import {
     Collection,
     CommandInteraction,
     Events,
-    Interaction,
     MessageFlags,
     User,
 } from 'discord.js';
@@ -14,7 +13,17 @@ import { BaseEvent } from '../types/structure/event';
 import { RegisterFact } from '../utils/common';
 import { Paginator } from '../utils/paginator';
 
-const handleCommand = async (action: string, interaction: Interaction | CommandInteraction) => {
+/**
+ * Routes component-based interactions (buttons, select menus, modals) to the appropriate command method.
+ *
+ * This function parses a `customId` string, which follows the format `namespace:command_name:arg1:arg2...`,
+ * to determine which action to take. It supports pagination, command execution, and settings management.
+ *
+ * @param {string} action The `customId` from the interaction.
+ * @param {BaseInteraction | CommandInteraction} interaction The interaction object.
+ * @returns {Promise<void>}
+ */
+const handleCommand = async (action: string, interaction: BaseInteraction | CommandInteraction): Promise<void> => {
     const [namespace, command_name, ...args] = action.split(':');
     const command =
         CommandLoader.BotCommands.get(interaction.guild!.id)?.get(command_name) ||
@@ -37,15 +46,14 @@ const handleCommand = async (action: string, interaction: Interaction | CommandI
         }
         case 'page': {
             if (args.length >= 1) {
-                const paginator = Paginator.getInstance();
                 let payload;
 
                 if (args[0] === 'prev') {
-                    payload = await paginator.previousPage(interaction.guild!.id, interaction.user.id, command_name);
+                    payload = await Paginator.previousPage(interaction.guild!.id, interaction.user.id, command_name);
                 } else if (args[0] === 'next') {
-                    payload = await paginator.nextPage(interaction.guild!.id, interaction.user.id, command_name);
+                    payload = await Paginator.nextPage(interaction.guild!.id, interaction.user.id, command_name);
                 } else {
-                    payload = await paginator.backPage(interaction.guild!.id, interaction.user.id, command_name);
+                    payload = await Paginator.backPage(interaction.guild!.id, interaction.user.id, command_name);
                 }
 
                 if (payload.embeds.length > 0 && interaction.isButton()) {
@@ -83,14 +91,35 @@ const handleCommand = async (action: string, interaction: Interaction | CommandI
     }
 };
 
+/**
+ * An in-memory collection to manage command cooldowns.
+ *
+ * The outer collection maps a command name to an inner collection.
+ * The inner collection maps a user's ID to the timestamp of their last command usage.
+ */
 const cooldowns: Collection<string, Collection<bigint, number>> = new Collection();
 
+/**
+ * Handles all incoming Discord interactions, acting as the central hub for command execution,
+ * component interactions, and cooldown management.
+ */
 export default class InteractionEvent extends BaseEvent<Events.InteractionCreate> {
     constructor() {
         super({ enabled: true, type: Events.InteractionCreate, once: false });
     }
 
-    public async execute(interaction: Interaction): Promise<void> {
+    /**
+     * The main execution method for the `interactionCreate` event.
+     *
+     * This method performs the following actions:
+     * 1. Registers the interacting user and channel in the database.
+     * 2. Determines the type of interaction (e.g., chat command, button, select menu).
+     * 3. For command interactions, it identifies the correct command, enforces cooldowns, and executes it.
+     * 4. For component interactions, it delegates the logic to the `handleCommand` helper function.
+     *
+     * @param {BaseInteraction} interaction The interaction object from Discord.js.
+     */
+    public async execute(interaction: BaseInteraction): Promise<void> {
         await RegisterFact<User>(interaction.user, undefined);
         await RegisterFact<Channel>(interaction.channel!, undefined);
 
@@ -118,7 +147,7 @@ export default class InteractionEvent extends BaseEvent<Events.InteractionCreate
                 if (now < expire) {
                     const left = ((expire - now) / 1000).toFixed();
                     interaction.reply({
-                        content: this.t('event.interaction.cooldown', { command: command.name, left }),
+                        content: this.t('event.interaction.cooldown', { command: command.name, left }, interaction),
                         flags: MessageFlags.Ephemeral,
                     });
                     return;

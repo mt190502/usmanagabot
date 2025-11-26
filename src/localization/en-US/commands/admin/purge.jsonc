@@ -1,8 +1,9 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "purge": {
-        "description": "Deletes messages up to the targeted message.",
+        "name": "purge",
         "pretty_name": "Purge",
+        "description": "Deletes messages up to the targeted message.",
         "help": "Deletes messages up to the specified message.\n\n**Usage:**\n- `/purge <message_id|message_url>` - Deletes messages up to the specified message.\n- You can also right-click on a message and select **Apps > Purge** to delete messages.\n\n**Examples:**\n- `/purge 123456789012345678` - Deletes messages up to the message with ID 123456789012345678.\n- `/purge https://discord.com/channels/987654321098765432/123456789012345678/234567890123456789` - Deletes messages up to the message at the specified URL.",
         "parameters": {
             "message_id": "Message ID or URL",

@@ -4,12 +4,17 @@ import { Database } from '@services/database';
 import { Logger } from '@services/logger';
 import { Translator } from './services/translator';
 
+/**
+ * The main entry point for the application.
+ *
+ * This self-executing asynchronous function orchestrates the initialization of all core services.
+ * It ensures that services are started in the correct order, handling any potential critical failures
+ * during the startup process.
+ */
 (async () => {
-    const config = Config.getInstance();
-    const translator = Translator.getInstance();
-    translator.setLanguage = config.current_botcfg.language;
-    const logger = Logger.getInstance();
-    logger.setLogLevel = config.current_botcfg.log_level;
-    await Database.getInstance();
-    await BotClient.init(config.current_botcfg.token);
+    await Translator.init();
+    Logger.setLogLevel = Config.current_botcfg.log_level;
+    Translator.setLanguage = Config.current_botcfg.language;
+    await Database.init();
+    await BotClient.init(Config.current_botcfg.token);
 })();

@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "alias": {
+        "name": "alias",
         "pretty_name": "Takma Ad Sistemi",
         "description": "Çeşitli takma adlar oluşturur ve yönetir.",
         "help": "Çeşitli takma adlar oluşturur ve yönetir.\n\n**Kullanım:**\n- `/alias add <isim> <içerik> <seçenekler>` - Yeni bir takma ad oluşturur.\n- `/alias list` - Mevcut takma adlarını listeler.\n- `/alias modify <name> <content?> <options?>` - Mevcut bir takma ad üzerinde değişiklik yapar.\n- `/alias remove <name>` - Mevcut bir takma adı kaldırır.",
@@ -24,11 +25,26 @@
             "success": "\"{alias}\" takma adı başarıyla güncellendi.",
         },
         "parameters": {
-            "casesensitive": "Büyük/küçük harf duyarlılığı",
-            "content": "Takma ad içeriği ({variables})",
-            "messageconsistsonlyofword": "Mesaj sadece bu kelimeden oluşmalı",
-            "messageincludesthisword": "Mesaj bu kelimeyi içermeli",
-            "name": "Takma ad ismi",
+            "alias_name": {
+                "name": "takma_ad_ismi",
+                "description": "Takma ad ismi",
+            },
+            "alias_content": {
+                "name": "takma_ad_içeriği",
+                "description": "Takma ad içeriği ({variables})",
+            },
+            "casesensitive": {
+                "name": "harf_duyarlılığı",
+                "description": "Büyük/küçük harf duyarlılığı",
+            },
+            "messageconsistsonlyofword": {
+                "name": "sadece_bu_kelime",
+                "description": "Mesaj sadece bu kelimeden oluşmalı",
+            },
+            "messageincludesthisword": {
+                "name": "bu_kelimeyi_içermeli",
+                "description": "Mesaj bu kelimeyi içermeli",
+            },
         },
         "remove": {
             "success": "\"{alias}\" takma adı başarıyla kaldırıldı.",
@@ -41,15 +57,19 @@
         },
         "subcommands": {
             "add": {
+                "name": "ekle",
                 "description": "Takma ad ekle",
             },
             "list": {
+                "name": "alias_listesi",
                 "description": "Takma adları listele",
             },
             "modify": {
-                "description": "Takma ad değiştir",
+                "name": "düzenle",
+                "description": "Takma ad düzenle",
             },
             "remove": {
+                "name": "kaldır",
                 "description": "Takma ad kaldır",
             },
         },

@@ -16,22 +16,12 @@ import path from 'path';
  */
 export class EventLoader {
     /**
-     * The singleton instance of the EventLoader.
-     * It is set during the `init()` method and remains null until initialization.
+     * The shared `Logger` for logging event loading information.
      * @private
      * @static
-     * @type {(EventLoader | null)}
+     * @type {typeof Logger}
      */
-    private static instance: EventLoader | null = null;
-
-    /**
-     * The shared `Logger` singleton instance.
-     * This is used for logging information about the event loading process.
-     * @private
-     * @static
-     * @type {Logger}
-     */
-    private static logger: Logger = Logger.getInstance();
+    private static logger: typeof Logger = Logger;
 
     /**
      * An in-memory registry of all loaded event handlers.
@@ -57,9 +47,6 @@ export class EventLoader {
      * @returns {Promise<Client>} A promise that resolves to the client instance with all events registered.
      */
     public static async init(client: Client): Promise<Client> {
-        if (EventLoader.instance) {
-            return client;
-        }
         for (const file of await glob(path.join(__dirname, './**/*.ts'), { ignore: '**/index.ts' })) {
             const file_name_with_path = file.match(/([^/]+\/[^/]+\/[^/]+)$/)![0];
             const event_classes = (await import(file)).default;
@@ -68,31 +55,14 @@ export class EventLoader {
             for (const event_class of events) {
                 const event = new event_class() as BaseEvent<keyof ClientEvents>;
                 if (!event.enabled) {
-                    EventLoader.logger.send('info', 'event.disabled', { event: event.type, filename: file_name_with_path });
+                    Logger.send('info', 'event.disabled', { event: event.type, filename: file_name_with_path });
                     continue;
                 }
-                EventLoader.logger.send('log', 'event.loading', { event: event.type, filename: file_name_with_path });
+                Logger.send('log', 'event.loading', { event: event.type, filename: file_name_with_path });
                 EventLoader.BotEvents[event.type] = event;
                 client[event.once ? 'once' : 'on'](event.type, (...args) => event.execute(...args));
             }
         }
-        EventLoader.instance = new EventLoader();
         return client;
-    }
-
-    /**
-     * Retrieves the singleton instance of the EventLoader.
-     *
-     * If an instance does not already exist, a new one will be created.
-     *
-     * @public
-     * @static
-     * @returns {EventLoader} The singleton instance of the EventLoader.
-     */
-    public static getInstance(): EventLoader {
-        if (!EventLoader.instance) {
-            EventLoader.instance = new EventLoader();
-        }
-        return EventLoader.instance;
     }
 }

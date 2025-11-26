@@ -1,11 +1,12 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "help": {
+        "name": "yardim",
         "pretty_name": "Yardım",
         "description": "Mevcut komutların listesini ve belirli bir komut hakkında ayrıntılı bilgileri görüntüler.",
         "help": "Mevcut komutların nasıl kullanılacağını ve belirli bir komut hakkında ayrıntılı bilgileri görüntüler.\n\n**Kullanım:**\n- `/help` - Tüm komutların listesini gösterir.",
         "execute": {
-            "command_title": "{command} Komutu Hakkında",
+            "command_title": "{command} Hakkında",
             "main_title": "Yardım - Mevcut Komutlar",
         },
     },

@@ -1,9 +1,6 @@
 import {
-    Interaction,
+    BaseInteraction,
     InteractionResponse,
-    ButtonInteraction,
-    ContextMenuCommandInteraction,
-    StringSelectMenuInteraction
 } from 'discord.js';
 
 interface StoredInteractionResponse {
@@ -13,22 +10,25 @@ interface StoredInteractionResponse {
 }
 
 /**
- * Centralized registry for storing interaction responses to enable proper editing
- * of original messages when handling button interactions in decorators.
+ * A static registry for temporarily storing `InteractionResponse` objects.
+ *
+ * This is primarily used by decorators to edit the original message response
+ * from a different context, such as a button interaction handler. Responses are
+ * stored with a Time-to-Live (TTL) and are automatically cleaned up.
  */
 export class InteractionResponseRegistry {
     private static responses = new Map<string, StoredInteractionResponse>();
     private static cleanup_interval: NodeJS.Timeout | null = null;
 
     /**
-     * Generates a unique key for storing interaction responses
-     * @param interaction The Discord interaction
-     * @param command_name The name of the command
-     * @param property_key The method name being decorated
-     * @returns A unique string key
+     * Generates a unique key for an interaction response based on the command and user context.
+     * @param {BaseInteraction} interaction The originating Discord interaction.
+     * @param {string} command_name The name of the command.
+     * @param {string} property_key The name of the decorated method (property key).
+     * @returns {string} A unique key for the registry.
      */
     static generateKey(
-        interaction: ContextMenuCommandInteraction | StringSelectMenuInteraction | ButtonInteraction | Interaction,
+        interaction: BaseInteraction,
         command_name: string,
         property_key: string
     ): string {
@@ -36,10 +36,10 @@ export class InteractionResponseRegistry {
     }
 
     /**
-     * Stores an interaction response for later retrieval
-     * @param key Unique identifier for the response
-     * @param response The InteractionResponse to store
-     * @param ttl Time to live in milliseconds (default: 5 minutes)
+     * Stores an `InteractionResponse` in the registry with a specific TTL.
+     * @param {string} key The unique key for the response.
+     * @param {InteractionResponse} response The response object to store.
+     * @param {number} [ttl=300000] The Time-to-Live for the stored response in milliseconds. Defaults to 5 minutes.
      */
     static store(key: string, response: InteractionResponse, ttl: number = 300000): void {
         this.responses.set(key, {
@@ -54,9 +54,9 @@ export class InteractionResponseRegistry {
     }
 
     /**
-     * Retrieves a stored interaction response
-     * @param key The unique identifier
-     * @returns The stored InteractionResponse or undefined if not found/expired
+     * Retrieves a stored `InteractionResponse`. If the item has expired, it is removed.
+     * @param {string} key The unique key for the response.
+     * @returns {InteractionResponse | undefined} The stored response, or `undefined` if not found or expired.
      */
     static get(key: string): InteractionResponse | undefined {
         const stored = this.responses.get(key);
@@ -74,8 +74,8 @@ export class InteractionResponseRegistry {
     }
 
     /**
-     * Removes a stored interaction response
-     * @param key The unique identifier
+     * Manually deletes an interaction response from the registry.
+     * @param {string} key The unique key for the response to delete.
      */
     static delete(key: string): void {
         this.responses.delete(key);
@@ -87,7 +87,7 @@ export class InteractionResponseRegistry {
     }
 
     /**
-     * Removes all expired interaction responses
+     * Iterates through the registry and removes all expired responses.
      */
     static cleanup(): void {
         const now = Date.now();
@@ -111,7 +111,8 @@ export class InteractionResponseRegistry {
     }
 
     /**
-     * Starts the automatic cleanup interval
+     * Starts the automatic cleanup interval if it is not already running.
+     * @private
      */
     private static startCleanupInterval(): void {
         this.cleanup_interval = setInterval(() => {
@@ -120,14 +121,16 @@ export class InteractionResponseRegistry {
     }
 
     /**
-     * Gets the current number of stored responses (for debugging)
+     * Returns the current number of items in the registry. Useful for debugging.
+     * @returns {number} The number of stored responses.
      */
     static size(): number {
         return this.responses.size;
     }
 
     /**
-     * Clears all stored responses (for cleanup/testing)
+     * Clears all responses from the registry and stops the cleanup interval.
+     * Useful for testing or shutting down.
      */
     static clear(): void {
         this.responses.clear();

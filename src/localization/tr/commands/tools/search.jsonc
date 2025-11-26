@@ -1,7 +1,8 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "search": {
-        "pretty_name": "Arama Komutu",
+        "name": "ara",
+        "pretty_name": "Arama",
         "description": "Belirtilen terim için arama yapar ve sonuçları döndürür.",
         "help": "Belirtilen terim için arama linki döndürür.\n\n**Kullanım:**\n- `/search <motor> <sorgu>` - Belirtilen arama motorunda sorgu için arama yapar.\n\n**Örnekler:**\n- `/search engine:Google query:Sütlaç Tarifi` - Google'da 'Sütlaç Tarifi' için arama yapar.\n- `/search engine:DuckDuckGo query:En iyi programlama dilleri` - DuckDuckGo'da 'En iyi programlama dilleri' için arama yapar.",
         "parameters": {

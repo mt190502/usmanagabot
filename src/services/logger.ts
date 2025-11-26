@@ -18,34 +18,32 @@ export enum LogLevels {
 }
 
 /**
- * Logger provides localized, leveled logging with formatted output.
+ * A static class for localized, leveled logging with formatted output.
  *
  * Features:
- * - Language-aware message lookup using jsonc files.
- * - Level filtering via a selected minimum threshold.
- * - Message formatting with timestamp, file and line metadata.
+ * - **Leveled Logging**: Filters messages by severity (debug, log, info, warn, error).
+ * - **Localization**: Fetches log messages from translation files via the `Translator` service.
+ * - **Rich Formatting**: Adds timestamp, color-coded level, and caller file/line info to messages.
+ * - **Discord Notifications**: Sends high-severity logs (error, warn) to a configured Discord channel.
  *
- * Use Logger.getInstance() to access the singleton.
+ * All methods are static. `Logger.init()` should be called at startup to apply the configured log level.
  */
 export class Logger {
     /**
-     * Singleton instance reference.
+     * The `Translator` class, used for localizing log messages.
+     * @private
      */
-    private static instance: Logger | null = null;
+    private static translator: typeof Translator = Translator;
 
     /**
-     * Translator instance for localization lookups.
+     * The language used for localizing log messages.
+     * @private
      */
-    private translator: Translator = Translator.getInstance();
+    private static current_language: SupportedLanguages = SupportedLanguages.EN_US;
 
     /**
-     * Current language used when resolving localization keys.
-     */
-    private static current_language: SupportedLanguages = SupportedLanguages.EN;
-
-    /**
-     * Currently selected minimum log level. Messages with a numerically greater
-     * value than this threshold are filtered out.
+     * The minimum log level to be processed. Messages with a lower severity will be ignored.
+     * @private
      */
     private static selected_log_level: LogLevels =
         process.env.NODE_ENV === 'production' ? LogLevels.error : LogLevels.debug;
@@ -54,7 +52,7 @@ export class Logger {
      * Determine caller filename and line from a stack trace.
      * @returns {{filename: string, linenumber: string}} The caller's source filename and line number.
      */
-    private getCallerInfo(): { filename: string; linenumber: string } {
+    private static getCallerInfo(): { filename: string; linenumber: string } {
         const stack_lines = new Error().stack?.split('\n') ?? [];
         let caller_line = '';
         for (let i = 3; i < stack_lines.length; i++) {
@@ -78,7 +76,7 @@ export class Logger {
      * @param {string} params.linenumber - The line number in the file where the log originated.
      * @returns {string} The formatted message.
      */
-    private format({
+    private static format({
         type,
         message,
         filename,
@@ -103,22 +101,23 @@ export class Logger {
 
     /**
      * Send logs to Discord for higher-severity levels.
-     * Uses management config if enabled, otherwise falls back to LogNotifier database entries.
-     * @param {string} type Log type: 'error' | 'warn'.
+     * Uses the management channel configuration from `Config`.
+     * @private
+     * @param {string} type The log level type ('error' or 'warn').
      * @param {string} message The log message.
      * @param {string} filename Source filename where the log originated.
      * @param {string} linenumber Source line number where the log originated.
      * @param {string} formatted_message Fully formatted log message.
      * @returns {Promise<void>} Resolves when the notification is sent or fails
      */
-    private async sendNotificationToDiscord(
+    private static async sendNotificationToDiscord(
         type: string,
         message: string,
         filename: string,
         linenumber: string,
         formatted_message: string,
     ): Promise<void> {
-        const management = Config.getInstance().current_botcfg.management;
+        const management = Config.current_botcfg.management;
         const client = BotClient.client;
         if (!client || !client.isReady()) return;
 
@@ -145,29 +144,30 @@ export class Logger {
      * Log a message at the provided level after localization and formatting.
      *
      * Behavior:
-     * - If the level is filtered out by the current threshold, nothing is logged.
-     * - For 'error' level, the process exits with code 1 after logging.
+     * - If the message's log level is below the configured `selected_log_level`, it is ignored.
+     * - `error` and `warn` messages are also sent as notifications to a configured Discord channel.
      *
-     * @param {keyof typeof LogLevels} type One of 'debug' | 'error' | 'info' | 'log' | 'warn'.
-     * @param {string} key Localization key for the message template.
-     * @param {(string | number | unknown)[]} [replacements] Optional template replacement values.
+     * @public
+     * @static
+     * @param {keyof typeof LogLevels} type The severity level of the log message.
+     * @param {string} key The localization key for the message template.
+     * @param {Record<string, unknown>} [replacements] Optional placeholder values for the message.
      * @returns {void}
      */
-    public send(type: keyof typeof LogLevels, key: string, replacements?: { [key: string]: unknown }): void {
+    public static send(type: keyof typeof LogLevels, key: string, replacements?: { [key: string]: unknown }): void {
         if (LogLevels[type] > Logger.selected_log_level) return;
-        const msg = this.translator.querySync(type, key, replacements);
+        const msg = Translator.querySync(type, key, replacements);
 
-        const { filename, linenumber } = this.getCallerInfo();
-        const formatted_message = this.format({ type: LogLevels[type], message: msg, filename, linenumber });
+        const { filename, linenumber } = Logger.getCallerInfo();
+        const formatted_message = Logger.format({ type: LogLevels[type], message: msg, filename, linenumber });
         switch (type) {
             case 'error':
                 console.log(formatted_message);
-                this.sendNotificationToDiscord('error', key, filename, linenumber, formatted_message);
-                process.exit(1);
+                Logger.sendNotificationToDiscord('error', key, filename, linenumber, formatted_message);
                 break;
             case 'warn':
                 console.warn(formatted_message);
-                this.sendNotificationToDiscord('warn', key, filename, linenumber, formatted_message);
+                Logger.sendNotificationToDiscord('warn', key, filename, linenumber, formatted_message);
                 break;
             default:
                 console.log(formatted_message);
@@ -175,19 +175,19 @@ export class Logger {
     }
 
     /**
-     * Update the minimum log level threshold.
-     * @param {LogLevels} level New log level to set as threshold.
+     * Sets the minimum log level threshold.
+     * @public
+     * @static
+     * @param {LogLevels} level The new minimum log level.
      */
-    public set setLogLevel(level: LogLevels) {
+    public static set setLogLevel(level: LogLevels) {
         if (level in LogLevels) Logger.selected_log_level = level;
     }
 
     /**
-     * Obtain the Logger singleton instance.
-     * @returns {Logger} Singleton instance.
+     * Initializes the Logger by setting the log level and language from the global configuration.
+     * This should be called once at startup after the `Config` service has been initialized.
+     * @public
+     * @static
      */
-    public static getInstance(): Logger {
-        if (!Logger.instance) Logger.instance = new Logger();
-        return Logger.instance;
-    }
 }

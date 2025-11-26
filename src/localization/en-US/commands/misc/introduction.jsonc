@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "introduction": {
+        "name": "introduction",
         "pretty_name": "Introduction",
         "description": "Creates and manages user introduction information.",
         "help": "Creates user-specific introduction information\n\n**Usage:**\n- `/introduction <parameters>` - Creates or updates introduction information.\n\n**Examples:**\n- `/introduction os:linux de:gnome` - Sets introduction information to 'os:linux de:gnome'.\n - `/introduction car:peugeot bike:yamaha` - Sets introduction information to 'car:peugeot bike:yamaha'.",

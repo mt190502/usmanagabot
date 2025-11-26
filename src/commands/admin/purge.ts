@@ -11,11 +11,27 @@ import {
     SlashCommandBuilder,
 } from 'discord.js';
 import { CommandQuestionPrompt } from '../../types/decorator/commandquestionprompt';
+import { Log } from '../../types/decorator/log';
 import { BaseCommand } from '../../types/structure/command';
 
+/**
+ * A command for bulk-deleting messages in a channel.
+ *
+ * This command allows administrators to delete all messages in a channel up to a specified
+ * target message. It functions as both a slash command (requiring a message ID/URL) and a
+ * message context menu command.
+ *
+ * To prevent accidental mass deletions, it uses the `@CommandQuestionPrompt` decorator
+ * to ask for confirmation from the user before proceeding.
+ */
 export default class PurgeCommand extends BaseCommand {
     // ============================ HEADER ============================ //
+    /**
+     * Stores the target message to delete up to.
+     * This is populated when the command is initiated.
+     */
     private static target: Message<boolean>;
+
     constructor() {
         super({ name: 'purge', is_admin_command: true });
 
@@ -26,6 +42,7 @@ export default class PurgeCommand extends BaseCommand {
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
         this.push_cmd_data = new ContextMenuCommandBuilder()
             .setName(this.pretty_name)
+            .setNameLocalizations(this.getLocalizations('pretty_name'))
             .setType(ApplicationCommandType.Message | ApplicationCommandType.User)
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
     }
@@ -33,6 +50,20 @@ export default class PurgeCommand extends BaseCommand {
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
+    /**
+     * Executes the purge operation.
+     *
+     * This method has two phases:
+     * 1. **Initiation (via `CommandInteraction`):** It identifies the target message from either the
+     *    context menu or the slash command's `message_id` option. It doesn't delete anything at
+     *    this stage; the `@CommandQuestionPrompt` decorator intercepts the execution and shows a
+     *    confirmation button to the user.
+     * 2. **Confirmation (via `ButtonInteraction`):** If the user clicks the "OK" button, this method
+     *    is re-invoked. It then fetches all messages between the present and the target message,
+     *    deletes them in chunks of 100, and finally deletes the target message itself.
+     *
+     * @param interaction The interaction object, which can be from the initial command or the confirmation button.
+     */
     @CommandQuestionPrompt({
         title: 'command.execute.warning',
         message: 'purge.execute.are_you_sure',
@@ -40,12 +71,8 @@ export default class PurgeCommand extends BaseCommand {
         cancel_label: 'command.execute.cancel',
         flags: MessageFlags.Ephemeral,
     })
+    @Log()
     public async execute(interaction: ButtonInteraction | CommandInteraction): Promise<void> {
-        this.log.send('debug', 'command.execute.start', {
-            name: this.name,
-            guild: interaction.guild,
-            user: interaction.user,
-        });
         const post = new EmbedBuilder();
         if (interaction.isButton()) {
             const selected_messages: Message<boolean>[] = [];
@@ -88,8 +115,12 @@ export default class PurgeCommand extends BaseCommand {
                     guild: interaction.guild,
                 });
             } catch (err) {
-                post.setTitle(`:octagonal_sign: ${this.t('command.execute.error')}`)
-                    .setDescription(this.t('execute.error', { error: (err as Error).message }))
+                post.setTitle(
+                    `:octagonal_sign: ${this.t('command.execute.error', undefined, interaction)}`,
+                )
+                    .setDescription(
+                        this.t('execute.error', { error: (err as Error).message }, interaction),
+                    )
                     .setColor(Colors.Red);
                 await interaction.update({ embeds: [post], components: [] });
                 this.log.send('warn', 'command.purge.execute.delete.failed', {
@@ -104,15 +135,12 @@ export default class PurgeCommand extends BaseCommand {
             PurgeCommand.target.delete();
             selected_count++;
 
-            post.setTitle(`:white_check_mark: ${this.t('command.execute.success')}`)
-                .setDescription(this.t('execute.success', { count: selected_count }))
+            post.setTitle(
+                `:white_check_mark: ${this.t('command.execute.success', undefined, interaction)}`,
+            )
+                .setDescription(this.t('execute.success', { count: selected_count }, interaction))
                 .setColor(Colors.Green);
             await interaction.update({ embeds: [post], components: [] });
-            this.log.send('debug', 'command.execute.success', {
-                name: this.name,
-                guild: interaction.guild,
-                user: interaction.user,
-            });
         } else {
             if (interaction.isMessageContextMenuCommand()) {
                 PurgeCommand.target = interaction.targetMessage;
@@ -124,8 +152,10 @@ export default class PurgeCommand extends BaseCommand {
                     .at(-1)!
                     .replaceAll(/(\s|<|>|@|&|!)/g, '');
                 if (!message_id) {
-                    post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                        .setDescription(this.t('execute.message_id_required'))
+                    post.setTitle(
+                        `:warning: ${this.t('command.execute.warning', undefined, interaction)}`,
+                    )
+                        .setDescription(this.t('execute.message_id_required', undefined, interaction))
                         .setColor(Colors.Yellow);
                     await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
                     return;
@@ -133,8 +163,12 @@ export default class PurgeCommand extends BaseCommand {
                 try {
                     PurgeCommand.target = await interaction.channel!.messages.fetch(message_id);
                 } catch (err) {
-                    post.setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                        .setDescription(this.t('execute.message_not_found_in_channel'))
+                    post.setTitle(
+                        `:warning: ${this.t('command.execute.warning', undefined, interaction)}`,
+                    )
+                        .setDescription(
+                            this.t('execute.message_not_found_in_channel', undefined, interaction),
+                        )
                         .setColor(Colors.Yellow);
                     await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
                     this.log.send('warn', 'command.purge.execute.delete.failed', {

@@ -2,12 +2,19 @@ import { Events, GuildMember, RoleSelectMenuInteraction, StringSelectMenuInterac
 import { BotClient } from '../../services/client';
 import { Autorole } from '../../types/database/entities/autorole';
 import { ChainEvent } from '../../types/decorator/chainevent';
+import { Log } from '../../types/decorator/log';
 import {
     SettingGenericSettingComponent,
     SettingRoleSelectMenuComponent,
 } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
+/**
+ * A pseudo-command that automatically assigns a role to new members when they join a guild.
+ *
+ * This command is triggered by the `GuildMemberAdd` event and is configurable through the settings system.
+ * It allows administrators to enable or disable the feature and to select the specific role to be assigned.
+ */
 export default class AutoroleCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
@@ -34,7 +41,15 @@ export default class AutoroleCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
+    /**
+     * Executes the autorole logic when a new member joins the guild.
+     * This method is decorated with `@ChainEvent` to listen for the `GuildMemberAdd` event.
+     * It checks if the feature is enabled for the guild and if a valid role is configured.
+     * If so, it assigns the configured role to the new member.
+     * @param member The member who just joined the guild.
+     */
     @ChainEvent({ type: Events.GuildMemberAdd })
+    @Log()
     public async execute(member: GuildMember): Promise<void> {
         this.log.send('debug', 'command.event.trigger.start', {
             name: 'autorole',
@@ -61,11 +76,18 @@ export default class AutoroleCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
+    /**
+     * Toggles the autorole feature on or off for the guild.
+     * This method is a setting component that handles a `StringSelectMenuInteraction`.
+     * It updates the `is_enabled` flag in the database and refreshes the settings UI.
+     * @param interaction The interaction from the settings select menu.
+     */
     @SettingGenericSettingComponent({
         database: Autorole,
         database_key: 'is_enabled',
         format_specifier: '%s',
     })
+    @Log()
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const autorole = await this.db.findOne(Autorole, {
@@ -86,11 +108,19 @@ export default class AutoroleCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Changes the role to be assigned to new members.
+     * This method is a setting component that handles a `RoleSelectMenuInteraction`.
+     * It validates that the selected role is below the bot's highest role in the hierarchy
+     * before updating the `role_id` in the database and refreshes the settings UI.
+     * @param interaction The interaction from the settings role select menu.
+     */
     @SettingRoleSelectMenuComponent({
         database: Autorole,
         database_key: 'role_id',
         format_specifier: '<@&%s>',
     })
+    @Log()
     public async changeRole(interaction: RoleSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.role.start', { name: this.name, guild: interaction.guild });
         const autorole = await this.db.findOne(Autorole, {
@@ -102,7 +132,7 @@ export default class AutoroleCommand extends CustomizableCommand {
         const requested_role = server_roles.get(interaction.values[0])!;
 
         if (requested_role.position >= bot_role.position) {
-            this.warning = this.t('settings.changerole.role_hierarchy_error');
+            this.warning = this.t('settings.changerole.role_hierarchy_error', undefined, interaction);
             await this.settingsUI(interaction);
             return;
         }

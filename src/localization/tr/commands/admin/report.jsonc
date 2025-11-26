@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "report": {
+        "name": "raporla",
         "pretty_name": "Rapor Sistemi",
         "description": "Belirtilen mesajı moderatörlere rapor eder.",
         "help": "Belirtilen mesajı moderatörlere raporlar.\n\n**Kullanım:**\n- `/report <kullanıcı> <sebep> [mesaj_url_listesi]` - Belirtilen kullanıcıyı ve sebebi moderatörlere raporlar. İsteğe bağlı olarak, bağlam sağlamak için bir veya daha fazla mesaj URL'si ekleyebilirsiniz.\n\n**Örnekler:**\n- `/report user:@Kullanıcı1 reason:Spam message_url:https://discord.com/channels/987654321098765432/123456789012345678/234567890123456789` - @Kullanıcı1'i spam nedeniyle raporlar ve belirtilen mesaj URL'sini bağlam olarak ekler.",

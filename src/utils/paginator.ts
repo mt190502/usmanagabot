@@ -9,21 +9,16 @@ import {
 import { Translator } from '../services/translator';
 
 /**
- * Paginator module.
- * Manages paginated embeds with navigation buttons and select menus.
+ * A static utility class for creating and managing paginated embeds in Discord.
+ *
+ * The `Paginator` handles state management for multi-page messages, allowing users
+ * to navigate through content using buttons and select menus.
  */
 
 /**
- * Pagination item state interface.
- * Tracks current page and configuration for pagination.
- *
- * @property {number} current_page - The current page number.
- * @property {object} config - Configuration for pagination.
- * @property {string} config.title - Title of the embed.
- * @property {ColorResolvable} config.color - Color of the embed.
- * @property {Array} config.items - Array of items to paginate.
- * @property {number} config.items_per_page - Number of items per page.
- * @property {string} [config.select_menu_placeholder] - Placeholder text for the select menu.
+ * Defines the state for a paginated message, including the current page
+ * and the configuration for the items being displayed.
+ * @internal
  */
 interface pageItem {
     current_page: number;
@@ -38,12 +33,9 @@ interface pageItem {
 }
 
 /**
- * View item state interface.
- * Used for viewing detailed information about a specific item.
- *
- * @property {string} title - Title of the embed.
- * @property {ColorResolvable} color - Color of the embed.
- * @property {string} description - Description of the item.
+ * Defines the configuration for a detailed "view" page, which is shown
+ * when a user selects an item from the paginated list.
+ * @internal
  */
 interface viewItem {
     color: ColorResolvable;
@@ -52,45 +44,49 @@ interface viewItem {
 }
 
 /**
- * Paginator class.
- * Manages paginated embeds with navigation buttons and select menus.
+ * A static class that provides methods for creating and managing paginated messages.
+ *
+ * It maintains the state of each user's paginated view in memory and provides
+ * methods to navigate between pages (`nextPage`, `previousPage`) and to generate
+ * the initial view (`generatePage`).
  */
 export class Paginator {
     // ============================ HEADER ============================ //
     /**
-     * Singleton instance reference for the Paginator class. Set during getInstance().
-     */
-    private static instance: Paginator | null = null;
-
-    /**
-     * Map to store pagination states for different guilds, users, and commands.
+     * An in-memory map to store the pagination state for each user and command interaction.
+     * The key is a unique string generated from the guild, user, and command name.
+     * @private
      * @static
-     * @type {Map<string, pageItem>}
      */
     private static page_states: Map<string, pageItem> = new Map();
 
     /**
-     * Generates a unique state key for a guild, user, and command combination.
-     *
-     * @param {string} guild_id - The ID of the guild.
-     * @param {string} user_id - The ID of the user.
-     * @param {string} command_name - The name of the command.
-     * @returns {string} Unique state key.
+     * Generates a unique key for storing the pagination state.
+     * @private
+     * @static
+     * @param {string} guild_id The ID of the guild.
+     * @param {string} user_id The ID of the user.
+     * @param {string} command_name The name of the command that initiated the pagination.
+     * @returns {string} A unique key for the state map.
      */
-    private getStateKey(guild_id: string, user_id: string, command_name: string): string {
+    private static getStateKey(guild_id: string, user_id: string, command_name: string): string {
         return `${guild_id}:${user_id}:${command_name}`;
     }
 
     /**
-     * Builds the paginated embed response with navigation buttons and select menu.
-     *
-     * @param {pageItem} pagination_state - The current pagination state.
-     * @param {string} command_name - The name of the command.
-     * @returns {object} Object containing embeds and components for the response.
+     * Constructs the Discord message payload (embeds and components) for the current page.
+     * @private
+     * @static
+     * @param {pageItem} pagination_state The current state of the paginated message.
+     * @param {string} command_name The name of the associated command.
+     * @param {string} [guild_id] The ID of the guild, used for localization.
+     * @returns {{ embeds: EmbedBuilder[], components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] }}
+     * The message payload to be sent to Discord.
      */
-    private buildPageResponse(
+    private static buildPageResponse(
         pagination_state: pageItem,
         command_name: string,
+        guild_id?: string,
     ): {
         embeds: EmbedBuilder[];
         components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[];
@@ -103,16 +99,16 @@ export class Paginator {
         const prev = new ButtonBuilder()
             .setCustomId(`page:${command_name}:prev`)
             .setEmoji('⬅️')
-            .setLabel(this.t('paginator.previous'))
+            .setLabel(Paginator.t('paginator.previous', undefined, BigInt(guild_id!)))
             .setStyle(ButtonStyle.Primary);
         const next = new ButtonBuilder()
             .setCustomId(`page:${command_name}:next`)
             .setEmoji('➡️')
-            .setLabel(this.t('paginator.next'))
+            .setLabel(Paginator.t('paginator.next', undefined, BigInt(guild_id!)))
             .setStyle(ButtonStyle.Primary);
         const string_select_menu = new StringSelectMenuBuilder()
             .setCustomId(`command:${command_name}:pageitem`)
-            .setPlaceholder(select_menu_placeholder || this.t('paginator.select'));
+            .setPlaceholder(select_menu_placeholder || Paginator.t('paginator.select', undefined, BigInt(guild_id!)));
 
         post.setTitle(title).setColor(color);
         let description = '';
@@ -140,7 +136,9 @@ export class Paginator {
             });
         }
         post.setDescription(description.trim());
-        post.setFooter({ text: this.t('paginator.page_status', { current_page, total_pages }) });
+        post.setFooter({
+            text: Paginator.t('paginator.page_status', { current_page, total_pages }, BigInt(guild_id!)),
+        });
 
         return {
             embeds: [post],
@@ -152,20 +150,16 @@ export class Paginator {
     }
 
     /**
-     * Generates the initial paginated embed response.
-     *
-     * @param {string} guild_id - The ID of the guild.
-     * @param {string} user_id - The ID of the user.
-     * @param {string} command_name - The name of the command.
-     * @param {object} o - Configuration for pagination.
-     * @param {string} o.title - Title of the embed.
-     * @param {ColorResolvable} o.color - Color of the embed.
-     * @param {Array} o.items - Array of items to paginate.
-     * @param {number} [o.items_per_page=5] - Number of items per page.
-     * @param {string} [o.select_menu_placeholder] - Placeholder text for the select menu.
-     * @returns {object} Object containing embeds and components for the response.
+     * Creates or updates the state for a paginated message and returns the initial page view.
+     * @public
+     * @static
+     * @param {string} guild_id The ID of the guild.
+     * @param {string} user_id The ID of the user.
+     * @param {string} command_name The name of the command initiating the pagination.
+     * @param {pageItem['config']} o The configuration for the paginated content.
+     * @returns {Promise<{ embeds: EmbedBuilder[], components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] }>} The message payload for the first page.
      */
-    public async generatePage(
+    public static async generatePage(
         guild_id: string,
         user_id: string,
         command_name: string,
@@ -175,7 +169,7 @@ export class Paginator {
         components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[];
     }> {
         const items_per_page = o.items_per_page ?? 5;
-        const state_key = this.getStateKey(guild_id, user_id, command_name);
+        const state_key = Paginator.getStateKey(guild_id, user_id, command_name);
 
         let pagination_state = Paginator.page_states.get(state_key);
         if (!pagination_state) {
@@ -202,10 +196,10 @@ export class Paginator {
             };
         }
 
-        return this.buildPageResponse(pagination_state, command_name);
+        return Paginator.buildPageResponse(pagination_state, command_name, guild_id);
     }
 
-    public async viewPage(
+    public static async viewPage(
         guild_id: string,
         user_id: string,
         command_name: string,
@@ -222,7 +216,7 @@ export class Paginator {
             new ButtonBuilder()
                 .setCustomId(`page:${command_name}:back`)
                 .setEmoji('⬅️')
-                .setLabel(this.t('paginator.back'))
+                .setLabel(Paginator.t('paginator.back', undefined, BigInt(guild_id)))
                 .setStyle(ButtonStyle.Secondary),
         );
         return {
@@ -232,14 +226,15 @@ export class Paginator {
     }
 
     /**
-     * Generates the previous page of the paginated embed.
-     *
-     * @param {string} guild_id - The ID of the guild.
-     * @param {string} user_id - The ID of the user.
-     * @param {string} command_name - The name of the command.
-     * @returns {object} Object containing embeds and components for the response.
+     * Moves to the previous page and returns the updated message payload.
+     * @public
+     * @static
+     * @param {string} guild_id The ID of the guild.
+     * @param {string} user_id The ID of the user.
+     * @param {string} command_name The name of the command.
+     * @returns {Promise<{ embeds: EmbedBuilder[], components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] }>} The message payload for the previous page.
      */
-    public async previousPage(
+    public static async previousPage(
         guild_id: string,
         user_id: string,
         command_name: string,
@@ -247,24 +242,25 @@ export class Paginator {
         embeds: EmbedBuilder[];
         components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[];
     }> {
-        const state_key = this.getStateKey(guild_id, user_id, command_name);
+        const state_key = Paginator.getStateKey(guild_id, user_id, command_name);
         const pagination_state = Paginator.page_states.get(state_key);
         if (!pagination_state) return { embeds: [], components: [] };
         if (pagination_state.current_page > 1) {
             pagination_state.current_page--;
         }
-        return this.buildPageResponse(pagination_state, command_name);
+        return Paginator.buildPageResponse(pagination_state, command_name, guild_id);
     }
 
     /**
-     * Generates the next page of the paginated embed.
-     *
-     * @param {string} guild_id - The ID of the guild.
-     * @param {string} user_id - The ID of the user.
-     * @param {string} command_name - The name of the command.
-     * @returns {object} Object containing embeds and components for the response.
+     * Moves to the next page and returns the updated message payload.
+     * @public
+     * @static
+     * @param {string} guild_id The ID of the guild.
+     * @param {string} user_id The ID of the user.
+     * @param {string} command_name The name of the command.
+     * @returns {Promise<{ embeds: EmbedBuilder[], components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] }>} The message payload for the next page.
      */
-    public async nextPage(
+    public static async nextPage(
         guild_id: string,
         user_id: string,
         command_name: string,
@@ -272,25 +268,26 @@ export class Paginator {
         embeds: EmbedBuilder[];
         components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[];
     }> {
-        const state_key = this.getStateKey(guild_id, user_id, command_name);
+        const state_key = Paginator.getStateKey(guild_id, user_id, command_name);
         const pagination_state = Paginator.page_states.get(state_key);
         if (!pagination_state) return { embeds: [], components: [] };
         const total_pages = Math.ceil(pagination_state.config.items.length / pagination_state.config.items_per_page);
         if (pagination_state.current_page < total_pages) {
             pagination_state.current_page++;
         }
-        return this.buildPageResponse(pagination_state, command_name);
+        return Paginator.buildPageResponse(pagination_state, command_name, guild_id);
     }
 
     /**
-     * Generates the back view of the paginated embed.
-     *
-     * @param {string} guild_id - The ID of the guild.
-     * @param {string} user_id - The ID of the user.
-     * @param {string} command_name - The name of the command.
-     * @returns {object} Object containing embeds and components for the response.
+     * Returns to the main paginated view from a detailed view.
+     * @public
+     * @static
+     * @param {string} guild_id The ID of the guild.
+     * @param {string} user_id The ID of the user.
+     * @param {string} command_name The name of the command.
+     * @returns {Promise<{ embeds: EmbedBuilder[], components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] }>} The message payload for the main list view.
      */
-    public async backPage(
+    public static async backPage(
         guild_id: string,
         user_id: string,
         command_name: string,
@@ -298,35 +295,22 @@ export class Paginator {
         embeds: EmbedBuilder[];
         components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[];
     }> {
-        const state_key = this.getStateKey(guild_id, user_id, command_name);
+        const state_key = Paginator.getStateKey(guild_id, user_id, command_name);
         const pagination_state = Paginator.page_states.get(state_key);
         if (!pagination_state) return { embeds: [], components: [] };
-        return this.buildPageResponse(pagination_state, command_name);
+        return Paginator.buildPageResponse(pagination_state, command_name, guild_id);
     }
 
     /**
-     * Translate a command string using the commands localization category.
-     * This method provides localization support for user-facing messages in commands.
-     *
+     * A convenience method for translating paginator-specific strings.
      * @protected
-     * @param {string} key Localization key from the commands category (e.g., 'purge.warning.title')
-     * @param {Record<string, unknown>} [replacements] Optional placeholder replacements for dynamic values
-     * @returns {string} Translated message in the current language
+     * @static
+     * @param {string} key The localization key (e.g., 'paginator.next').
+     * @param {Record<string, unknown>} [replacements] Optional placeholder values.
+     * @param {bigint} [guild_id] The ID of the guild for language-specific translation.
+     * @returns {string} The translated string.
      */
-    protected t(key: string, replacements?: Record<string, unknown>): string {
-        const translator = Translator.getInstance();
-        return translator.querySync('commands', key, replacements);
-    }
-
-    /**
-     * Return the singleton Paginator instance, creating it if necessary.
-     *
-     * @returns {Paginator} Singleton instance of Paginator.
-     */
-    public static getInstance(): Paginator {
-        if (!Paginator.instance) {
-            Paginator.instance = new Paginator();
-        }
-        return Paginator.instance;
+    protected static t(key: string, replacements?: Record<string, unknown>, guild_id?: bigint): string {
+        return Translator.querySync('commands', key, replacements, guild_id);
     }
 }

@@ -7,34 +7,30 @@ import { Users } from '../types/database/entities/users';
 import { DatabaseManager } from '../types/structure/database';
 
 /**
- * Database service class responsible for initializing and exposing TypeORM DataSource.
+ * A static class for initializing and managing the TypeORM DataSource.
  *
  * Responsibilities:
- * - Discover entity/migration/subscriber modules from src/types/database and initialize TypeORM DataSource.
- * - Expose the initialized DataSource for use by repositories and other services.
- * - Provide a singleton accessor to ensure a single DB connection per process.
+ * - Dynamically discovers entities, migrations, and subscribers from the `src/types/database` directory.
+ * - Initializes and exposes the TypeORM `DataSource` for use across the application.
+ * - Provides a `dbManager` proxy for convenient access to the entity manager with custom helper methods.
  *
- * Note: Initialization errors are logged via the Logger singleton; this class does not throw during init.
+ * Initialization errors during `init()` are thrown to be caught by the global error handler in `main.ts`.
  */
 export class Database {
     /**
-     * Singleton reference for the Database service.
-     */
-    private static instance: Promise<Database> | null = null;
-
-    /**
-     * `Logger` singleton used for reporting initialization errors and other important events.
+     * The `Logger` class used for reporting initialization events.
+     * @private
      * @static
-     * @type {Logger}
+     * @type {typeof Logger}
      */
-    private static logger: Logger = Logger.getInstance();
+    private static logger: typeof Logger = Logger;
 
     /**
      * The currently loaded database configuration used to build the `DataSource`.
-     * @readonly
+     * @static
      * @type {DatabaseConfig_t}
      */
-    public readonly current_dbcfg: DatabaseConfig_t;
+    public static current_dbcfg: DatabaseConfig_t;
 
     /**
      * The TypeORM `DataSource` instance once initialization completes.
@@ -42,24 +38,6 @@ export class Database {
      * @type {(DataSource | null)}
      */
     public static dataSource: DataSource | null = null;
-
-    /**
-     * Obtain the Database singleton. If not yet created, it constructs the object and
-     * attempts to initialize the underlying TypeORM DataSource.
-     *
-     * @param {DatabaseConfig_t} [c_dbcfg] Optional override for the database configuration (useful for tests).
-     * @returns {Promise<Database>} Promise resolving to the singleton Database instance.
-     */
-    public static getInstance(c_dbcfg?: DatabaseConfig_t): Promise<Database> {
-        if (!Database.instance) {
-            Database.instance = (async () => {
-                const db_instance = new Database(c_dbcfg);
-                await db_instance.init();
-                return db_instance;
-            })();
-        }
-        return Database.instance;
-    }
 
     /**
      * Provides a proxy-wrapped TypeORM `EntityManager` with added convenience methods
@@ -95,45 +73,39 @@ export class Database {
      * Initialize the TypeORM `DataSource`:
      * - Scans repository for entities, migrations, and subscribers.
      * - Constructs a `DataSource` using the loaded configuration and modules.
-     * - Calls `dataSource.initialize()` and logs any errors encountered.
+     * - Calls `dataSource.initialize()` and throws on error.
      *
-     * @private
+     * @static
      * @async
-     * @returns {Promise<void>} Resolves when initialization completes (or after logging on error).
+     * @param {DatabaseConfig_t} [c_dbcfg] Optional override for the database configuration.
+     * @returns {Promise<void>} Resolves when initialization completes.
+     * @throws {Error} If initialization fails.
      */
-    private async init(): Promise<void> {
+    public static async init(c_dbcfg?: DatabaseConfig_t): Promise<void> {
+        Database.current_dbcfg = c_dbcfg || Config.current_dbcfg;
         const entities = (await glob('src/types/database/entities/*.ts')).sort((a, b) => a.localeCompare(b));
         const migrations = (await glob('src/types/database/migrations/*.ts')).sort((a, b) => a.localeCompare(b));
         const subscribers = (await glob('src/types/database/subscribers/*.ts')).sort((a, b) => a.localeCompare(b));
-        Database.dataSource = new DataSource({
-            type: 'postgres',
-            host: this.current_dbcfg.host,
-            port: this.current_dbcfg.port,
-            username: this.current_dbcfg.username,
-            password: this.current_dbcfg.password,
-            database: this.current_dbcfg.database,
-            synchronize: this.current_dbcfg.synchronize,
-            logging: this.current_dbcfg.logging,
-            entities,
-            migrations,
-            subscribers,
-        });
-        try {
-            await Database.dataSource.initialize();
-            Database.logger.send('info', 'services.database.init.success');
-        } catch (error) {
-            Database.logger.send('error', 'services.database.init.failed', {
-                message: error instanceof Error ? error.message : 'Unknown error',
-            });
-        }
-    }
 
-    /**
-     * Private constructor to enforce singleton usage.
-     *
-     * @param {DatabaseConfig_t} [c_dbcfg] Optional database configuration override.
-     */
-    private constructor(c_dbcfg?: DatabaseConfig_t) {
-        this.current_dbcfg = c_dbcfg || Config.getInstance().current_dbcfg;
+        try {
+            Database.dataSource = new DataSource({
+                type: 'postgres',
+                host: Database.current_dbcfg.host,
+                port: Database.current_dbcfg.port,
+                username: Database.current_dbcfg.username,
+                password: Database.current_dbcfg.password,
+                database: Database.current_dbcfg.database,
+                synchronize: Database.current_dbcfg.synchronize,
+                logging: Database.current_dbcfg.logging,
+                entities,
+                migrations,
+                subscribers,
+            });
+
+            await Database.dataSource.initialize();
+            Logger.send('info', 'services.database.init.success');
+        } catch (error) {
+            throw new Error(`Failed to initialize database: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
     }
 }

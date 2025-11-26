@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "settings": {
+        "name": "ayarlar",
         "pretty_name": "Ayarlar",
         "help": "Belirli bir komutun ayarlarını yönetir.\n\n**Kullanım:**\n- `/settings` - Ayarları yönetmek için etkileşimli bir menü açar.",
         "description": "Komut ayarlarını yönetir.",

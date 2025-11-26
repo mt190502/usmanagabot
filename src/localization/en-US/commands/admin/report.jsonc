@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "report": {
+        "name": "report",
         "pretty_name": "Report System",
         "description": "Reports the specified message to moderators.",
         "help": "Reports the specified message to moderators.\n\n**Usage:**\n- `/report <user> <reason> [message_url_list]` - Reports the specified user and reason to moderators. Optionally, you can include one or more message URLs to provide context.\n\n**Examples:**\n- `/report user:@User1 reason:Spam message_url:https://discord.com/channels/987654321098765432/123456789012345678/234567890123456789` - Reports @User1 for spam and includes the specified message URL as context.",

@@ -1,12 +1,14 @@
 /**
- * Utility function to mask sensitive fields in an object.
- * It replaces the values of specified fields with a masked version.
- * The fields to be masked are defined in the `fields` array.
- * If the value is a string, it masks it by keeping the first 3 and last 3 characters,
- * replacing the middle part with '\*\*\*'. If the value is not a string,
- * it replaces it with '\*\*\*'.
- * @param {T} data - The object containing sensitive fields to be masked.
- * @returns {T} - The object with masked sensitive fields.
+ * Recursively masks sensitive fields within an object.
+ *
+ * This function clones the input object and replaces the values of predefined
+ * sensitive fields (e.g., 'token', 'password') with a masked string ('***').
+ * For string values longer than 6 characters, it partially masks the value,
+ * showing only the first and last 3 characters.
+ *
+ * @template T The type of the data object.
+ * @param {T} data The object to mask.
+ * @returns {T} A new object with sensitive fields masked.
  */
 export const maskSensitiveFields = <T>(data: T): T => {
     if (!data || typeof data !== 'object') return data;

@@ -1,7 +1,8 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "search": {
-        "pretty_name": "Search Command",
+        "name": "search",
+        "pretty_name": "Search",
         "description": "Searches for the specified term and returns results.",
         "help": "Returns a search link for the specified term.\n\n**Usage:**\n- `/search <engine> <query>` - Searches for the query in the specified search engine.\n\n**Examples:**\n- `/search engine:Google query:Rice Pudding Recipe` - Searches for 'Rice Pudding Recipe' on Google.\n- `/search engine:DuckDuckGo query:Best programming languages` - Searches for 'Best programming languages' on DuckDuckGo.",
         "parameters": {

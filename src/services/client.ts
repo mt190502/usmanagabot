@@ -1,48 +1,46 @@
-import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import { CommandLoader } from '@commands/index';
 import { EventLoader } from '@events/index';
 import { BotConfig_t } from '@services/config';
 import { Logger } from '@services/logger';
+import { Client, GatewayIntentBits, Partials } from 'discord.js';
 
 /**
- * BotClient is the main entry point for initializing and managing the Discord bot client.
+ * A static class responsible for initializing and managing the Discord.js client.
  *
- * Responsibilities:
- * - Instantiates the Discord.js Client with appropriate intents and partials.
- * - Chains command loading and event registration to configure the bot instance.
- * - Exposes access to the singleton bot client for use across the codebase.
+ * This class orchestrates the bot's startup sequence:
+ * 1. Creates a new `Client` instance with the required gateway intents and partials.
+ * 2. Initializes the `EventLoader` to register all event handlers.
+ * 3. Initializes the `CommandLoader` to load all application commands.
+ * 4. Logs the client into Discord using the provided token.
  *
- * Usage:
- * - Call BotClient.init(token) once during startup to create a Client and log in.
- * - Retrieve the current bot client via BotClient.client or BotClient.getInstance().
+ * The initialized client is stored in the static `BotClient.client` property for global access.
  */
 export class BotClient {
     /**
-     * Singleton reference to the BotClient instance. Lazily instantiated via `getInstance`.
-     */
-    private static instance: BotClient | null = null;
-
-    /**
-     * Shared `Logger` singleton for structured logging and localization-backed messages.
+     * The `Logger` class, used for logging client-related events.
+     * @private
      * @static
-     * @type {Logger}
+     * @type {typeof Logger}
      */
-    private static logger: Logger = Logger.getInstance();
+    private static logger: typeof Logger = Logger;
 
     /**
-     * The global `discord.js` Client instance representing the bot connection.
+     * The global `discord.js` `Client` instance, accessible after `init()` is called.
+     * @public
      * @static
      * @type {Client}
      */
     public static client: Client;
 
     /**
-     * Initializes the bot client, configures events/commands, and logs in via the provided token.
-     *
+     * Initializes the Discord client, loads events and commands, and logs in.
+     * This is the main entry point for starting the bot.
+     * @public
      * @static
      * @async
-     * @param {BotConfig_t['token']} token Discord bot authentication token.
+     * @param {BotConfig_t['token']} token The Discord bot authentication token.
      * @returns {Promise<void>}
+     * @throws {Error} If the login to Discord fails.
      */
     public static async init(token: BotConfig_t['token']): Promise<void> {
         const intents = [
@@ -61,17 +59,6 @@ export class BotClient {
         const client = new Client({ intents, partials });
         BotClient.client = await EventLoader.init(client);
         await CommandLoader.init();
-        BotClient.client.login(token);
-    }
-
-    /**
-     * Gets the singleton instance of BotClient.
-     * @returns {BotClient} The current BotClient instance.
-     */
-    public static getInstance(): BotClient {
-        if (!BotClient.instance) {
-            BotClient.instance = new BotClient();
-        }
-        return BotClient.instance;
+        await BotClient.client.login(token);
     }
 }

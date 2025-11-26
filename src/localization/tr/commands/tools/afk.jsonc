@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "afk": {
+        "name": "afk",
         "pretty_name": "AFK Sistemi",
         "description": "Kullanıcıların AFK (Uzakta) durumlarını yönetir.",
         "help": "Kullanıcıların AFK (Uzakta) durumlarını yönetir.\n\n**Kullanım:**\n- `/afk <sebep>` - AFK durumunuzu belirli bir sebep ile ayarlar.\n\n**Örnekler:**\n- `/afk reason:Kısa bir ara veriyorum` - AFK durumunuzu 'Kısa bir ara veriyorum' olarak ayarlar.",

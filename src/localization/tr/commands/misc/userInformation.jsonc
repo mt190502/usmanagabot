@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "user_information": {
+        "name": "kullanici_bilgisi",
         "pretty_name": "Kullanıcı Bilgisi",
         "description": "Belirtilen kullanıcı hakkında bilgileri alır.",
         "help": "Belirtilen kullanıcı hakkında detaylı bilgileri alır.\n\n**Kullanım:**\n- `/user_information <kullanıcı>` - Belirtilen kullanıcı hakkında bilgi alır.\n\n**Örnekler:**\n- `/user_information @Kullanıcı1` - @Kullanıcı1 hakkında bilgi alır.\n- Kullanıcı profiline veya mesajına sağ tıklayıp **Uygulamalar > Kullanıcı Bilgisi** seçeneğini kullanarak da kullanıcı bilgisi alabilirsiniz.",

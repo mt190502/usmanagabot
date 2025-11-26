@@ -5,8 +5,8 @@
     //* Token
     "token": "",
 
-    //* Language (supported: en, tr)
-    "language": "en",
+    //* Language (supported: auto, en, tr)
+    "language": "auto",
 
     //* Log Level (debug [16] > error [8] > warn [4] > info [2] > log [1] > off [0]) [default: debug (if NODE_ENV is not production)]
     "log_level": 16,

@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "ping": {
+        "name": "ping",
         "pretty_name": "Ping",
         "description": "Botun yanıt süresini ölçer.",
         "help": "Botun yanıt süresini ölçer.\n\n**Kullanım:**\n- `/ping` - Botun gecikme süresini milisaniye cinsinden döndürür.\n\n**Örnek Çıktı:**\n```plain\nPong! 🏓\n123ms\n```",

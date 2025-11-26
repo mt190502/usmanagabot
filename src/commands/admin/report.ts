@@ -19,7 +19,20 @@ import {
     SettingRoleSelectMenuComponent,
 } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
+import { Log } from '../../types/decorator/log';
 
+/**
+ * A command for users to report other users to the server administration.
+ *
+ * This command allows any user to file a report against another user, providing a reason and
+ * optional links to specific messages as evidence. The report is then sent to a pre-configured
+ * private channel where administrators can review it.
+ *
+ * The command is highly configurable per-guild, allowing settings for:
+ * - A target channel for reports.
+ * - A specific role to be pinged for new reports.
+ * - Enabling or disabling the report system entirely.
+ */
 export default class ReportCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
@@ -33,10 +46,7 @@ export default class ReportCommand extends CustomizableCommand {
                 option.setName('reason').setDescription(this.t('parameters.reason')).setRequired(true),
             )
             .addStringOption((option) =>
-                option
-                    .setName('message_url')
-                    .setDescription(this.t('parameters.message_url_list'))
-                    .setRequired(false),
+                option.setName('message_url').setDescription(this.t('parameters.message_url_list')).setRequired(false),
             );
     }
 
@@ -59,12 +69,19 @@ export default class ReportCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
+    /**
+     * Executes the report submission process.
+     *
+     * This method validates user input, checks if the report system is configured,
+     * gathers details about the reporter and the reported user, and formats an
+     * embed. It then sends this embed to the designated report channel, pinging
+     * the moderator role if configured. Finally, it sends an ephemeral confirmation
+     * message back to the user who filed the report.
+     *
+     * @param interaction The `ChatInputCommandInteraction` from the user.
+     */
+    @Log()
     public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-        this.log.send('debug', 'command.execute.start', {
-            name: this.name,
-            guild: interaction.guild,
-            user: interaction.user,
-        });
         const user_post = new EmbedBuilder();
         const admin_post = new EmbedBuilder();
         const report = await this.db.findOne(Reports, {
@@ -86,8 +103,8 @@ export default class ReportCommand extends CustomizableCommand {
 
         if (!report?.channel_id) {
             user_post
-                .setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                .setDescription(this.t('execute.command_not_configured'))
+                .setTitle(`:warning: ${this.t('command.execute.warning', undefined, interaction)}`)
+                .setDescription(this.t('execute.command_not_configured', undefined, interaction))
                 .setColor(Colors.Red);
             await interaction.reply({ embeds: [user_post], flags: MessageFlags.Ephemeral });
             this.log.send('warn', 'command.configuration.missing', { name: this.name, guild: interaction.guild });
@@ -100,8 +117,8 @@ export default class ReportCommand extends CustomizableCommand {
             for (const url of message_urls) {
                 if (!pattern.test(url)) {
                     user_post
-                        .setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                        .setDescription(this.t('execute.invalid_url', { url }))
+                        .setTitle(`:warning: ${this.t('command.execute.warning', undefined, interaction)}`)
+                        .setDescription(this.t('execute.invalid_url', { url }, interaction))
                         .setColor(Colors.Red);
                     await interaction.reply({ embeds: [user_post], flags: MessageFlags.Ephemeral });
                     this.log.send('warn', 'command.report.execute.invalid_url', {
@@ -115,8 +132,8 @@ export default class ReportCommand extends CustomizableCommand {
         } else {
             if (!message_in_database) {
                 user_post
-                    .setTitle(`:warning: ${this.t('command.execute.warning')}`)
-                    .setDescription(this.t('execute.message_not_found'))
+                    .setTitle(`:warning: ${this.t('command.execute.warning', undefined, interaction)}`)
+                    .setDescription(this.t('execute.message_not_found', undefined, interaction))
                     .setColor(Colors.Red);
                 await interaction.reply({
                     embeds: [user_post],
@@ -139,13 +156,17 @@ export default class ReportCommand extends CustomizableCommand {
             .setThumbnail(user.displayAvatarURL())
             .setTimestamp()
             .setDescription(
-                this.t('execute.admin_report_description', {
-                    username: user.username,
-                    user_id: user.id,
-                    reason,
-                    message_urls: message_urls.join(' '),
-                    channel_id: interaction.channel!.id,
-                }),
+                this.t(
+                    'execute.admin_report_description',
+                    {
+                        username: user.username,
+                        user_id: user.id,
+                        reason,
+                        message_urls: message_urls.join(' '),
+                        channel_id: interaction.channel!.id,
+                    },
+                    interaction,
+                ),
             );
         (message_channel_id as TextChannel).send({
             content: report.moderator_role_id ? `<@&${report.moderator_role_id}>` : undefined,
@@ -153,29 +174,34 @@ export default class ReportCommand extends CustomizableCommand {
         });
 
         user_post
-            .setTitle(`:white_check_mark: ${this.t('command.execute.success')}`)
+            .setTitle(`:white_check_mark: ${this.t('command.execute.success', undefined, interaction)}`)
             .setColor(Colors.Green)
             .setDescription(
-                this.t('execute.user_reported_description', {
-                    user: user.username,
-                    reason: reason,
-                }),
+                this.t(
+                    'execute.user_reported_description',
+                    {
+                        user: user.username,
+                        reason: reason,
+                    },
+                    interaction,
+                ),
             );
         await interaction.reply({ embeds: [user_post], flags: MessageFlags.Ephemeral });
-        this.log.send('debug', 'command.execute.success', {
-            name: this.name,
-            guild: interaction.guild,
-            user: interaction.user,
-        });
     }
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
+    /**
+     * Toggles the report system on or off for the guild.
+     *
+     * @param interaction The interaction from the settings UI.
+     */
     @SettingGenericSettingComponent({
         database: Reports,
         database_key: 'is_enabled',
         format_specifier: '%s',
     })
+    @Log()
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const report = await this.db.findOne(Reports, {
@@ -187,7 +213,7 @@ export default class ReportCommand extends CustomizableCommand {
         report!.timestamp = new Date();
         this.enabled = report!.is_enabled;
         await this.db.save(Reports, report!);
-        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+        CommandLoader.RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.toggle.success', {
             name: this.name,
@@ -196,6 +222,11 @@ export default class ReportCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Sets the channel where reports will be sent.
+     *
+     * @param interaction The interaction from the settings UI.
+     */
     @SettingChannelMenuComponent({
         database: Reports,
         database_key: 'channel_id',
@@ -204,6 +235,7 @@ export default class ReportCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
+    @Log()
     public async changeTargetChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const report = await this.db.findOne(Reports, {
@@ -224,6 +256,11 @@ export default class ReportCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Sets the moderator role to be pinged when a new report is submitted.
+     *
+     * @param interaction The interaction from the settings UI.
+     */
     @SettingRoleSelectMenuComponent({
         database: Reports,
         database_key: 'moderator_role_id',
@@ -233,6 +270,7 @@ export default class ReportCommand extends CustomizableCommand {
             max_values: 1,
         },
     })
+    @Log()
     public async changeModeratorRole(interaction: RoleSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.role.start', { name: this.name, guild: interaction.guild });
         const report = await this.db.findOne(Reports, {
@@ -252,7 +290,13 @@ export default class ReportCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Removes the configured moderator role, so no role is pinged on new reports.
+     *
+     * @param interaction The interaction from the settings UI.
+     */
     @SettingGenericSettingComponent({ view_in_ui: false })
+    @Log()
     public async removeModeratorRole(interaction: StringSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.report.removemoderatorrole.start', { guild: interaction.guild });
         const report = await this.db.findOne(Reports, {

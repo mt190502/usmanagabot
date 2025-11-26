@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "alias": {
+        "name": "alias",
         "pretty_name": "Alias System",
         "description": "Creates and manages various aliases.",
         "help": "Creates and manages various aliases.\n\n**Usage:**\n- `/alias add <name> <content> <options>` - Creates a new alias.\n- `/alias list` - Lists existing aliases.\n- `/alias modify <name> <content?> <options?>` - Modifies an existing alias.\n- `/alias remove <name>` - Removes an existing alias.",
@@ -24,11 +25,26 @@
             "success": "Alias \"{alias}\" successfully updated.",
         },
         "parameters": {
-            "casesensitive": "Case sensitivity",
-            "content": "Alias content ({variables})",
-            "messageconsistsonlyofword": "Message must consist only of this word",
-            "messageincludesthisword": "Message must include this word",
-            "name": "Alias name",
+            "alias_name": {
+                "name": "alias_name",
+                "description": "Alias name",
+            },
+            "alias_content": {
+                "name": "alias_content",
+                "description": "Alias content ({variables})",
+            },
+            "casesensitive": {
+                "name": "case_sensitive",
+                "description": "Case sensitivity",
+            },
+            "messageconsistsonlyofword": {
+                "name": "message_consists_only_of_word",
+                "description": "Message must consist only of this word",
+            },
+            "messageincludesthisword": {
+                "name": "message_includes_this_word",
+                "description": "Message must include this word",
+            },
         },
         "remove": {
             "success": "Alias \"{alias}\" successfully removed.",
@@ -41,15 +57,19 @@
         },
         "subcommands": {
             "add": {
+                "name": "add",
                 "description": "Add alias",
             },
             "list": {
+                "name": "alias_list",
                 "description": "List aliases",
             },
             "modify": {
+                "name": "modify",
                 "description": "Modify alias",
             },
             "remove": {
+                "name": "remove",
                 "description": "Remove alias",
             },
         },

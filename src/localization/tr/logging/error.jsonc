@@ -2,6 +2,9 @@
     "$schema": "../../../types/structure/schemas/logging.json",
     "error": {
         "command": {
+            "execute": {
+                "failed": "Sunucu \"{guild}\" içinde \"{name}\" komutu yürütülürken hata oluştu: {message}",
+            },
             "readCommandFiles": {
                 "database_metadata_missing": "Veritabanı meta verisi eksik, komut dosyaları okunamıyor.",
             },

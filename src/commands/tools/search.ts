@@ -9,9 +9,16 @@ import {
 } from 'discord.js';
 import { CommandLoader } from '..';
 import { Search, SearchEngines } from '../../types/database/entities/search';
+import { Log } from '../../types/decorator/log';
 import { SettingGenericSettingComponent, SettingModalComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
+/**
+ * A highly customizable search command that allows users to query different search engines.
+ *
+ * This command is dynamically built based on the search engines configured for each guild.
+ * Administrators can add, edit, and remove search engines through the command's settings UI.
+ */
 export default class SearchCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
@@ -19,7 +26,6 @@ export default class SearchCommand extends CustomizableCommand {
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
-        this.log.send('debug', 'command.prepare.start', { name: this.name, guild: guild_id });
         const guild = await this.db.getGuild(guild_id);
         let search = await this.db.findOne(Search, { where: { from_guild: guild! } });
         const system_user = await this.db.getUser(BigInt(0));
@@ -49,58 +55,56 @@ export default class SearchCommand extends CustomizableCommand {
         }
         this.enabled = search.is_enabled;
 
-        const data: SlashCommandBuilder = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
-        if (engines.length === 0) {
-            data.addStringOption((o) =>
-                o
-                    .setName('engine')
-                    .setDescription(this.t('parameters.engine'))
-                    .setRequired(true)
-                    .addChoices({ name: 'Google', value: 'https://google.com/search?q=' })
-                    .addChoices({ name: 'DuckDuckGo', value: 'https://duckduckgo.com/?q=' }),
-            );
-        } else {
-            data.addStringOption((o) =>
-                o
-                    .setName('engine')
-                    .setDescription(this.t('parameters.engine'))
-                    .setRequired(true)
-                    .addChoices(...engines.map((engine) => ({ name: engine.engine_name, value: engine.engine_url }))),
-            );
-        }
-        data.addStringOption((option) =>
-            option.setName('query').setDescription(this.t('parameters.query')).setRequired(true),
+        const data = new SlashCommandBuilder()
+            .setName(this.name)
+            .setDescription(this.t('description', undefined, guild_id))
+            .setNameLocalizations(this.getLocalizations('name'))
+            .setDescriptionLocalizations(this.getLocalizations('description'));
+
+        data.addStringOption((o) =>
+            o
+                .setName('engine')
+                .setDescription(this.t('parameters.engine', undefined, guild_id))
+                .setRequired(true)
+                .addChoices(...engines.map((engine) => ({ name: engine.engine_name, value: engine.engine_url }))),
         );
+
+        data.addStringOption((option) =>
+            option
+                .setName('query')
+                .setDescription(this.t('parameters.query', undefined, guild_id))
+                .setRequired(true),
+        );
+
         this.base_cmd_data = data;
-        this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
     }
     // ================================================================ //
 
     // ============================ EXECUTE =========================== //
+    /**
+     * Executes the search command.
+     * It constructs a search URL from the chosen engine and the user's query and replies with it.
+     * @param interaction The chat input command interaction.
+     */
+    @Log()
     public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-        this.log.send('debug', 'command.execute.start', {
-            name: this.name,
-            guild: interaction.guild,
-            user: interaction.user,
-        });
         const engine = interaction.options.data.find((option) => option.name === 'engine')!.value;
         const query = interaction.options.data.find((option) => option.name === 'query')!.value;
-
         await interaction.reply(`${engine}${query!.toString().replace(/\s+/g, '+')}`);
-        this.log.send('debug', 'command.execute.success', {
-            name: this.name,
-            guild: interaction.guild,
-            user: interaction.user,
-        });
     }
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
+    /**
+     * Toggles the search command on or off for the guild.
+     * @param interaction The string select menu interaction from the settings UI.
+     */
     @SettingGenericSettingComponent({
         database: Search,
         database_key: 'is_enabled',
         format_specifier: '%s',
     })
+    @Log()
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const search = await this.db.findOne(Search, {
@@ -113,7 +117,7 @@ export default class SearchCommand extends CustomizableCommand {
         search!.timestamp = new Date();
         this.enabled = search!.is_enabled;
         await this.db.save(Search, search!);
-        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+        CommandLoader.RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.toggle.success', {
             name: this.name,
@@ -122,6 +126,11 @@ export default class SearchCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Handles the submission of the "Add Engine" modal.
+     * Creates a new search engine and saves it to the database.
+     * @param interaction The modal submit interaction.
+     */
     @SettingModalComponent({
         view_in_ui: false,
         inputs: [
@@ -137,6 +146,7 @@ export default class SearchCommand extends CustomizableCommand {
             },
         ],
     })
+    @Log()
     public async addEngine(interaction: ModalSubmitInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
@@ -146,7 +156,7 @@ export default class SearchCommand extends CustomizableCommand {
         const name = interaction.fields.getTextInputValue('engine_name');
         const url = interaction.fields.getTextInputValue('engine_url');
         if (engines.find((e) => e.engine_name.toLowerCase() === name.toLowerCase())) {
-            this.warning = this.t('settings.addengine.duplicate_engine', { name });
+            this.warning = this.t('settings.addengine.duplicate_engine', { name }, interaction);
             this.log.send('warn', 'command.search.addengine.duplicate_engine', {
                 name: this.name,
                 guild: interaction.guild,
@@ -163,7 +173,7 @@ export default class SearchCommand extends CustomizableCommand {
         new_engine.from_guild = guild!;
         new_engine.timestamp = new Date();
         await this.db.save(new_engine);
-        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+        CommandLoader.RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.modalsubmit.success', {
             name: this.name,
@@ -172,6 +182,12 @@ export default class SearchCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Handles the submission of the "Edit Engine" modal.
+     * Updates an existing search engine's details in the database.
+     * @param interaction The modal submit interaction.
+     * @param engine_name The original name of the engine being edited.
+     */
     @SettingModalComponent({
         database: SearchEngines,
         database_key: 'engine_name',
@@ -198,6 +214,7 @@ export default class SearchCommand extends CustomizableCommand {
             },
         ],
     })
+    @Log()
     public async editEngine(interaction: ModalSubmitInteraction, engine_name: string): Promise<void> {
         this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
@@ -215,7 +232,7 @@ export default class SearchCommand extends CustomizableCommand {
         engine.timestamp = new Date();
 
         await this.db.save(engine);
-        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+        CommandLoader.RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.modalsubmit.success', {
             name: this.name,
@@ -224,7 +241,15 @@ export default class SearchCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Handles the "Remove Engine" setting.
+     * It first displays a select menu listing all engines.
+     * Upon selection, it removes the chosen engine from the database.
+     * @param interaction The string select menu interaction.
+     * @param engine_name The name of the engine selected for removal.
+     */
     @SettingGenericSettingComponent({ view_in_ui: false })
+    @Log()
     public async removeEngine(interaction: StringSelectMenuInteraction, engine_name: string): Promise<void> {
         this.log.send('debug', 'command.setting.selectmenu.start', { name: this.name, guild: interaction.guild });
         const guild = await this.db.getGuild(BigInt(interaction.guildId!));
@@ -238,7 +263,7 @@ export default class SearchCommand extends CustomizableCommand {
                     new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                         new StringSelectMenuBuilder()
                             .setCustomId('settings:search:removeengine')
-                            .setPlaceholder(this.t('settings.removeengine.placeholder'))
+                            .setPlaceholder(this.t('settings.removeengine.placeholder', undefined, interaction))
                             .addOptions(
                                 ...engines.map((engine) => ({
                                     label: engine.engine_name,
@@ -246,8 +271,8 @@ export default class SearchCommand extends CustomizableCommand {
                                     value: `settings:search:removeengine:${engine.engine_name}`,
                                 })),
                                 {
-                                    label: this.t('command.settings.cancel.display_name'),
-                                    description: this.t('command.settings.cancel.description'),
+                                    label: this.t('command.settings.cancel.display_name', undefined, interaction),
+                                    description: this.t('command.settings.cancel.description', undefined, interaction),
                                     value: 'settings:search',
                                 },
                             ),
@@ -257,7 +282,7 @@ export default class SearchCommand extends CustomizableCommand {
             return;
         } else if (interaction.customId.startsWith('settings:search:removeengine')) {
             await this.db.remove(engines.find((e) => e.engine_name === engine_name)!);
-            CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+            CommandLoader.RESTCommandLoader(this, interaction.guildId!);
             search!.latest_action_from_user = user;
             search!.timestamp = new Date();
             await this.db.save(Search, search!);

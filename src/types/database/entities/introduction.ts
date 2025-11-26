@@ -10,12 +10,6 @@ export class Introduction {
     @Column({ type: 'boolean', nullable: false, default: false })
     is_enabled!: boolean;
 
-    @Column({ type: 'varchar', length: 25 })
-    cmd_name!: string;
-
-    @Column({ type: 'varchar', length: 100 })
-    cmd_desc!: string;
-
     @Column({ type: 'bigint', nullable: true, default: null })
     channel_id!: string;
 

@@ -1,15 +1,17 @@
 import botcfg from '@config/bot.jsonc';
 import dbcfg from '@config/database.jsonc';
-import { Logger, LogLevels } from '@services/logger';
-import fs from 'fs';
+import { LogLevels } from '@services/logger';
 import { env } from 'process';
 import { z } from 'zod';
 import { SupportedLanguages } from './translator';
 
 /**
  * Configuration module.
- * Provides zod schemas and a singleton Config class that loads and validates
- * bot and database configuration from the repository defaults or provided overrides.
+ * Provides Zod schemas and a static Config class that loads and validates
+ * bot and database configurations.
+ *
+ * This class handles parsing from JSONC files, environment variables, and in-memory objects,
+ * making it flexible for different deployment environments.
  */
 
 /**
@@ -52,7 +54,7 @@ const bot_config_schema = z.object({
             .enum(SupportedLanguages, {
                 message: 'Invalid language',
             })
-            .default(SupportedLanguages.EN),
+            .default(SupportedLanguages.EN_US),
     ),
     log_level: parseEnv(
         'BOT__LOG_LEVEL',
@@ -114,91 +116,47 @@ const database_config_schema = z.object({
 export type DatabaseConfig_t = z.infer<typeof database_config_schema>;
 
 /**
- * Config is a singleton that loads, validates and exposes runtime configuration.
+ * A static class for loading, validating, and providing access to runtime configuration.
  *
- * It prefers provided overrides (useful for tests) and falls back to the project's
- * default JSONC files imported at module scope.
+ * The class reads from JSONC files, environment variables, and in-memory objects.
+ * It uses Zod to ensure that the configuration is valid before it is used.
+ *
+ * To use, call `Config.init()` at startup. The loaded configuration will be available
+ * via `Config.current_botcfg` and `Config.current_dbcfg`.
  */
 export class Config {
     /**
-     * Singleton instance reference for the Config class. Set during getInstance().
-     */
-    private static instance: Config | null = null;
-
-    /**
-     * Shared `Logger` singleton for structured logging and localization-backed messages.
-     * @static
-     * @type {Logger}
-     */
-    private static logger: Logger = Logger.getInstance();
-
-    /**
      * The currently loaded and validated bot configuration.
-     * @readonly
-     * @type {BotConfig_t}
      */
-    public readonly current_botcfg: BotConfig_t;
+    public static current_botcfg: BotConfig_t = Config.parse(botcfg, bot_config_schema as z.ZodType<BotConfig_t>);
 
     /**
      * The currently loaded and validated database configuration.
-     * @readonly
-     * @type {DatabaseConfig_t}
      */
-    public readonly current_dbcfg: DatabaseConfig_t;
+    public static current_dbcfg: DatabaseConfig_t = Config.parse(dbcfg, database_config_schema as z.ZodType<DatabaseConfig_t>);
 
     /**
      * Parse raw configuration data using the provided Zod schema.
      *
      * Behavior:
-     * - If `data` is a string, it reads the file contents and parses JSON.
+     * - If `data` is a string, it reads the file contents asynchronously and parses JSONC.
      * - If `data` is already an object, it validates that object directly.
-     * - On validation or parse error, an error is logged and an empty object cast to T is returned.
+     * - On validation or parse error, throws an error.
      *
+     * @private
+     * @static
      * @template T
      * @param {string|object} data Path to a JSON file or an in-memory object to validate.
      * @param {z.ZodType<T>} schema A Zod schema instance that validates the shape of T.
-     * @returns {T} The validated configuration typed as T. Returns {} as T on error.
+     * @returns {Promise<T>} The validated configuration typed as T.
+     * @throws {Error} If parsing or validation fails.
      */
-    private parse<T>(data: string | object, schema: z.ZodType<T>): T {
+    private static parse<T>(data: object, schema: z.ZodType<T>): T {
         try {
-            let raw_data: T;
-            if (typeof data === 'string') {
-                raw_data = JSON.parse(fs.readFileSync(data, 'utf-8')) as T;
-            } else {
-                raw_data = data as T;
-            }
-            const parsed = schema.parse(raw_data);
-            return parsed;
+            return schema.parse(data);
         } catch (error) {
-            Config.logger.send('error', 'services.config.parse.failed', {
-                message: error instanceof Error ? error.message : 'Unknown error',
-            });
-            return {} as T;
+            const message = error instanceof z.ZodError ? JSON.stringify(error.issues, null, 2) : (error as Error).message;
+            throw new Error(`Failed to parse configuration: ${message}`);
         }
-    }
-
-    /**
-     * Return the singleton Config instance, creating it if necessary.
-     *
-     * @param {BotConfig_t} [c_botcfg] Optional override for bot configuration (useful in tests).
-     * @param {DatabaseConfig_t} [c_dbcfg] Optional override for database configuration.
-     * @returns {Config} Singleton instance with validated configurations loaded.
-     */
-    public static getInstance(c_botcfg?: BotConfig_t, c_dbcfg?: DatabaseConfig_t): Config {
-        if (!Config.instance) {
-            Config.instance = new Config(c_botcfg, c_dbcfg);
-        }
-        return Config.instance;
-    }
-
-    /**
-     * Internal constructor: validates and stores current configurations.
-     *
-     * @param {BotConfig_t} [c_botcfg] Optional bot config override.
-     * @param {DatabaseConfig_t} [c_dbcfg] Optional database config override.
-     */
-    private constructor(c_botcfg?: BotConfig_t, c_dbcfg?: DatabaseConfig_t) {
-        this.current_botcfg = this.parse(c_botcfg || botcfg, bot_config_schema as z.ZodType<BotConfig_t>);
-        this.current_dbcfg = this.parse(c_dbcfg || dbcfg, database_config_schema as z.ZodType<DatabaseConfig_t>);
     }
 }

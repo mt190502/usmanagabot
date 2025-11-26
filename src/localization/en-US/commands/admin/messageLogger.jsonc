@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "message_logger": {
+        "name": "message_logger",
         "pretty_name": "Message Logger",
         "description": "Logs the content and attachments of the specified message.",
         "help": "Manages the message logging system for the server.\n\n**Usage:**\n- `/message_logger <message_id|message_url>`: Returns the logged link of the specified message.\n- You can also right-click on a message and select **Apps > Message Logger** to log a message.",

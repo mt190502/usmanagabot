@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "randomizer": {
+        "name": "rastgele",
         "pretty_name": "Rastgele Seçici",
         "description": "Belirtilen seçenekler arasından rastgele seçim yapar.",
         "help": "Belirtilen seçenekler arasından rastgele seçim yapar.\n\n**Kullanım:**\n- `/randomizer <seçenek1> <seçenek2> [seçenek3] ...` - Belirtilen seçenekler arasından rastgele birini seçer.\n\n**Örnekler:**\n- `/randomizer elma muz çilek` - 'elma', 'muz' veya 'çilek' arasından rastgele birini seçer.",

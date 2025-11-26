@@ -1,8 +1,9 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "purge": {
+        "name": "silsupur",
+        "pretty_name": "Sil Süpür",
         "description": "Hedeflenen mesaja kadar olan mesajları siler.",
-        "pretty_name": "Temizle",
         "help": "Belirtilen mesaja kadar olan mesajları siler.\n\n**Kullanım:**\n- `/purge <message_id|message_url>` - Belirtilen mesaja kadar olan mesajları siler.\n- Bir mesajın üzerine sağ tıklayıp **Uygulamalar > Temizle** seçeneğini kullanarak da mesajları silebilirsiniz.\n\n**Örnekler:**\n- `/purge 123456789012345678` - 123456789012345678 ID'li mesaja kadar olan mesajları siler.\n- `/purge https://discord.com/channels/987654321098765432/123456789012345678/234567890123456789` - Belirtilen URL'deki mesaja kadar olan mesajları siler.",
         "parameters": {
             "message_id": "Mesaj ID'si veya URL'si",

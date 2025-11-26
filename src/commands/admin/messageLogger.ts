@@ -22,26 +22,36 @@ import { CommandLoader } from '..';
 import { MessageLogger } from '../../types/database/entities/message_logger';
 import { Messages } from '../../types/database/entities/messages';
 import { ChainEvent } from '../../types/decorator/chainevent';
+import { Log } from '../../types/decorator/log';
 import { SettingChannelMenuComponent, SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
+/**
+ * A comprehensive message logging and tracking command.
+ *
+ * This command automatically logs message creation, deletion, and updates to a designated channel
+ * via a webhook. It also provides a command interface to retrieve the logged location of a specific message.
+ *
+ * Features:
+ * - Listens for `MessageCreate`, `MessageDelete`, and `MessageUpdate` events.
+ * - Logs message content, attachments, and replies to a webhook.
+ * - Marks deleted or edited messages in the log channel.
+ * - Supports both a slash command and a context menu command to find a logged message.
+ * - Fully configurable settings per guild, including enabling/disabling, setting the log channel, and ignoring specific channels.
+ */
 export default class MessageLoggerCommand extends CustomizableCommand {
     // ============================ HEADER ============================ //
     constructor() {
         super({ name: 'message_logger', is_admin_command: true });
 
-        this.base_cmd_data = new SlashCommandBuilder()
-            .setName(this.name)
-            .setDescription(this.description)
+        (this.base_cmd_data as SlashCommandBuilder)
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
             .addStringOption((option) =>
-                option
-                    .setName('message_id')
-                    .setDescription(this.t('parameters.message_id')!)
-                    .setRequired(true),
+                option.setName('message_id').setDescription(this.t('parameters.message_id')!).setRequired(true),
             ) as SlashCommandBuilder;
         this.push_cmd_data = new ContextMenuCommandBuilder()
             .setName(this.pretty_name)
+            .setNameLocalizations(this.getLocalizations('pretty_name'))
             .setType(ApplicationCommandType.Message)
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
     }
@@ -65,12 +75,17 @@ export default class MessageLoggerCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== EXECUTE ============================ //
+    /**
+     * Executes the command to find a logged message.
+     *
+     * This method is triggered by either the slash command (using a message ID/URL) or the
+     * message context menu. It searches the database for the original message's record
+     * and replies with a link to the corresponding logged message in the webhook channel.
+     *
+     * @param interaction The interaction from the slash command or context menu.
+     */
+    @Log()
     public async execute(interaction: ContextMenuCommandInteraction | ChatInputCommandInteraction): Promise<void> {
-        this.log.send('debug', 'command.execute.start', {
-            name: this.name,
-            guild: interaction.guild,
-            user: interaction.user,
-        });
         const logger = (await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(interaction.guild!.id) } },
         }))!;
@@ -88,8 +103,8 @@ export default class MessageLoggerCommand extends CustomizableCommand {
                 message_id = input;
             } else {
                 post.setColor(Colors.Yellow)
-                    .setTitle(`:warning: ${this.t('execute.invalid_input')}`)
-                    .setDescription(this.t('execute.invalid_input_description', { input })!);
+                    .setTitle(`:warning: ${this.t('execute.invalid_input', undefined, interaction)}`)
+                    .setDescription(this.t('execute.invalid_input_description', { input }, interaction)!);
                 await interaction.reply({
                     embeds: [post],
                     flags: MessageFlags.Ephemeral,
@@ -108,8 +123,8 @@ export default class MessageLoggerCommand extends CustomizableCommand {
 
         if (!message_in_logger) {
             post.setColor(Colors.Yellow)
-                .setTitle(`:warning: ${this.t('execute.message_not_found')}`)
-                .setDescription(this.t('execute.message_not_found_description', { message_id })!);
+                .setTitle(`:warning: ${this.t('execute.message_not_found', undefined, interaction)}`)
+                .setDescription(this.t('execute.message_not_found_description', { message_id }, interaction)!);
             await interaction.reply({
                 embeds: [post],
                 flags: MessageFlags.Ephemeral,
@@ -123,35 +138,45 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         }
 
         post.setColor(Colors.Green)
-            .setTitle(`:mag: ${this.t('execute.message_found')}`)
+            .setTitle(`:mag: ${this.t('execute.message_found', undefined, interaction)}`)
             .setDescription(
-                this.t('execute.message_found_description', {
-                    message_id,
-                    guild_id: logger.from_guild.gid,
-                    channel_id: logger.channel_id,
-                    message_in_logger,
-                })!,
+                this.t(
+                    'execute.message_found_description',
+                    {
+                        message_id,
+                        guild_id: logger.from_guild.gid,
+                        channel_id: logger.channel_id,
+                        message_in_logger,
+                    },
+                    interaction,
+                )!,
             );
         await interaction.reply({
             embeds: [post],
             flags: MessageFlags.Ephemeral,
         });
-        this.log.send('debug', 'command.execute.success', {
-            name: this.name,
-            guild: interaction.guild,
-            user: interaction.user,
-        });
     }
 
+    /**
+     * Performs preliminary checks for message-related events.
+     *
+     * This helper method verifies several conditions before processing an event:
+     * - The message is from a guild and not from a bot.
+     * - The message logger is enabled for the guild.
+     * - A valid log channel and webhook are configured.
+     * - The message's channel is not in the ignored list.
+     * - The message type is a standard or reply message.
+     *
+     * If all checks pass, it returns the logger configuration and an initialized webhook client.
+     *
+     * @param message The message that triggered the event.
+     * @returns A promise that resolves with the logger and webhook client, or `undefined` if any check fails.
+     */
+    @Log()
     public async preCheck(
         message: Message<true>,
     ): Promise<{ logger: MessageLogger; webhook: WebhookClient } | undefined> {
         if (!message.guild || message?.author?.bot) return;
-        this.log.send('debug', 'command.execute.start', {
-            name: 'messagelogger',
-            guild: message.guild,
-            user: message.author,
-        });
         const logger = await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(message.guild.id) } },
         });
@@ -164,15 +189,21 @@ export default class MessageLoggerCommand extends CustomizableCommand {
 
         const webhook = new WebhookClient({ id: logger.webhook_id, token: logger.webhook_token });
         await setTimeout(500);
-        this.log.send('debug', 'command.execute.success', {
-            name: 'messagelogger',
-            guild: message.guild,
-            user: message.author,
-        });
         return { logger, webhook };
     }
 
+    /**
+     * Event handler for `messageCreate`.
+     *
+     * Logs a newly created message to the designated webhook channel. It includes the message URL,
+     * content, attachments, stickers, and a link to the replied message, if any. The content is
+     * split into multiple webhook messages if it exceeds the character limit. The ID of the final
+     * webhook message is stored in the database against the original message.
+     *
+     * @param message The message that was created.
+     */
     @ChainEvent({ type: Events.MessageCreate })
+    @Log()
     public async onMessageCreate(message: Message<true>): Promise<void> {
         const pre_check_result = await this.preCheck(message);
         if (!pre_check_result) return;
@@ -192,12 +223,12 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             const url = ref_message
                 ? `https://discord.com/channels/${ref_message.from_guild.gid}/${logger.channel_id}/${ref_message.logged_message_id}`
                 : `https://discord.com/channels/${message.guild!.id}/${message.channel.id}/${message.reference.messageId}`;
-            content += ` | [${this.t('events.onmessagecreate.reply')}](${url})`;
+            content += ` | [${this.t('events.onmessagecreate.reply', undefined, message)}](${url})`;
         }
 
         if (message.stickers.size > 0) {
             content +=
-                ` | ${this.t('events.onmessagecreate.stickers')}: ` +
+                ` | ${this.t('events.onmessagecreate.stickers', undefined, message)}: ` +
                 message.stickers.map((sticker) => sticker.url).join('\n');
             content += '\n';
         }
@@ -243,7 +274,16 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         return;
     }
 
+    /**
+     * Event handler for `messageDelete`.
+     *
+     * When a message is deleted, this finds the corresponding logged message via the database
+     * and edits it to include an embed indicating that the original message was deleted.
+     *
+     * @param message The message that was deleted.
+     */
     @ChainEvent({ type: Events.MessageDelete })
+    @Log()
     public async onMessageDelete(message: Message<true>): Promise<void> {
         this.log.send('debug', 'command.event.trigger.start', {
             name: 'messagelogger',
@@ -260,7 +300,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             where: { message_id: BigInt(message.id) },
         });
         const embed = new EmbedBuilder()
-            .setTitle(this.t('events.onmessagedelete.deleted_message'))
+            .setTitle(this.t('events.onmessagedelete.deleted_message', undefined, message))
             .setColor(Colors.Red)
             .setTimestamp();
         if (db_message?.logged_message_id) {
@@ -274,7 +314,18 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Event handler for `messageUpdate`.
+     *
+     * When a message is edited, this finds the corresponding logged message and edits it to
+     * include an embed showing the new content and/or attachments, indicating that the
+     * original message was updated.
+     *
+     * @param old_message The message before the update.
+     * @param new_message The message after the update.
+     */
     @ChainEvent({ type: Events.MessageUpdate })
+    @Log()
     public async onMessageUpdate(old_message: Message<true>, new_message: Message<true>): Promise<void> {
         if (new_message.author?.bot) return;
         this.log.send('debug', 'command.event.trigger.start', {
@@ -289,15 +340,15 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         await setTimeout(500);
 
         const embed = new EmbedBuilder()
-            .setTitle(this.t('events.onmessageupdate.updated_message'))
+            .setTitle(this.t('events.onmessageupdate.updated_message', undefined, new_message))
             .setColor(Colors.Yellow)
             .setTimestamp()
             .setDescription(
                 (new_message.content !== ''
-                    ? `**${this.t('events.onmessageupdate.new_message')}:**\n${new_message.content}\n\n`
+                    ? `**${this.t('events.onmessageupdate.new_message', undefined, new_message)}:**\n${new_message.content}\n\n`
                     : '') +
                     (new_message.attachments.size > 0
-                        ? `**${this.t('events.onmessageupdate.new_attachments')}:**\n${new_message.attachments.map((a) => a.url).join('\n')}`
+                        ? `**${this.t('events.onmessageupdate.new_attachments', undefined, new_message)}:**\n${new_message.attachments.map((a) => a.url).join('\n')}`
                         : ''),
             );
         const db_message = await this.db.findOne(Messages, {
@@ -316,11 +367,21 @@ export default class MessageLoggerCommand extends CustomizableCommand {
     // ================================================================ //
 
     // =========================== SETTINGS =========================== //
+    /**
+     * Toggles the message logger on or off for the guild.
+     *
+     * This method is a setting component that responds to a select menu interaction.
+     * It flips the `is_enabled` boolean in the database and reloads the command on Discord
+     * to reflect the new state.
+     *
+     * @param interaction The interaction from the settings UI.
+     */
     @SettingGenericSettingComponent({
         database: MessageLogger,
         database_key: 'is_enabled',
         format_specifier: '%s',
     })
+    @Log()
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
         const msg_logger = await this.db.findOne(MessageLogger, {
@@ -333,7 +394,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         msg_logger!.timestamp = new Date();
         this.enabled = msg_logger!.is_enabled;
         await this.db.save(MessageLogger, msg_logger!);
-        CommandLoader.getInstance().RESTCommandLoader(this, interaction.guildId!);
+        CommandLoader.RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
         this.log.send('debug', 'command.setting.toggle.success', {
             name: this.name,
@@ -342,6 +403,15 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Sets the channel where messages will be logged.
+     *
+     * This method is a setting component that responds to a channel select menu.
+     * It updates the `channel_id` in the database, deletes any old webhook associated
+     * with the previous channel, and creates a new webhook in the selected channel.
+     *
+     * @param interaction The interaction from the settings UI.
+     */
     @SettingChannelMenuComponent({
         database: MessageLogger,
         database_key: 'channel_id',
@@ -350,6 +420,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
+    @Log()
     public async setLogChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const msg_logger = (await this.db.findOne(MessageLogger, {
@@ -382,6 +453,15 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         });
     }
 
+    /**
+     * Manages the list of channels to be ignored by the logger.
+     *
+     * This method is a setting component that responds to a multi-select channel menu.
+     * It updates the `ignored_channels` array in the database with the user's selection.
+     * Messages from these channels will not be logged.
+     *
+     * @param interaction The interaction from the settings UI.
+     */
     @SettingChannelMenuComponent({
         database: MessageLogger,
         database_key: 'ignored_channels',
@@ -393,6 +473,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             max_values: 25,
         },
     })
+    @Log()
     public async manageIgnoredChannels(interaction: ChannelSelectMenuInteraction): Promise<void> {
         this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
         const msg_logger = await this.db.findOne(MessageLogger, {

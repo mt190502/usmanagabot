@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "settings": {
+        "name": "settings",
         "pretty_name": "Settings",
         "description": "Manages command settings.",
         "help": "Manages settings for a specific command.\n\n**Usage:**\n- `/settings` - Opens an interactive menu to manage settings.",

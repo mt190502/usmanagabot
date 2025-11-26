@@ -1,4 +1,4 @@
-import { Awaitable, ClientEvents } from 'discord.js';
+import { Awaitable, BaseInteraction, ClientEvents } from 'discord.js';
 import { Config } from '../../services/config';
 import { Database } from '../../services/database';
 import { Logger } from '../../services/logger';
@@ -6,9 +6,13 @@ import { Translator } from '../../services/translator';
 import { DatabaseManager } from './database';
 
 /**
- * An abstract class representing a base event handler.
- * All event handlers should extend this class.
- * @template {keyof ClientEvents} T - The name of the Discord.js client event this handler is for.
+ * The abstract base class for all Discord.js event handlers.
+ *
+ * It provides a common structure for event properties (`enabled`, `once`, `type`)
+ * and provides utility getters for accessing static services like `Config`, `Logger`, and `Database`.
+ *
+ * All new event handlers should extend this class.
+ * @template {keyof ClientEvents} T The name of the `discord.js` client event.
  */
 export abstract class BaseEvent<T extends keyof ClientEvents> {
     // ======================== HEADER SECTION ======================== //
@@ -41,17 +45,17 @@ export abstract class BaseEvent<T extends keyof ClientEvents> {
 
     // ====================== EVENT BASE SECTION ====================== //
     /**
-     * The main execution logic for the event handler.
+     * The main execution logic for the event handler. This must be implemented by all subclasses.
      * @public
      * @abstract
-     * @param {...ClientEvents[T]} args - The arguments emitted by the event.
-     * @returns {Awaitable<void> | Promise<Awaitable<void>>}
+     * @param {...ClientEvents[T]} args The arguments emitted by the `discord.js` client for the event.
+     * @returns {Awaitable<void>}
      */
     public abstract execute(...args: ClientEvents[T]): Awaitable<void> | Promise<Awaitable<void>>;
 
     /**
-     * Constructs a new instance of the BaseEvent.
-     * @param {Omit<BaseEvent<T>, 'once' | 'execute'> & { once?: boolean }} options - The options to initialize the event handler with.
+     * Initializes a new instance of the `BaseEvent`.
+     * @param {Omit<BaseEvent<T>, 'execute'>} options The options for the event handler.
      */
     constructor(options: Omit<BaseEvent<T>, 'once' | 'execute'> & { once?: boolean }) {
         this.enabled = options.enabled;
@@ -62,44 +66,45 @@ export abstract class BaseEvent<T extends keyof ClientEvents> {
 
     // =================== EVENT UTILITIES SECTION ==================== //
     /**
-     * Provides access to the bot's configuration.
+     * Provides access to the static `Config` class.
      * @protected
-     * @returns {Config} The configuration instance.
+     * @returns {typeof Config} The `Config` class.
      */
-    protected get cfg(): Config {
-        return Config.getInstance();
+    protected get cfg(): typeof Config {
+        return Config;
     }
 
     /**
-     * Provides access to the logger instance.
+     * Provides access to the static `Logger` class.
      * @protected
-     * @returns {Logger} The logger instance.
+     * @returns {typeof Logger} The `Logger` class.
      */
-    protected get log(): Logger {
-        return Logger.getInstance();
+    protected get log(): typeof Logger {
+        return Logger;
     }
 
     /**
-     * Provides a promise that resolves to the database entity manager.
+     * Provides access to the `DatabaseManager` proxy.
      * @protected
-     * @returns {Promise<EntityManager>} A promise that resolves to the entity manager.
+     * @returns {DatabaseManager} The `DatabaseManager` instance.
      */
     protected get db(): DatabaseManager {
         return Database.dbManager;
     }
 
     /**
-     * Translate a command string using the commands localization category.
-     * This method provides localization support for user-facing messages in commands.
+     * A convenience method for translating strings using the `Translator` service.
+     *
+     * This method automatically scopes the translation query to the 'commands' category.
      *
      * @protected
-     * @param {string} key Localization key from the commands category (e.g., 'purge.warning.title')
-     * @param {Record<string, unknown>} [replacements] Optional placeholder replacements for dynamic values
-     * @returns {string} Translated message in the current language
+     * @param {string} key The localization key.
+     * @param {Record<string, unknown>} [replacements] Optional placeholder values.
+     * @param {BaseInteraction} [interaction] The interaction to derive the guild ID from.
+     * @returns {string} The translated string.
      */
-    protected t(key: string, replacements?: Record<string, unknown>): string {
-        const translator = Translator.getInstance();
-        return translator.querySync('commands', key, replacements);
+    protected t(key: string, replacements?: Record<string, unknown>, interaction?: BaseInteraction): string {
+        return Translator.querySync('commands', key, replacements, BigInt(interaction!.guildId!));
     }
     // ================================================================ //
 }

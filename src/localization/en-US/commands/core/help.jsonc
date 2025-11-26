@@ -1,11 +1,12 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "help": {
+        "name": "help",
         "pretty_name": "Help",
         "description": "Displays a list of available commands and detailed information about a specific command.",
         "help": "Displays how to use available commands and detailed information about a specific command.\n\n**Usage:**\n- `/help` - Shows a list of all commands.",
         "execute": {
-            "command_title": "About the {command} Command",
+            "command_title": "About the {command}",
             "main_title": "Help - Available Commands",
         },
     },

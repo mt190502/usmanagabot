@@ -1,6 +1,7 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "message_logger": {
+        "name": "mesaj_gunlugu",
         "pretty_name": "Mesaj Günlüğü",
         "description": "Belirtilen mesajın içeriğini ve eklerini günlüğe kaydeder.",
         "help": "Bulunan sunucudaki mesaj günlüğü sistemini yönetir.\n\n**Kullanım:**\n- `/message_logger <message_id|message_url>`: Belirtilen mesajın kaydedilmiş linkini döndürür.\n- Bir mesajın üzerine sağ tıklayıp **Uygulamalar > Mesaj Günlüğü** seçeneğini kullanarak da mesaj günlüğü kaydı alabilirsiniz.",

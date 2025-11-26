@@ -2,6 +2,9 @@
     "$schema": "../../../types/structure/schemas/logging.json",
     "error": {
         "command": {
+            "execute": {
+                "failed": "Error occurred while executing command \"{name}\" in server \"{guild}\": {message}",
+            },
             "readCommandFiles": {
                 "database_metadata_missing": "Database metadata is missing, cannot read command files.",
             },

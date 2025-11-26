@@ -6,9 +6,11 @@ import {
     ContextMenuCommandBuilder,
     EmbedBuilder,
     Interaction,
+    Message,
     MessageFlags,
     SlashCommandBuilder,
     StringSelectMenuBuilder,
+    ThreadChannel,
     User,
 } from 'discord.js';
 import moment from 'moment';
@@ -18,14 +20,19 @@ import { BotClient } from '../../services/client';
 import { Config } from '../../services/config';
 import { Database } from '../../services/database';
 import { Logger } from '../../services/logger';
-import { Translator } from '../../services/translator';
+import { SupportedLanguages, Translator } from '../../services/translator';
 import { Paginator } from '../../utils/paginator';
 import { Users } from '../database/entities/users';
 import { DatabaseManager } from './database';
 
 /**
- * An abstract class representing a base command.
- * All commands should extend this class or a class that extends it.
+ * The abstract base class for all application commands.
+ *
+ * It provides a common structure for command properties (e.g., `name`, `description`),
+ * utility getters for accessing static services (`cfg`, `db`, `log`), and core methods
+ * for execution and localization.
+ *
+ * All new commands should extend either `BaseCommand` or `CustomizableCommand`.
  */
 export abstract class BaseCommand {
     // ======================== HEADER SECTION ======================== //
@@ -106,35 +113,35 @@ export abstract class BaseCommand {
 
     // ===================== COMMAND DATA SECTION ===================== //
     /**
-     * The primary command data builder for slash commands or context menus.
+     * The `discord.js` command data builder for the main slash command.
      * @private
-     * @static
-     * @type {(SlashCommandBuilder | ContextMenuCommandBuilder)}
+     * @type {(SlashCommandBuilder | ContextMenuCommandBuilder | null)}
      */
     private main_command_data: SlashCommandBuilder | ContextMenuCommandBuilder | null = null;
 
     /**
-     * An array of additional command data builders.
+     * A set of additional command data builders, for subcommands or related commands.
      * @private
-     * @static
-     * @type {(SlashCommandBuilder | ContextMenuCommandBuilder)[]}
+     * @type {Set<SlashCommandBuilder | ContextMenuCommandBuilder>}
      */
     private extra_command_data: Set<SlashCommandBuilder | ContextMenuCommandBuilder> = new Set();
     // ================================================================ //
 
     // ===================== COMMAND BASE SECTION ===================== //
     /**
-     * The main execution logic for the command.
+     * The main execution logic for the command. This method must be implemented by all subclasses.
      * @public
      * @abstract
-     * @param {Interaction | CommandInteraction} interaction - The interaction object from Discord.js.
-     * @returns {Promise<void>} A promise that resolves when the command execution is complete.
+     * @param {Interaction | CommandInteraction | unknown} interaction The interaction object from Discord.js.
+     * @param {unknown} [args] Optional additional arguments.
+     * @returns {Promise<unknown>} A promise that resolves when the command execution is complete.
      */
     public abstract execute(interaction: Interaction | CommandInteraction | unknown, args?: unknown): Promise<unknown>;
 
     /**
-     * Constructs a new instance of the BaseCommand.
-     * @param {Partial<BaseCommand> & { name: string }} options - The options to initialize the command with.
+     * Initializes a new instance of the `BaseCommand`, setting its properties and
+     * creating the initial slash command data builder with localized names and descriptions.
+     * @param {Partial<BaseCommand> & { name: string }} options The options to initialize the command with.
      */
     constructor(options: Partial<BaseCommand> & { name: string }) {
         this.enabled = options.enabled ?? true;
@@ -147,64 +154,86 @@ export abstract class BaseCommand {
         this.cooldown = options.cooldown ?? 0;
         this.aliases = options.aliases;
         this.main_command_data = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
+        this.main_command_data.setNameLocalizations(this.getLocalizations('name'));
+        this.main_command_data.setDescriptionLocalizations(this.getLocalizations('description'));
     }
     // ================================================================ //
 
     // ================== COMMAND UTILITIES SECTION =================== //
     /**
-     * Provides access to the bot's configuration.
+     * Provides access to the static `Config` class.
      * @protected
-     * @returns {Config} The configuration instance.
+     * @returns {typeof Config} The `Config` class.
      */
-    protected get cfg(): Config {
-        return Config.getInstance();
+    protected get cfg(): typeof Config {
+        return Config;
     }
 
     /**
-     * Provides access to the database manager.
+     * Provides access to the `DatabaseManager` proxy.
      * @protected
-     * @returns {DatabaseManager} The database manager instance.
+     * @returns {DatabaseManager} The `DatabaseManager` instance.
      */
     protected get db(): DatabaseManager {
         return Database.dbManager;
     }
 
     /**
-     * Provides access to the logger instance.
+     * Provides access to the static `Logger` class.
      * @protected
-     * @returns {Logger} The logger instance.
+     * @returns {typeof Logger} The `Logger` class.
      */
-    protected get log(): Logger {
-        return Logger.getInstance();
+    protected get log(): typeof Logger {
+        return Logger;
     }
 
     /**
-     * Provides access to the paginator instance.
+     * Provides access to the static `Paginator` class.
      * @protected
-     * @returns {Paginator} The paginator instance.
+     * @returns {typeof Paginator} The `Paginator` class.
      */
-    protected get paginator(): Paginator {
-        return Paginator.getInstance();
+    protected get paginator(): typeof Paginator {
+        return Paginator;
     }
 
     /**
-     * Translate a command string using the commands localization category.
-     * This method provides localization support for user-facing messages in commands.
+     * A convenience method for translating command-specific strings using the `Translator` service.
+     *
+     * This method automatically scopes the translation query to the current command's name.
      *
      * @protected
-     * @param {string} key Localization key from the commands category (e.g., 'purge.warning.title')
-     * @param {Record<string, unknown>} [replacements] Optional placeholder replacements for dynamic values
-     * @returns {string} Translated message in the current language
+     * @template T - The type of the interaction or context identifier (e.g., `BaseInteraction`, `Message`, `string`).
+     * @param {string} key The localization key (e.g., 'success_message').
+     * @param {Record<string, unknown>} [replacements] Optional placeholder values.
+     * @param {T} [id] Optional context identifier to determine the guild for localization.
+     * @param {SupportedLanguages} [lang] Optional specific language to use.
+     * @returns {string} The translated string.
      */
-    protected t(key: string, replacements?: Record<string, unknown>): string {
-        const translator = Translator.getInstance();
-        return translator.querySync('commands', key, replacements);
+    protected t<T extends BaseInteraction | Message | ThreadChannel | bigint | string>(
+        key: string,
+        replacements?: Record<string, unknown>,
+        id?: T,
+        lang?: SupportedLanguages,
+    ): string {
+        return Translator.querySync(
+            this.name,
+            key,
+            replacements,
+            typeof id === 'string'
+                ? BigInt(id)
+                : typeof id === 'bigint'
+                    ? id
+                    : id?.guildId
+                        ? BigInt(id.guildId)
+                        : undefined,
+            lang,
+        );
     }
 
     /**
      * Gets the primary command data builder.
      * @public
-     * @returns {SlashCommandBuilder | ContextMenuCommandBuilder} The main command data.
+     * @returns {SlashCommandBuilder | ContextMenuCommandBuilder | null} The main command data builder.
      */
     public get base_cmd_data(): SlashCommandBuilder | ContextMenuCommandBuilder | null {
         return this.main_command_data;
@@ -213,25 +242,26 @@ export abstract class BaseCommand {
     /**
      * Sets the primary command data builder.
      * @public
-     * @param {SlashCommandBuilder | ContextMenuCommandBuilder} data - The main command data to set.
+     * @param {SlashCommandBuilder | ContextMenuCommandBuilder | null} data The command data builder to set.
      */
     public set base_cmd_data(data: SlashCommandBuilder | ContextMenuCommandBuilder | null) {
         this.main_command_data = data;
     }
 
     /**
-     * Gets an array containing the main command data builder and any extra command data builders.
+     * Gets an array containing the main and all extra command data builders.
      * @public
-     * @returns {(SlashCommandBuilder | ContextMenuCommandBuilder)[]} An array of all command data.
+     * @returns {(SlashCommandBuilder | ContextMenuCommandBuilder | null)[]} An array of all command data builders.
      */
     public get all_cmd_data(): (SlashCommandBuilder | ContextMenuCommandBuilder | null)[] {
         return [this.main_command_data, ...(this.extra_command_data ?? [])];
     }
 
     /**
-     * Adds a new command data builder to the extra command data list.
+     * Adds a new command data builder to the set of extra command data.
+     * It ensures that no duplicate command names are added.
      * @public
-     * @param {SlashCommandBuilder | ContextMenuCommandBuilder} data - The command data to add.
+     * @param {SlashCommandBuilder | ContextMenuCommandBuilder} data The command data builder to add.
      */
     public set push_cmd_data(data: SlashCommandBuilder | ContextMenuCommandBuilder) {
         for (const cmd_data of this.extra_command_data) {
@@ -239,12 +269,34 @@ export abstract class BaseCommand {
         }
         this.extra_command_data.add(data);
     }
+
+    /**
+     * Generates localized names or descriptions for all supported languages.
+     * @protected
+     * @param {string} key The localization key to translate.
+     * @returns {Record<string, string>} An object mapping language codes to localized strings.
+     */
+    protected getLocalizations(key: string, replacements?: { [key: string]: unknown }): Record<string, string> {
+        return Object.values(SupportedLanguages)
+            .filter((l) => /^[a-z]*$/.test(l[0]))
+            .reduce(
+                (acc, lang) => {
+                    if (lang === SupportedLanguages.AUTO) return acc;
+                    acc[lang] = this.t(key, replacements, undefined, lang);
+                    return acc;
+                },
+                {} as Record<string, string>,
+            );
+    }
     // ================================================================ //
 }
 
 /**
- * Represents a command that can have guild-specific custom settings.
- * This class extends `BaseCommand` and is intended for commands that require per-guild configuration.
+ * An abstract class for commands that have customizable, guild-specific settings.
+ *
+ * This class extends `BaseCommand` and adds functionality for managing per-guild configurations,
+ * including methods for preparing data (`prepareCommandData`) and rendering a settings UI (`settingsUI`).
+ * It also provides a helper method, `findOrCreateSetting`, to simplify database interactions.
  */
 export abstract class CustomizableCommand extends BaseCommand {
     // ============= CUSTOMIZABLE COMMAND HEADER SECTION ============== //
@@ -252,7 +304,7 @@ export abstract class CustomizableCommand extends BaseCommand {
 
     // ============== CUSTOMIZABLE COMMAND DATA SECTION =============== //
     /**
-     * A warning message to be displayed in the settings UI, if any.
+     * An optional warning message to be displayed at the top of the settings UI.
      * @protected
      * @type {string | null}
      */
@@ -261,25 +313,32 @@ export abstract class CustomizableCommand extends BaseCommand {
 
     // ============== CUSTOMIZABLE COMMAND BASE SECTION =============== //
     /**
-     * Prepares the data for a specific guild. (database entries, loads defaults, etc.)
-     * This method should be implemented by subclasses to initialize or load settings as needed.
+     * An abstract method for preparing command-specific data for a guild, such as creating
+     * default database entries. This is called by the `CommandLoader` at startup.
      * @public
      * @abstract
-     * @param {bigint} guild_id - The ID of the guild for which to prepare settings.
-     * @returns {Promise<void>} A promise that resolves when the settings are prepared.
+     * @param {bigint} guild_id The ID of the guild for which to prepare data.
+     * @returns {Promise<void>} A promise that resolves when preparation is complete.
      */
     public abstract prepareCommandData(guild_id: bigint): Promise<void>;
 
     /**
-     * Generates and sends the settings user interface for the command.
+     * Renders and sends the settings user interface for the command.
+     *
+     * This method dynamically builds an embed and select menu based on the setting components
+     * registered with the `@Setting...` decorators.
      * @public
-     * @param {BaseInteraction | CommandInteraction} interaction - The interaction that triggered the settings UI.
-     * @returns {Promise<void>} A promise that resolves when the settings UI has been sent.
+     * @param {BaseInteraction | CommandInteraction} interaction The interaction that triggered the settings UI.
+     * @returns {Promise<void>} A promise that resolves when the UI has been sent or updated.
      */
     public async settingsUI(interaction: BaseInteraction | CommandInteraction): Promise<void> {
         const subsettings = Reflect.getMetadata('custom:settings', this.constructor);
-        const ui = new EmbedBuilder().setTitle(`:gear: ${this.t('settings.execute.title', { command: this.pretty_name })}`);
-        const menu = new StringSelectMenuBuilder().setCustomId(`settings:${this.name}`).setPlaceholder(this.t('settings.execute.placeholder'));
+        const ui = new EmbedBuilder().setTitle(
+            `:gear: ${this.t('settings.execute.title', { command: this.t(`${this.name}.pretty_name`, undefined, interaction) }, interaction)}`,
+        );
+        const menu = new StringSelectMenuBuilder()
+            .setCustomId(`settings:${this.name}`)
+            .setPlaceholder(this.t('settings.execute.placeholder', undefined, interaction));
 
         if (this.warning) {
             ui.setColor(Colors.Yellow);
@@ -331,37 +390,37 @@ export abstract class CustomizableCommand extends BaseCommand {
                 let value;
                 if (typeof row === 'boolean') {
                     value = row
-                        ? `:green_circle: ${this.t('command.execute.true')}`
-                        : `:red_circle: ${this.t('command.execute.false')}`;
+                        ? `:green_circle: ${this.t('command.execute.true', undefined, interaction)}`
+                        : `:red_circle: ${this.t('command.execute.false', undefined, interaction)}`;
                 } else if (setting.db_column_is_array) {
                     value = setting.database_key
                         ? Array.isArray(row) && row.length > 0
                             ? row.length == 1 && row[0] === null
-                                ? `:orange_circle: ${this.t('settings.execute.not_set')}`
+                                ? `:orange_circle: ${this.t('settings.execute.not_set', undefined, interaction)}`
                                 : row.map((val) => format(setting.format_specifier, val)).join(', ')
-                            : `:orange_circle: ${this.t('settings.execute.not_set')}`
-                        : this.t('settings.execute.view_in_edit_mode');
+                            : `:orange_circle: ${this.t('settings.execute.not_set', undefined, interaction)}`
+                        : this.t('settings.execute.view_in_edit_mode', undefined, interaction);
                 } else {
                     value = setting.database_key
                         ? row
                             ? format(setting.format_specifier, row ?? '')
-                            : `:orange_circle: ${this.t('settings.execute.not_set')}`
-                        : this.t('settings.execute.view_in_edit_mode');
+                            : `:orange_circle: ${this.t('settings.execute.not_set', undefined, interaction)}`
+                        : this.t('settings.execute.view_in_edit_mode', undefined, interaction);
                 }
                 ui.addFields({
-                    name: setting.display_name,
+                    name: this.t(setting.display_name, undefined, interaction),
                     value: value,
                 });
             }
             menu.addOptions({
-                label: setting.pretty,
-                description: setting.description,
+                label: this.t(setting.pretty, undefined, interaction),
+                description: this.t(setting.description, undefined, interaction),
                 value: `settings:${this.name}:${name}`,
             });
         }
         menu.addOptions({
-            label: this.t('settings.execute.back_to_main_menu'),
-            description: this.t('settings.execute.back_to_main_menu_description'),
+            label: this.t('settings.execute.back_to_main_menu', undefined, interaction),
+            description: this.t('settings.execute.back_to_main_menu_description', undefined, interaction),
             value: 'command:settings',
         });
 
@@ -388,10 +447,14 @@ export abstract class CustomizableCommand extends BaseCommand {
                 ui.addFields({ name: '\u00A0', value: '' });
                 ui.setFooter({
                     iconURL: user ? user.displayAvatarURL() : undefined,
-                    text: this.t('settings.execute.last_modified_by', {
-                        user: user ? user.tag : this.t('settings.execute.unknown_user'),
-                        date: date ? date : this.t('settings.execute.unknown_date'),
-                    }),
+                    text: this.t(
+                        'settings.execute.last_modified_by',
+                        {
+                            user: user ? user.tag : this.t('settings.execute.unknown_user', undefined, interaction),
+                            date: date ? date : this.t('settings.execute.unknown_date', undefined, interaction),
+                        },
+                        interaction,
+                    ),
                 });
             }
         }
@@ -419,8 +482,8 @@ export abstract class CustomizableCommand extends BaseCommand {
     }
 
     /**
-     * Constructs a new instance of the CustomizableCommand.
-     * @param {Partial<CustomizableCommand> & { name: string }} options - The options to initialize the command with.
+     * Initializes a new instance of the `CustomizableCommand`.
+     * @param {Partial<CustomizableCommand> & { name: string }} options The options to initialize the command with.
      */
     constructor(options: Partial<CustomizableCommand> & { name: string }) {
         super(options);
