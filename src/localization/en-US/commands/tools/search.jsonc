@@ -15,6 +15,7 @@
             "addengine": {
                 "description": "Adds a new search engine.",
                 "duplicate_engine": "Search engine \"{name}\" already exists.",
+                "invalid_url": "The URL \"{url}\" is not valid. It must start with http:// or https://.",
                 "pretty_name": "Add Search Engine",
                 "parameters": {
                     "engine_name": "Search engine name",
@@ -28,6 +29,7 @@
                 },
                 "description": "Edits an existing search engine.",
                 "display_name": "Search Engines",
+                "invalid_url": "The URL \"{url}\" is not valid. It must start with http:// or https://.",
                 "placeholder": "Select search engine to edit",
                 "pretty_name": "Edit Search Engine",
                 "title": "Edit Search Engine: {name}",

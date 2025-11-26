@@ -166,6 +166,17 @@ export default class SearchCommand extends CustomizableCommand {
             await this.settingsUI(interaction);
             return;
         }
+        if (!url.match(/^https?:\/\/.+/)) {
+            this.warning = this.t('settings.addengine.invalid_url', { url }, interaction);
+            this.log.send('warn', 'command.search.addengine.invalid_url', {
+                name: this.name,
+                guild: interaction.guild,
+                user: interaction.user,
+                url,
+            });
+            await this.settingsUI(interaction);
+            return;
+        }
         const new_engine = new SearchEngines();
         new_engine.engine_name = name;
         new_engine.engine_url = url;
@@ -224,6 +235,18 @@ export default class SearchCommand extends CustomizableCommand {
         const name = interaction.fields.getTextInputValue('engine_name');
         const url = interaction.fields.getTextInputValue('engine_url');
         const engine = engines.find((e) => e.engine_name === engine_name)!;
+
+        if (!url.match(/^https?:\/\/.+/)) {
+            this.warning = this.t('settings.editengine.invalid_url', { url }, interaction);
+            this.log.send('warn', 'command.search.editengine.invalid_url', {
+                name: this.name,
+                guild: interaction.guild,
+                user: interaction.user,
+                url,
+            });
+            await this.settingsUI(interaction);
+            return;
+        }
 
         engine.engine_name = name;
         engine.engine_url = url;

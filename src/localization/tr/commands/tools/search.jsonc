@@ -15,6 +15,7 @@
             "addengine": {
                 "description": "Yeni bir arama motoru ekler.",
                 "duplicate_engine": "\"{name}\" arama motoru zaten mevcut.",
+                "invalid_url": "URL \"{url}\" geçerli değil. http:// veya https:// ile başlamalıdır.",
                 "pretty_name": "Arama Motoru Ekle",
                 "parameters": {
                     "engine_name": "Arama motoru adı",
@@ -28,6 +29,7 @@
                 },
                 "description": "Mevcut bir arama motorunu düzenler.",
                 "display_name": "Arama Motorları",
+                "invalid_url": "URL \"{url}\" geçerli değil. http:// veya https:// ile başlamalıdır.",
                 "placeholder": "Düzenlenecek arama motorunu seçin",
                 "pretty_name": "Arama Motorunu Düzenle",
                 "title": "Arama Motorunu Düzenle: {name}",

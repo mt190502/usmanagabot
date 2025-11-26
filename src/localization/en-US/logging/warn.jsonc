@@ -65,6 +65,10 @@
             "search": {
                 "addengine": {
                     "duplicate_engine": "Search engine \"{name}\" attempted to be added by user \"{user}\" on server \"{guild}\" already exists.",
+                    "invalid_url": "Invalid URL \"{url}\" attempted to be added by user \"{user}\" on server \"{guild}\".",
+                },
+                "editengine": {
+                    "invalid_url": "Invalid URL \"{url}\" attempted to be set by user \"{user}\" on server \"{guild}\".",
                 },
             },
             "user_information": {

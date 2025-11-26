@@ -65,6 +65,10 @@
             "search": {
                 "addengine": {
                     "duplicate_engine": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından eklenmeye çalışılan \"{name}\" arama motoru zaten mevcut.",
+                    "invalid_url": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından eklenmeye çalışılan URL geçersiz: \"{url}\".",
+                },
+                "editengine": {
+                    "invalid_url": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından ayarlanmaya çalışılan URL geçersiz: \"{url}\".",
                 },
             },
             "user_information": {
