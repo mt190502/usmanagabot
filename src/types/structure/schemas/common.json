@@ -2,13 +2,51 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "common.json",
     "title": "Common Translations",
-    "description": "Shared translation strings used across the application",
+    "description": "Common translation strings used across the application, grouped by UI component type.",
     "type": "object",
     "properties": {
-        "$schema": { "type": "string" },
-        "command": { "type": "object" },
-        "event": { "type": "object" },
-        "paginator": { "type": "object" },
-        "question": { "type": "object" }
-    }
+        "$schema": {
+            "type": "string"
+        },
+        "buttons": {
+            "type": "object",
+            "properties": {
+                "cancel": { "type": "string" },
+                "ok": { "type": "string" },
+                "yes": { "type": "string" },
+                "no": { "type": "string" },
+                "previous": { "type": "string" },
+                "next": { "type": "string" },
+                "back": { "type": "string" }
+            }
+        },
+        "labels": {
+            "type": "object",
+            "properties": {
+                "active": { "type": "string" },
+                "viewInEditMode": { "type": "string" },
+                "pageStatus": { "type": "string" },
+                "cancelOperationDescription": { "type": "string" }
+            }
+        },
+        "messages": {
+            "type": "object",
+            "properties": {
+                "error": { "type": "string" },
+                "success": { "type": "string" },
+                "warning": { "type": "string" },
+                "operationCancelled": { "type": "string" },
+                "operationCancelledByUser": { "type": "string" },
+                "pleaseWait": { "type": "string" },
+                "processing": { "type": "string" }
+            }
+        },
+        "placeholders": {
+            "type": "object",
+            "properties": {
+                "selectItemFromList": { "type": "string" }
+            }
+        }
+    },
+    "required": ["buttons", "labels", "messages", "placeholders"]
 }

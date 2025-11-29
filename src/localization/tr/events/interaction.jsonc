@@ -1,0 +1,11 @@
+{
+    "$schema": "../../../types/structure/schemas/event.json",
+    "interaction": {
+        "execute": {
+            "cooldown": "Lütfen \"{command}\" komutunu tekrar kullanmadan önce **{left}** saniye bekleyin."
+        },
+        "warn": {
+            "cooldown": "{user} kullanıcısı, bekleme süresi bitmeden önce \"{command}\" komutunu kullanmaya çalıştı. Kalan süre: **{left}** saniye."
+        }
+    }
+}

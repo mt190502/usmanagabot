@@ -5,8 +5,26 @@
         "pretty_name": "Ping",
         "description": "Measures the bot's response time.",
         "help": "Measures the bot's response time.\n\n**Usage:**\n- `/ping` - Returns the bot's latency in milliseconds.\n\n**Example Output:**\n```plain\nPong! 🏓\n123ms\n```",
+        "parameters": {},
         "execute": {
-            "measuring": "Measuring latency...",
+            "measuring": "Measuring latency..."
         },
-    },
+        "subcommands": {},
+        "events": {},
+        "settings": {},
+        "logging": {
+            "debug": {
+                "execute": {
+                    "start": "\"Ping\" command execution started by user \"{user}\" in guild \"{guild}\".",
+                    "success": "\"Ping\" command executed successfully by user \"{user}\" in guild \"{guild}\".",
+                    "latency_measured": "Ping measured by user \"{user}\" in guild \"{guild}\": {ping}ms.",
+                    "measuring_latency": "Measuring latency with \"Ping\" command by user \"{user}\" in guild \"{guild}\"..."
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {},
+            "log": {}
+        }
+    }
 }

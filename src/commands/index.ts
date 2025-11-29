@@ -81,7 +81,7 @@ export class CommandLoader {
         await timers.setTimeout(1000);
 
         if (!client.guilds.cache.size) {
-            CommandLoader.logger.send('error', 'command.registerGuilds.no_guilds_found');
+            CommandLoader.logger.send('services', 'command_loader', 'error', 'registerGuilds.no_guilds_found');
             return;
         }
 
@@ -167,17 +167,19 @@ export class CommandLoader {
     ): Promise<void> {
         for (const { name: filename, data: cmd } of commands) {
             if (!cmd.name) {
-                CommandLoader.logger.send('info', 'command.readCommandFiles.invalid_name', { name: filename });
+                CommandLoader.logger.send('services', 'command_loader', 'info', 'readCommandFiles.invalid_name', {
+                    name: filename,
+                });
                 continue;
             }
 
             if (!cmd.enabled && !custom_command) {
-                CommandLoader.logger.send('info', 'command.readCommandFiles.command_disabled', {
+                CommandLoader.logger.send('services', 'command_loader', 'info', 'readCommandFiles.command_disabled', {
                     name: cmd.name,
                 });
                 continue;
             }
-            CommandLoader.logger.send('log', 'command.readCommandFiles.command_loading', {
+            CommandLoader.logger.send('services', 'command_loader', 'log', 'readCommandFiles.command_loading', {
                 name: cmd.name,
                 filename: filename,
             });
@@ -215,10 +217,16 @@ export class CommandLoader {
                 CommandLoader.BotCommands.get(guild)!.set(cloned.name, cloned);
                 for (const c of cloned.all_cmd_data) {
                     if (!cloned.enabled) {
-                        CommandLoader.logger.send('info', 'command.readCommandFiles.custom_disabled', {
-                            name: cloned.name,
-                            guild: guild,
-                        });
+                        CommandLoader.logger.send(
+                            'services',
+                            'command_loader',
+                            'info',
+                            'readCommandFiles.custom_disabled',
+                            {
+                                name: cloned.name,
+                                guild: guild,
+                            },
+                        );
                         continue;
                     }
                     if (c) CommandLoader.rest_commands.get(guild)!.add(c.toJSON());
@@ -244,7 +252,12 @@ export class CommandLoader {
             guilds = await Database.dbManager.find(Guilds);
         } catch (error) {
             if (error instanceof TypeORMError && error.message.includes('No metadata for')) {
-                CommandLoader.logger.send('error', 'command.readCommandFiles.database_metadata_missing');
+                CommandLoader.logger.send(
+                    'services',
+                    'command_loader',
+                    'error',
+                    'readCommandFiles.database_metadata_missing',
+                );
             }
         }
 
@@ -269,8 +282,7 @@ export class CommandLoader {
         rest: REST,
         route: `/${string}`,
         commands: Set<
-            | RESTPostAPIChatInputApplicationCommandsJSONBody
-            | RESTPostAPIContextMenuApplicationCommandsJSONBody
+            RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody
         >,
         clear: boolean,
     ) {
@@ -304,7 +316,7 @@ export class CommandLoader {
                         : Routes.applicationGuildCommands(cfg.app_id, guild_id);
                 await CommandLoader.putCommands(rest, route, commands, cfg.clear_old_commands_on_startup);
             } catch (error) {
-                CommandLoader.logger.send('error', 'command.RESTCommandLoader.failed', {
+                CommandLoader.logger.send('services', 'command_loader', 'error', 'RESTCommandLoader.failed', {
                     guild: guild_id,
                     message: (error as Error).message,
                 });

@@ -9,7 +9,6 @@ import {
 } from 'discord.js';
 import { Afk } from '../../types/database/entities/afk';
 import { ChainEvent } from '../../types/decorator/chainevent';
-import { Log } from '../../types/decorator/log';
 import { BaseCommand } from '../../types/structure/command';
 
 /**
@@ -28,7 +27,12 @@ export default class AFKCommand extends BaseCommand {
         super({ name: 'afk', cooldown: 10 });
 
         (this.base_cmd_data as SlashCommandBuilder).addStringOption((option) =>
-            option.setName('reason').setDescription(this.t('parameters.reason')).setRequired(true),
+            option
+                .setName('reason')
+                .setDescription(this.t.commands({ key: 'parameters.reason' }))
+                .setNameLocalizations(this.getLocalizations('parameters.reason.name'))
+                .setDescriptionLocalizations(this.getLocalizations('parameters.reason.description'))
+                .setRequired(true),
         );
     }
     // ================================================================ //
@@ -39,9 +43,8 @@ export default class AFKCommand extends BaseCommand {
      * Sets the user's AFK status, reason, and updates their nickname.
      * @param interaction The chat input command interaction.
      */
-    @Log()
     public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-        this.log.send('debug', 'command.execute.start', {
+        this.log('debug', 'execute.start', {
             name: this.name,
             guild: interaction.guild,
             user: interaction.user,
@@ -54,7 +57,9 @@ export default class AFKCommand extends BaseCommand {
         const post = new EmbedBuilder();
 
         if (user_afk) {
-            post.setTitle(`:warning: ${this.t('execute.already_afk', undefined, interaction)}`).setColor(Colors.Yellow);
+            post.setTitle(
+                `:warning: ${this.t.commands({ key: 'execute.already_afk', guild_id: BigInt(interaction.guildId!) })}`,
+            ).setColor(Colors.Yellow);
             await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
             return;
         }
@@ -65,12 +70,14 @@ export default class AFKCommand extends BaseCommand {
         afk.message = reason;
         await this.db.save(afk);
 
-        post.setTitle(`:white_check_mark: ${this.t('execute.afk_success', undefined, interaction)}`).setColor(
-            Colors.Green,
-        );
+        post.setTitle(
+            `:white_check_mark: ${this.t.commands({ key: 'execute.afk_success', guild_id: BigInt(interaction.guildId!) })}`,
+        ).setColor(Colors.Green);
         if (!member.manageable) {
-            post.setDescription(`:warning: ${this.t('execute.role_hierarchy_error', undefined, interaction)}`);
-            this.log.send('warn', 'command.afk.execute.nickname_change_failed', {
+            post.setDescription(
+                `:warning: ${this.t.commands({ key: 'execute.role_hierarchy_error', guild_id: BigInt(interaction.guildId!) })}`,
+            );
+            this.log('warn', 'execute.nickname_change_failed', {
                 guild: interaction.guild,
                 user: interaction.user,
             });
@@ -92,10 +99,9 @@ export default class AFKCommand extends BaseCommand {
      * @param message The message that was created.
      */
     @ChainEvent({ type: Events.MessageCreate })
-    @Log()
     public async onMessageCreate(message: Message<true>): Promise<void> {
         if (message?.author?.bot || !message.guild) return;
-        this.log.send('debug', 'command.event.trigger.start', {
+        this.log('debug', 'event.trigger.start', {
             name: 'afk',
             event: 'MessageCreate',
             guild: message.guild,
@@ -111,20 +117,30 @@ export default class AFKCommand extends BaseCommand {
             const post = new EmbedBuilder();
             if (member.manageable) await member?.setNickname(member.nickname!.replaceAll('[AFK]', ''));
             post.setTitle(
-                `:white_check_mark: ${this.t('events.onmessagecreate.no_longer_afk', undefined, message)}`,
+                `:white_check_mark: ${this.t.commands({ key: 'events.onmessagecreate.no_longer_afk', guild_id: BigInt(message.guild.id) })}`,
             ).setColor(Colors.Green);
             if (user_afk.mentions.length > 0) {
                 post.setDescription(
-                    this.t('events.onmessagecreate.mentions', { length: user_afk.mentions.length }, message),
+                    this.t.commands({
+                        key: 'events.onmessagecreate.mentions',
+                        replacements: { length: user_afk.mentions.length },
+                        guild_id: BigInt(message.guild.id),
+                    }),
                 );
                 await message.author.send({
-                    content: this.t(
-                        'events.onmessagecreate.dm_description',
-                        {
+                    content: this.t.commands({
+                        key: 'events.onmessagecreate.dm_description',
+                        replacements: {
                             message_list: user_afk.mentions.join('\n'),
                         },
-                        message,
-                    ),
+                        guild_id: BigInt(message.guild.id),
+                    }),
+                }).catch((err) => {
+                    this.log('warn', 'events.onmessagecreate.dm_failed', {
+                        guild: message.guild,
+                        user: message.author,
+                        error: err,
+                    });
                 });
             }
             await this.db.delete(Afk, { id: user_afk.id });
@@ -136,12 +152,12 @@ export default class AFKCommand extends BaseCommand {
             });
             if (mentioned_user_afk) {
                 const post = new EmbedBuilder();
-                post.setTitle(`:warning: ${this.t('events.onmessagecreate.afk_info', undefined, message)}`).setColor(
-                    Colors.Yellow,
-                );
+                post.setTitle(
+                    `:warning: ${this.t.commands({ key: 'events.onmessagecreate.afk_info', guild_id: BigInt(message.guild.id) })}`,
+                ).setColor(Colors.Yellow);
                 if (mentioned_user_afk.message) {
                     post.setDescription(
-                        `${this.t('events.onmessagecreate.afk_reason', { reason: mentioned_user_afk.message }, message)}`,
+                        `${this.t.commands({ key: 'events.onmessagecreate.afk_reason', replacements: { reason: mentioned_user_afk.message }, guild_id: BigInt(message.guild.id) })}`,
                     );
                 }
                 await message.reply({
@@ -153,7 +169,7 @@ export default class AFKCommand extends BaseCommand {
                 await this.db.save(mentioned_user_afk);
             }
         }
-        this.log.send('debug', 'command.event.trigger.success', {
+        this.log('debug', 'event.trigger.success', {
             name: 'afk',
             event: 'MessageCreate',
             guild: message.guild,

@@ -6,7 +6,10 @@
         "description": "Belirtilen kullanıcı hakkında bilgileri alır.",
         "help": "Belirtilen kullanıcı hakkında detaylı bilgileri alır.\n\n**Kullanım:**\n- `/user_information <kullanıcı>` - Belirtilen kullanıcı hakkında bilgi alır.\n\n**Örnekler:**\n- `/user_information @Kullanıcı1` - @Kullanıcı1 hakkında bilgi alır.\n- Kullanıcı profiline veya mesajına sağ tıklayıp **Uygulamalar > Kullanıcı Bilgisi** seçeneğini kullanarak da kullanıcı bilgisi alabilirsiniz.",
         "parameters": {
-            "user": "Hedef kullanıcı",
+            "user": {
+                "name": "kullanıcı",
+                "description": "Hakkında bilgi alınacak kullanıcı."
+            }
         },
         "execute": {
             "account_info": "Hesap Bilgileri",
@@ -23,7 +26,26 @@
             "updated": "Tanıtım Güncellendi",
             "user_not_found_in_guild": "{user} kullanıcısı bu sunucuda bulunamadı.",
             "username": "Kullanıcı Adı",
-            "validation_failed": "Lütfen en az bir değer sağlayın.",
+            "validation_failed": "Lütfen en az bir değer sağlayın."
         },
-    },
+        "subcommands": {},
+        "events": {},
+        "settings": {},
+        "logging": {
+            "debug": {
+                "execute": {
+                    "success": "{user} kullanıcısı tarafından {guild} sunucusundaki {channel} kanalında \"{user_target}\" kullanıcısının bilgileri alındı.",
+                    "fetching_introduction": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için tanıtım verileri alınıyor..."
+                }
+            },
+            "info": {},
+            "warn": {
+                "execute": {
+                    "user_not_found": "\"{id}\" ID'li kullanıcı \"{guild}\" sunucusunda bulunamadı."
+                }
+            },
+            "error": {},
+            "log": {}
+        }
+    }
 }

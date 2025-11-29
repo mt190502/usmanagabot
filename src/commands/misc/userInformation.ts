@@ -11,7 +11,6 @@ import {
     User,
 } from 'discord.js';
 import { Introduction, IntroductionSubmit } from '../../types/database/entities/introduction';
-import { Log } from '../../types/decorator/log';
 import { BaseCommand } from '../../types/structure/command';
 
 /**
@@ -30,7 +29,12 @@ export default class UserInformationCommand extends BaseCommand {
     constructor() {
         super({ name: 'user_information', cooldown: 5 });
         (this.base_cmd_data as SlashCommandBuilder).addUserOption((option) =>
-            option.setName('user').setDescription(this.t('parameters.user')).setRequired(false),
+            option
+                .setName('user')
+                .setDescription(this.t.commands({ key: 'parameters.user.description' }))
+                .setNameLocalizations(this.getLocalizations('parameters.user.name'))
+                .setDescriptionLocalizations(this.getLocalizations('parameters.user.description'))
+                .setRequired(false),
         );
         this.push_cmd_data = new ContextMenuCommandBuilder()
             .setName(this.pretty_name)
@@ -53,7 +57,6 @@ export default class UserInformationCommand extends BaseCommand {
      *
      * @param interaction The interaction from the slash or context menu command.
      */
-    @Log()
     public async execute(
         interaction: ChatInputCommandInteraction | MessageContextMenuCommandInteraction,
     ): Promise<void> {
@@ -66,11 +69,19 @@ export default class UserInformationCommand extends BaseCommand {
 
         if (!interaction.guild!.members.cache.get(user.id)) {
             const post = new EmbedBuilder()
-                .setTitle(`:warning: ${this.t('command.execute.warning', undefined, interaction)}`)
-                .setDescription(this.t('execute.user_not_found_in_guild', { user: user.username }, interaction))
+                .setTitle(
+                    `:warning: ${this.t.system({ caller: 'messages', key: 'warning', guild_id: BigInt(interaction.guildId!) })}`,
+                )
+                .setDescription(
+                    this.t.commands({
+                        key: 'execute.user_not_found_in_guild',
+                        replacements: { user: user.username },
+                        guild_id: BigInt(interaction.guildId!),
+                    }),
+                )
                 .setColor(Colors.Yellow);
             await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
-            this.log.send('warn', 'command.user_information.execute.user_not_found', {
+            this.log('warn', 'execute.user_not_found', {
                 guild: interaction.guild,
                 user: interaction.user,
                 id: user.id,
@@ -87,7 +98,7 @@ export default class UserInformationCommand extends BaseCommand {
         const data: string[] = [];
 
         if (introduction) {
-            this.log.send('debug', 'command.user_information.execute.fetching_introduction', {
+            this.log('debug', 'execute.fetching_introduction', {
                 guild: interaction.guild,
                 user: interaction.user,
                 id: user.id,
@@ -96,7 +107,9 @@ export default class UserInformationCommand extends BaseCommand {
                 where: { from_user: { uid: BigInt(user.id) }, from_guild: { gid: BigInt(interaction.guild!.id) } },
             });
             if (last_introduction_submit) {
-                data.push(`**__${this.t('execute.header', { user: interaction.user.username }, interaction)}__**\n`);
+                data.push(
+                    `**__${this.t.commands({ key: 'execute.header', replacements: { user: interaction.user.username }, guild_id: BigInt(interaction.guildId!) })}__**\n`,
+                );
                 for (let i = 1; i <= 8; i++) {
                     const key = introduction[`col${i}` as keyof Introduction];
                     if (Array.isArray(key)) {
@@ -112,17 +125,17 @@ export default class UserInformationCommand extends BaseCommand {
         }
 
         data.push(
-            `\n**__${this.t('execute.account_info', undefined, interaction)}__**\n`,
-            `**${this.t('execute.username', undefined, interaction)}**: ${user.username}\n`,
-            `**${this.t('execute.nickname', undefined, interaction)}**: <@!${user.id}>\n`,
-            `**${this.t('execute.id', undefined, interaction)}**: ${user.id}\n`,
-            `**${this.t('execute.created_at', undefined, interaction)}**: <t:${Math.floor(user.createdTimestamp / 1000)}:R>\n`,
-            `**${this.t('execute.joined_at', undefined, interaction)}**: <t:${Math.floor(interaction.guild!.members.cache.get(user.id)!.joinedTimestamp! / 1000)}:R>\n`,
-            `**${this.t('execute.roles', undefined, interaction)}**: ${
+            `\n**__${this.t.commands({ key: 'execute.account_info', guild_id: BigInt(interaction.guildId!) })}__**\n`,
+            `**${this.t.commands({ key: 'execute.username', guild_id: BigInt(interaction.guildId!) })}**: ${user.username}\n`,
+            `**${this.t.commands({ key: 'execute.nickname', guild_id: BigInt(interaction.guildId!) })}**: <@!${user.id}>\n`,
+            `**${this.t.commands({ key: 'execute.id', guild_id: BigInt(interaction.guildId!) })}**: ${user.id}\n`,
+            `**${this.t.commands({ key: 'execute.created_at', guild_id: BigInt(interaction.guildId!) })}**: <t:${Math.floor(user.createdTimestamp / 1000)}:R>\n`,
+            `**${this.t.commands({ key: 'execute.joined_at', guild_id: BigInt(interaction.guildId!) })}**: <t:${Math.floor(interaction.guild!.members.cache.get(user.id)!.joinedTimestamp! / 1000)}:R>\n`,
+            `**${this.t.commands({ key: 'execute.roles', guild_id: BigInt(interaction.guildId!) })}**: ${
                 user_roles!
                     .filter((r) => r.name !== '@everyone')
                     .map((r) => `<@&${r.id}>`)
-                    .join(', ') || this.t('execute.no_roles', undefined, interaction)
+                    .join(', ') || this.t.commands({ key: 'execute.no_roles', guild_id: BigInt(interaction.guildId!) })
             }\n`,
         );
 

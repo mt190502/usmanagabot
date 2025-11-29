@@ -19,7 +19,6 @@ import {
     SettingRoleSelectMenuComponent,
 } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
-import { Log } from '../../types/decorator/log';
 
 /**
  * A command for users to report other users to the server administration.
@@ -40,18 +39,33 @@ export default class ReportCommand extends CustomizableCommand {
 
         (this.base_cmd_data as SlashCommandBuilder)
             .addUserOption((option) =>
-                option.setName('user').setDescription(this.t('parameters.user')).setRequired(true),
+                option
+                    .setName('user')
+                    .setDescription(this.t.commands({ key: 'parameters.user.description' }))
+                    .setNameLocalizations(this.getLocalizations('parameters.user.name'))
+                    .setDescriptionLocalizations(this.getLocalizations('parameters.user.description'))
+                    .setRequired(true),
             )
             .addStringOption((option) =>
-                option.setName('reason').setDescription(this.t('parameters.reason')).setRequired(true),
+                option
+                    .setName('reason')
+                    .setDescription(this.t.commands({ key: 'parameters.reason.description' }))
+                    .setNameLocalizations(this.getLocalizations('parameters.reason.name'))
+                    .setDescriptionLocalizations(this.getLocalizations('parameters.reason.description'))
+                    .setRequired(true),
             )
             .addStringOption((option) =>
-                option.setName('message_url').setDescription(this.t('parameters.message_url_list')).setRequired(false),
+                option
+                    .setName('message_url')
+                    .setDescription(this.t.commands({ key: 'parameters.message_urls.description' }))
+                    .setNameLocalizations(this.getLocalizations('parameters.message_urls.name'))
+                    .setDescriptionLocalizations(this.getLocalizations('parameters.message_urls.description'))
+                    .setRequired(false),
             );
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
-        this.log.send('debug', 'command.prepare.start', { name: this.name, guild: guild_id });
+        this.log('debug', 'prepare.start', { name: this.name, guild: guild_id });
         const guild = await this.db.getGuild(guild_id);
         const system_user = await this.db.getUser(BigInt(0));
         let report = await this.db.findOne(Reports, { where: { from_guild: guild! } });
@@ -61,10 +75,10 @@ export default class ReportCommand extends CustomizableCommand {
             new_settings.latest_action_from_user = system_user!;
             new_settings.from_guild = guild!;
             report = await this.db.save(new_settings);
-            this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
+            this.log('log', 'prepare.database.success', { name: this.name, guild: guild_id });
         }
         this.enabled = report.is_enabled;
-        this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
+        this.log('debug', 'prepare.success', { name: this.name, guild: guild_id });
     }
     // ================================================================ //
 
@@ -80,7 +94,6 @@ export default class ReportCommand extends CustomizableCommand {
      *
      * @param interaction The `ChatInputCommandInteraction` from the user.
      */
-    @Log()
     public async execute(interaction: ChatInputCommandInteraction): Promise<void> {
         const user_post = new EmbedBuilder();
         const admin_post = new EmbedBuilder();
@@ -103,11 +116,15 @@ export default class ReportCommand extends CustomizableCommand {
 
         if (!report?.channel_id) {
             user_post
-                .setTitle(`:warning: ${this.t('command.execute.warning', undefined, interaction)}`)
-                .setDescription(this.t('execute.command_not_configured', undefined, interaction))
+                .setTitle(
+                    `:warning: ${this.t.system({ caller: 'messages', key: 'warning', guild_id: BigInt(interaction.guildId!) })}`,
+                )
+                .setDescription(
+                    this.t.commands({ key: 'execute.command_not_configured', guild_id: BigInt(interaction.guildId!) }),
+                )
                 .setColor(Colors.Red);
             await interaction.reply({ embeds: [user_post], flags: MessageFlags.Ephemeral });
-            this.log.send('warn', 'command.configuration.missing', { name: this.name, guild: interaction.guild });
+            this.log('warn', 'configuration.missing', { name: this.name, guild: interaction.guild?.id });
             return;
         }
 
@@ -117,11 +134,19 @@ export default class ReportCommand extends CustomizableCommand {
             for (const url of message_urls) {
                 if (!pattern.test(url)) {
                     user_post
-                        .setTitle(`:warning: ${this.t('command.execute.warning', undefined, interaction)}`)
-                        .setDescription(this.t('execute.invalid_url', { url }, interaction))
+                        .setTitle(
+                            `:warning: ${this.t.system({ caller: 'messages', key: 'warning', guild_id: BigInt(interaction.guildId!) })}`,
+                        )
+                        .setDescription(
+                            this.t.commands({
+                                key: 'execute.invalid_url',
+                                replacements: { url },
+                                guild_id: BigInt(interaction.guildId!),
+                            }),
+                        )
                         .setColor(Colors.Red);
                     await interaction.reply({ embeds: [user_post], flags: MessageFlags.Ephemeral });
-                    this.log.send('warn', 'command.report.execute.invalid_url', {
+                    this.log('warn', 'execute.invalid_url', {
                         guild: interaction.guild,
                         user: interaction.user,
                         url,
@@ -132,14 +157,18 @@ export default class ReportCommand extends CustomizableCommand {
         } else {
             if (!message_in_database) {
                 user_post
-                    .setTitle(`:warning: ${this.t('command.execute.warning', undefined, interaction)}`)
-                    .setDescription(this.t('execute.message_not_found', undefined, interaction))
+                    .setTitle(
+                        `:warning: ${this.t.system({ caller: 'messages', key: 'warning', guild_id: BigInt(interaction.guildId!) })}`,
+                    )
+                    .setDescription(
+                        this.t.commands({ key: 'execute.message_not_found', guild_id: BigInt(interaction.guildId!) }),
+                    )
                     .setColor(Colors.Red);
                 await interaction.reply({
                     embeds: [user_post],
                     flags: MessageFlags.Ephemeral,
                 });
-                this.log.send('warn', 'command.report.execute.message_not_found', {
+                this.log('warn', 'execute.message_not_found', {
                     guild: interaction.guild,
                     user: interaction.user,
                 });
@@ -156,17 +185,17 @@ export default class ReportCommand extends CustomizableCommand {
             .setThumbnail(user.displayAvatarURL())
             .setTimestamp()
             .setDescription(
-                this.t(
-                    'execute.admin_report_description',
-                    {
+                this.t.commands({
+                    key: 'execute.admin_report_description',
+                    replacements: {
                         username: user.username,
                         user_id: user.id,
                         reason,
                         message_urls: message_urls.join(' '),
                         channel_id: interaction.channel!.id,
                     },
-                    interaction,
-                ),
+                    guild_id: BigInt(interaction.guildId!),
+                }),
             );
         (message_channel_id as TextChannel).send({
             content: report.moderator_role_id ? `<@&${report.moderator_role_id}>` : undefined,
@@ -174,17 +203,19 @@ export default class ReportCommand extends CustomizableCommand {
         });
 
         user_post
-            .setTitle(`:white_check_mark: ${this.t('command.execute.success', undefined, interaction)}`)
+            .setTitle(
+                `:white_check_mark: ${this.t.system({ caller: 'messages', key: 'success', guild_id: BigInt(interaction.guildId!) })}`,
+            )
             .setColor(Colors.Green)
             .setDescription(
-                this.t(
-                    'execute.user_reported_description',
-                    {
+                this.t.commands({
+                    key: 'execute.user_reported_description',
+                    replacements: {
                         user: user.username,
-                        reason: reason,
+                        reason,
                     },
-                    interaction,
-                ),
+                    guild_id: BigInt(interaction.guildId!),
+                }),
             );
         await interaction.reply({ embeds: [user_post], flags: MessageFlags.Ephemeral });
     }
@@ -201,9 +232,8 @@ export default class ReportCommand extends CustomizableCommand {
         database_key: 'is_enabled',
         format_specifier: '%s',
     })
-    @Log()
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.toggle.start', { name: this.name, guild: interaction.guild });
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -215,7 +245,7 @@ export default class ReportCommand extends CustomizableCommand {
         await this.db.save(Reports, report!);
         CommandLoader.RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.toggle.success', {
+        this.log('debug', 'settings.toggle.success', {
             name: this.name,
             guild: interaction.guild,
             toggle: this.enabled,
@@ -235,9 +265,8 @@ export default class ReportCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
-    @Log()
     public async changeTargetChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.channel.start', { name: this.name, guild: interaction.guild });
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -249,7 +278,7 @@ export default class ReportCommand extends CustomizableCommand {
         report!.timestamp = new Date();
         await this.db.save(Reports, report!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.channel.success', {
+        this.log('debug', 'settings.channel.success', {
             name: this.name,
             guild: interaction.guild,
             channel: selected_channel,
@@ -270,9 +299,8 @@ export default class ReportCommand extends CustomizableCommand {
             max_values: 1,
         },
     })
-    @Log()
     public async changeModeratorRole(interaction: RoleSelectMenuInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.role.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.role.start', { name: this.name, guild: interaction.guild });
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -283,7 +311,7 @@ export default class ReportCommand extends CustomizableCommand {
         report!.timestamp = new Date();
         await this.db.save(Reports, report!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.role.success', {
+        this.log('debug', 'settings.role.success', {
             name: this.name,
             guild: interaction.guild,
             role: interaction.values[0],
@@ -296,9 +324,8 @@ export default class ReportCommand extends CustomizableCommand {
      * @param interaction The interaction from the settings UI.
      */
     @SettingGenericSettingComponent({ view_in_ui: false })
-    @Log()
     public async removeModeratorRole(interaction: StringSelectMenuInteraction): Promise<void> {
-        this.log.send('debug', 'command.report.removemoderatorrole.start', { guild: interaction.guild });
+        this.log('debug', 'removemoderatorrole.start', { guild: interaction.guild });
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -309,7 +336,7 @@ export default class ReportCommand extends CustomizableCommand {
         report!.timestamp = new Date();
         await this.db.save(Reports, report!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.report.removemoderatorrole.success', { guild: interaction.guild });
+        this.log('debug', 'removemoderatorrole.success', { guild: interaction.guild });
     }
     // ================================================================ //
 }

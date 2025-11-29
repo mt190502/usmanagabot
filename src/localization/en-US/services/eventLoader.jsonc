@@ -1,0 +1,17 @@
+{
+    "$schema": "../../../types/structure/schemas/service.json",
+    "event_loader": {
+        "debug": {
+            "loaded": "Loaded event: {event}"
+        },
+        "error": {
+            "load_failed": "Failed to load event {event}: {message}"
+        },
+        "info": {
+            "disabled": "Event {event} is disabled. Skipping..."
+        },
+        "log": {
+            "loading": "Loading event: {event}"
+        }
+    }
+}

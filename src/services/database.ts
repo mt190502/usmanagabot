@@ -103,7 +103,7 @@ export class Database {
             });
 
             await Database.dataSource.initialize();
-            Logger.send('info', 'services.database.init.success');
+            Logger.send('services', 'database', 'info', 'init.success');
         } catch (error) {
             throw new Error(`Failed to initialize database: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }

@@ -16,14 +16,6 @@ import path from 'path';
  */
 export class EventLoader {
     /**
-     * The shared `Logger` for logging event loading information.
-     * @private
-     * @static
-     * @type {typeof Logger}
-     */
-    private static logger: typeof Logger = Logger;
-
-    /**
      * An in-memory registry of all loaded event handlers.
      *
      * The keys are the event names (from `ClientEvents`), and the values are the corresponding `BaseEvent` instances.
@@ -55,10 +47,10 @@ export class EventLoader {
             for (const event_class of events) {
                 const event = new event_class() as BaseEvent<keyof ClientEvents>;
                 if (!event.enabled) {
-                    Logger.send('info', 'event.disabled', { event: event.type, filename: file_name_with_path });
+                    Logger.send('services', 'event_loader', 'info', 'disabled', { event: event.type, filename: file_name_with_path });
                     continue;
                 }
-                Logger.send('log', 'event.loading', { event: event.type, filename: file_name_with_path });
+                Logger.send('services', 'event_loader', 'log', 'loading', { event: event.type, filename: file_name_with_path });
                 EventLoader.BotEvents[event.type] = event;
                 client[event.once ? 'once' : 'on'](event.type, (...args) => event.execute(...args));
             }

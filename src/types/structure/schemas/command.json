@@ -16,7 +16,27 @@
                 "parameters": {
                     "type": "object",
                     "patternProperties": {
-                        "^[a-zA-Z0-9_]+$": { "type": ["object", "string"] }
+                        "^[a-zA-Z0-9_]+$": {
+                            "type": "object",
+                            "properties": {
+                                "name": { "type": "string" },
+                                "description": { "type": "string" }
+                            },
+                            "required": ["name", "description"]
+                        }
+                    }
+                },
+                "subcommands": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^[a-zA-Z0-9_]+$": {
+                            "type": "object",
+                            "properties": {
+                                "name": { "type": "string" },
+                                "description": { "type": "string" }
+                            },
+                            "required": ["name", "description"]
+                        }
                     }
                 },
                 "execute": {
@@ -34,7 +54,39 @@
                 "settings": {
                     "type": "object",
                     "patternProperties": {
-                        "^[a-zA-Z0-9_]+$": { "type": ["object", "string"] }
+                        "^[a-zA-Z0-9_]+$": {
+                            "type": "object",
+                            "properties": {
+                                "description": { "type": "string" },
+                                "display_name": { "type": "string" },
+                                "placeholder": { "type": "string" },
+                                "pretty_name": { "type": "string" },
+                                "parameters": {
+                                    "type": "object",
+                                    "patternProperties": {
+                                        "^[a-zA-Z0-9_]+$": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": { "type": "string" },
+                                                "description": { "type": "string" },
+                                                "placeholder": { "type": "string" }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "logging": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^[a-zA-Z0-9_]+$": {
+                            "type": "object",
+                            "patternProperties": {
+                                "^[a-zA-Z0-9_]+$": { "type": ["object", "string"] }
+                            }
+                        }
                     }
                 }
             },

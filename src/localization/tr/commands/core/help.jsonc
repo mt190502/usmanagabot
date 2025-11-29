@@ -5,9 +5,29 @@
         "pretty_name": "Yardım",
         "description": "Mevcut komutların listesini ve belirli bir komut hakkında ayrıntılı bilgileri görüntüler.",
         "help": "Mevcut komutların nasıl kullanılacağını ve belirli bir komut hakkında ayrıntılı bilgileri görüntüler.\n\n**Kullanım:**\n- `/help` - Tüm komutların listesini gösterir.",
+        "parameters": {},
         "execute": {
             "command_title": "{command} Hakkında",
-            "main_title": "Yardım - Mevcut Komutlar",
+            "main_title": "Yardım - Mevcut Komutlar"
         },
-    },
+        "subcommands": {},
+        "events": {},
+        "settings": {},
+        "logging": {
+            "debug": {
+                "execute": {
+                    "commands_filtered": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için \"{length}\" adet komut filtrelendi.",
+                    "generating_page": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için yardım sayfası oluşturuluyor..."
+                },
+                "handlePageItem": {
+                    "start": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için yardım sayfası öğesi işleniyor...",
+                    "success": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için yardım sayfası öğesi başarıyla işlendi."
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {},
+            "log": {}
+        }
+    }
 }

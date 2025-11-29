@@ -4,6 +4,10 @@
         "pretty_name": "Otomatik Rol",
         "description": "Yeni katılan kullanıcılara otomatik olarak rol atar.",
         "help": "Yeni katılan kullanıcılara otomatik olarak rol atar.",
+        "parameters": {},
+        "execute": {},
+        "subcommands": {},
+        "events": {},
         "settings": {
             "changerole": {
                 "description": "Yeni katılan kullanıcılara atanacak rolü değiştirir.",
@@ -11,11 +15,47 @@
                 "placeholder": "Atanacak rolü seçin",
                 "pretty_name": "Atanacak Rol",
                 "role_hierarchy_error": "Seçilen rol, botun en yüksek rolünden üstte. Lütfen farklı bir rol seçin.",
+                "parameters": {}
             },
             "toggle": {
                 "description": "Sunucuda otomatik rol sistemini etkinleştirir veya devre dışı bırakır.",
-                "pretty_name": "Otomatik Rol Aktifliği",
-            },
+                "pretty_name": "Otomatik Rol Sistemini Aç/Kapat",
+                "parameters": {}
+            }
         },
-    },
+        "logging": {
+            "debug": {
+                "prepare": {
+                    "start": "\"{guild}\" sunucusu için Otomatik Rol komutu hazırlanıyor.",
+                    "success": "\"{guild}\" sunucusu için Otomatik Rol komutu başarıyla hazırlandı."
+                },
+                "event": {
+                    "trigger": {
+                        "start": "Otomatik Rol etkinliği \"{event}\", \"{guild}\" sunucusunda \"{user}\" kullanıcısı tarafından tetiklendi.",
+                        "success": "Otomatik Rol etkinliği \"{event}\", \"{guild}\" sunucusunda \"{user}\" kullanıcısı için başarıyla işlendi."
+                    }
+                },
+                "settings": {
+                    "toggle": {
+                        "start": "Otomatik Rol sistemi açma/kapama ayarı, \"{guild}\" sunucusunda kullanıcı tarafından başlatıldı.",
+                        "success": "Otomatik Rol sistemi açma/kapama ayarı, \"{guild}\" sunucusunda başarıyla \"{toggle}\" olarak güncellendi."
+                    },
+                    "role": {
+                        "start": "Otomatik Rol sistemi rol ayarı, \"{guild}\" sunucusunda kullanıcı tarafından başlatıldı.",
+                        "success": "Otomatik Rol sistemi rolü, \"{guild}\" sunucusunda başarıyla \"{role}\" olarak güncellendi."
+                    }
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "\"{guild}\" sunucusu için Otomatik Rol komutu ayarları veritabanına başarıyla işlendi."
+                    }
+                }
+            }
+        }
+    }
 }

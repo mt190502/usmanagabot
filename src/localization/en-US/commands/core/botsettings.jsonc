@@ -2,28 +2,80 @@
     "$schema": "../../../../types/structure/schemas/command.json",
     "botsettings": {
         "pretty_name": "Bot",
-        "description": "Manages bot general settings.",
-        "help": "Manages bot general settings.\n\n**Usage:**\n- Accessible via the `/settings` command from the settings menu.\n- Only the bot owner can view these settings.",
+        "description": "Manages the bot's general settings.",
+        "help": "Manages the bot's general settings.\n\n**Usage:**\n- Accessible via the `/settings` command from the settings menu.\n- Only the bot owner can see these settings.",
+        "parameters": {},
+        "execute": {},
+        "subcommands": {},
+        "events": {},
         "settings": {
             "managerandomstatuses": {
                 "description": "Manages the bot's random status messages.",
                 "display_name": "Random Status Messages",
                 "pretty_name": "Manage Random Status Messages",
                 "parameters": {
-                    "bot_random_statuses": "Random Status Messages (comma-separated)",
-                },
+                    "bot_random_statuses": {
+                        "name": "Random Status Messages (comma-separated)",
+                        "description": "A comma-separated list of status messages for the bot to cycle through.",
+                        "placeholder": "YouTube, Twitch, Odysee"
+                    }
+                }
             },
             "setrandomstatusinterval": {
-                "description": "Determines how often the bot will change its status messages.",
+                "description": "Determines how often the bot changes its status messages.",
                 "display_name": "Random Status Change Interval (minutes)",
-                "placeholder": "Select status change interval",
+                "placeholder": "Select the status change interval",
                 "pretty_name": "Random Status Change Interval",
+                "parameters": {}
             },
             "togglerandomstatus": {
                 "description": "Enables or disables the bot's random status messages.",
-                "display_name": "Random Status Messages Status",
-                "pretty_name": "Enable Random Status Messages",
-            },
+                "display_name": "Random Status Messages Activity",
+                "pretty_name": "Toggle Random Status Messages",
+                "parameters": {}
+            }
         },
-    },
+        "logging": {
+            "debug": {
+                "settings": {
+                    "toggle": {
+                        "start": "Bot setting toggle initiated in guild \"{guild}\"."
+                    },
+                    "selectmenu": {
+                        "start": "Bot setting select menu initiated in guild \"{guild}\".",
+                        "success": "Bot setting select menu successfully updated in guild \"{guild}\"."
+                    },
+                    "modalsubmit": {
+                        "start": "Bot setting modal initiated in guild \"{guild}\".",
+                        "success": "Bot setting modal successfully updated in guild \"{guild}\"."
+                    },
+                    "managerandomstatuses": {
+                        "success": "User {user} updated random statuses in channel {channel} on guild {guild}. New statuses: {statuses}"
+                    },
+                    "setrandomstatusinterval": {
+                        "success": "User {user} set the random status interval to {interval} minutes in channel {channel} on guild {guild}."
+                    },
+                    "togglerandomstatus": {
+                        "success": "User {user} changed the random status to {status} in channel {channel} on guild {guild}."
+                    }
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {
+                "settings": {
+                    "managerandomstatuses": {
+                        "failed": "User {user} failed to update random statuses in channel {channel} on guild {guild}: {message}"
+                    },
+                    "setrandomstatusinterval": {
+                        "failed": "User {user} failed to set the random status interval in channel {channel} on guild {guild}: {message}"
+                    },
+                    "togglerandomstatus": {
+                        "failed": "User {user} failed to change the random status in channel {channel} on guild {guild}: {message}"
+                    }
+                }
+            },
+            "log": {}
+        }
+    }
 }

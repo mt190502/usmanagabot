@@ -7,9 +7,8 @@ import {
     StringSelectMenuInteraction,
 } from 'discord.js';
 import { CommandLoader } from '..';
-import { Paginator } from '../../utils/paginator';
-import { Log } from '../../types/decorator/log';
 import { BaseCommand } from '../../types/structure/command';
+import { Paginator } from '../../utils/paginator';
 
 /**
  * A dynamic, paginated settings command for administrators.
@@ -41,15 +40,16 @@ export default class SettingsCommand extends BaseCommand {
      *
      * @param interaction The interaction from the slash command or a component.
      */
-    @Log()
-    public async execute(interaction: BaseInteraction | CommandInteraction | StringSelectMenuInteraction): Promise<void> {
-        this.log.send('debug', 'command.settings.execute.generating_page', {
+    public async execute(
+        interaction: BaseInteraction | CommandInteraction | StringSelectMenuInteraction,
+    ): Promise<void> {
+        this.log('debug', 'execute.generating_page', {
             guild: interaction.guild,
             user: interaction.user,
         });
         const commands = [...CommandLoader.BotCommands.get(interaction.guild!.id)!.values()];
         const payload = await Paginator.generatePage(interaction.guild!.id, interaction.user.id, this.name, {
-            title: `:gear: ${this.t('pretty_name', undefined, interaction)}`,
+            title: `:gear: ${this.t.commands({ caller: this.name, key: 'pretty_name', guild_id: BigInt(interaction.guildId!) })}`,
             color: Colors.Blurple,
             items: commands
                 .filter((cmd) =>
@@ -61,16 +61,31 @@ export default class SettingsCommand extends BaseCommand {
                 .map((cmd) => ({
                     name: cmd.name,
                     pretty_name:
-                        this.t(`${cmd.name}.pretty_name`, undefined, interaction) ||
-                        this.t(`${cmd.name}.name`, undefined, interaction) ||
+                        this.t.commands({
+                            caller: cmd.name,
+                            key: 'pretty_name',
+                            guild_id: BigInt(interaction.guildId!),
+                        }) ||
+                        this.t.commands({ caller: cmd.name, key: 'name', guild_id: BigInt(interaction.guildId!) }) ||
                         cmd.pretty_name ||
                         cmd.name,
                     description:
-                        this.t(`${cmd.name}.description`, undefined, interaction) || cmd.description || '<missing>',
+                        this.t.commands({
+                            caller: cmd.name,
+                            key: 'description',
+                            guild_id: BigInt(interaction.guildId!),
+                        }) ||
+                        cmd.description ||
+                        '<missing>',
                     namespace: 'settings' as const,
                 }))
                 .sort((a, b) => a.pretty_name.localeCompare(b.pretty_name)),
             items_per_page: 5,
+        });
+        this.log('debug', 'execute.commands_filtered', {
+            guild: interaction.guild,
+            user: interaction.user,
+            length: commands.length,
         });
         if (interaction.isButton() || interaction.isStringSelectMenu()) {
             await interaction.update({

@@ -11,7 +11,6 @@ import {
     SlashCommandBuilder,
 } from 'discord.js';
 import { CommandQuestionPrompt } from '../../types/decorator/commandquestionprompt';
-import { Log } from '../../types/decorator/log';
 import { BaseCommand } from '../../types/structure/command';
 
 /**
@@ -37,7 +36,12 @@ export default class PurgeCommand extends BaseCommand {
 
         (this.base_cmd_data as SlashCommandBuilder)
             .addStringOption((o) =>
-                o.setName('message_id').setRequired(true).setDescription(this.t('parameters.message_id')),
+                o
+                    .setName('message_id')
+                    .setDescription(this.t.commands({ key: 'parameters.message_id.description' }))
+                    .setNameLocalizations(this.getLocalizations('parameters.message_id.name'))
+                    .setDescriptionLocalizations(this.getLocalizations('parameters.message_id.description'))
+                    .setRequired(true)
             )
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
         this.push_cmd_data = new ContextMenuCommandBuilder()
@@ -65,13 +69,9 @@ export default class PurgeCommand extends BaseCommand {
      * @param interaction The interaction object, which can be from the initial command or the confirmation button.
      */
     @CommandQuestionPrompt({
-        title: 'command.execute.warning',
-        message: 'purge.execute.are_you_sure',
-        ok_label: 'command.execute.ok',
-        cancel_label: 'command.execute.cancel',
+        message: 'execute.are_you_sure',
         flags: MessageFlags.Ephemeral,
     })
-    @Log()
     public async execute(interaction: ButtonInteraction | CommandInteraction): Promise<void> {
         const post = new EmbedBuilder();
         if (interaction.isButton()) {
@@ -108,7 +108,7 @@ export default class PurgeCommand extends BaseCommand {
                 } else {
                     await interaction.channel.bulkDelete(selected_messages);
                 }
-                this.log.send('debug', 'command.purge.execute.delete.success', {
+                this.log('debug', 'execute.delete.success', {
                     count: selected_count + 1,
                     channel: interaction.channel,
                     user: interaction.user,
@@ -116,14 +116,18 @@ export default class PurgeCommand extends BaseCommand {
                 });
             } catch (err) {
                 post.setTitle(
-                    `:octagonal_sign: ${this.t('command.execute.error', undefined, interaction)}`,
+                    `:octagonal_sign: ${this.t.system({ caller: 'messages', key: 'error', guild_id: BigInt(interaction.guildId!) })}`,
                 )
                     .setDescription(
-                        this.t('execute.error', { error: (err as Error).message }, interaction),
+                        this.t.commands({
+                            key: 'execute.error',
+                            replacements: { error: (err as Error).message },
+                            guild_id: BigInt(interaction.guildId!),
+                        }),
                     )
                     .setColor(Colors.Red);
                 await interaction.update({ embeds: [post], components: [] });
-                this.log.send('warn', 'command.purge.execute.delete.failed', {
+                this.log('warn', 'execute.delete.failed', {
                     channel: interaction.channel,
                     user: interaction.user,
                     guild: interaction.guild,
@@ -136,9 +140,15 @@ export default class PurgeCommand extends BaseCommand {
             selected_count++;
 
             post.setTitle(
-                `:white_check_mark: ${this.t('command.execute.success', undefined, interaction)}`,
+                `:white_check_mark: ${this.t.system({ caller: 'messages', key: 'success', guild_id: BigInt(interaction.guildId!) })}`,
             )
-                .setDescription(this.t('execute.success', { count: selected_count }, interaction))
+                .setDescription(
+                    this.t.commands({
+                        key: 'execute.success',
+                        replacements: { count: selected_count },
+                        guild_id: BigInt(interaction.guildId!),
+                    }),
+                )
                 .setColor(Colors.Green);
             await interaction.update({ embeds: [post], components: [] });
         } else {
@@ -153,9 +163,14 @@ export default class PurgeCommand extends BaseCommand {
                     .replaceAll(/(\s|<|>|@|&|!)/g, '');
                 if (!message_id) {
                     post.setTitle(
-                        `:warning: ${this.t('command.execute.warning', undefined, interaction)}`,
+                        `:warning: ${this.t.system({ caller: 'messages', key: 'warning', guild_id: BigInt(interaction.guildId!) })}`,
                     )
-                        .setDescription(this.t('execute.message_id_required', undefined, interaction))
+                        .setDescription(
+                            this.t.commands({
+                                key: 'execute.message_id_required',
+                                guild_id: BigInt(interaction.guildId!),
+                            }),
+                        )
                         .setColor(Colors.Yellow);
                     await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
                     return;
@@ -164,14 +179,17 @@ export default class PurgeCommand extends BaseCommand {
                     PurgeCommand.target = await interaction.channel!.messages.fetch(message_id);
                 } catch (err) {
                     post.setTitle(
-                        `:warning: ${this.t('command.execute.warning', undefined, interaction)}`,
+                        `:warning: ${this.t.system({ caller: 'messages', key: 'warning', guild_id: BigInt(interaction.guildId!) })}`,
                     )
                         .setDescription(
-                            this.t('execute.message_not_found_in_channel', undefined, interaction),
+                            this.t.commands({
+                                key: 'execute.message_not_found_in_channel',
+                                guild_id: BigInt(interaction.guildId!),
+                            }),
                         )
                         .setColor(Colors.Yellow);
                     await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
-                    this.log.send('warn', 'command.purge.execute.delete.failed', {
+                    this.log('warn', 'execute.delete.failed', {
                         channel: interaction.channel,
                         user: interaction.user,
                         guild: interaction.guild,

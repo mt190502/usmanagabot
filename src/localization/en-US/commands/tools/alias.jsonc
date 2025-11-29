@@ -5,73 +5,126 @@
         "pretty_name": "Alias System",
         "description": "Creates and manages various aliases.",
         "help": "Creates and manages various aliases.\n\n**Usage:**\n- `/alias add <name> <content> <options>` - Creates a new alias.\n- `/alias list` - Lists existing aliases.\n- `/alias modify <name> <content?> <options?>` - Modifies an existing alias.\n- `/alias remove <name>` - Removes an existing alias.",
-        "add": {
-            "alias_exists": "Alias \"{alias}\" already exists. Please choose a different name.",
-            "success": "Alias \"{alias}\" successfully created.",
-        },
-        "alias_not_found": "Alias \"{alias}\" not found.",
-        "handlepageitem": {
-            "casesensitive": "Case Sensitivity",
-            "content": "Content",
-            "messageconsistsonlyofword": "Message Must Consist Only of This Word",
-            "messageincludesthisword": "Message Must Include This Word",
-            "name": "Name",
-        },
-        "list": {
-            "no_aliases": "No aliases defined on this server.",
-            "title": "Alias List",
-        },
-        "modify": {
-            "success": "Alias \"{alias}\" successfully updated.",
-        },
         "parameters": {
             "alias_name": {
                 "name": "alias_name",
-                "description": "Alias name",
+                "description": "The name of the alias"
             },
             "alias_content": {
                 "name": "alias_content",
-                "description": "Alias content ({variables})",
+                "description": "(vars: {variables})"
             },
             "casesensitive": {
                 "name": "case_sensitive",
-                "description": "Case sensitivity",
+                "description": "Case sensitivity"
             },
             "messageconsistsonlyofword": {
                 "name": "message_consists_only_of_word",
-                "description": "Message must consist only of this word",
+                "description": "Message must consist only of this word"
             },
             "messageincludesthisword": {
                 "name": "message_includes_this_word",
-                "description": "Message must include this word",
-            },
+                "description": "Message must include this word"
+            }
         },
-        "remove": {
-            "success": "Alias \"{alias}\" successfully removed.",
-        },
-        "settings": {
-            "toggle": {
-                "description": "Enables or disables the alias system on the server.",
-                "pretty_name": "Alias System Status",
+        "execute": {
+            "add": {
+                "alias_exists": "The alias \"{alias}\" already exists. Please choose a different name.",
+                "success": "The alias \"{alias}\" was created successfully."
             },
+            "alias_not_found": "The alias \"{alias}\" was not found.",
+            "handlepageitem": {
+                "casesensitive": "Case Sensitive",
+                "content": "Content",
+                "messageconsistsonlyofword": "Message Consists Only of This Word",
+                "messageincludesthisword": "Message Includes This Word",
+                "name": "Name"
+            },
+            "list": {
+                "no_aliases": "There are no aliases defined on this server.",
+                "title": "Alias List"
+            },
+            "modify": {
+                "success": "The alias \"{alias}\" was updated successfully."
+            },
+            "remove": {
+                "success": "The alias \"{alias}\" was removed successfully."
+            }
         },
         "subcommands": {
             "add": {
                 "name": "add",
-                "description": "Add alias",
+                "description": "Add an alias"
             },
             "list": {
                 "name": "alias_list",
-                "description": "List aliases",
+                "description": "List aliases"
             },
             "modify": {
                 "name": "modify",
-                "description": "Modify alias",
+                "description": "Modify an alias"
             },
             "remove": {
                 "name": "remove",
-                "description": "Remove alias",
-            },
+                "description": "Remove an alias"
+            }
         },
-    },
+        "events": {},
+        "settings": {
+            "toggle": {
+                "description": "Enables or disables the alias system on the server.",
+                "pretty_name": "Toggle Alias System"
+            }
+        },
+        "logging": {
+            "debug": {
+                "execute": {
+                    "add": {
+                        "alias_created": "Alias \"{alias}\" was created by user \"{user}\" in guild \"{guild}\"."
+                    },
+                    "subcommand": {
+                        "start": "Alias subcommand \"{subcommand}\" initiated by user \"{user}\" in guild \"{guild}\".",
+                        "success": "Alias subcommand \"{subcommand}\" executed successfully for user \"{user}\" in guild \"{guild}\"."
+                    }
+                },
+                "handlePageItem": {
+                    "start": "Alias pagination item interaction initiated by user \"{user}\" in guild \"{guild}\".",
+                    "success": "Alias pagination item interaction processed successfully for user \"{user}\" in guild \"{guild}\"."
+                },
+                "settings": {
+                    "toggle": {
+                        "start": "Alias system enable/disable process initiated in guild \"{guild}\".",
+                        "success": "Alias system successfully updated to \"{toggle}\" in guild \"{guild}\"."
+                    }
+                },
+                "prepare": {
+                    "start": "Preparing Alias command for guild \"{guild}\".",
+                    "success": "Alias command for guild \"{guild}\" prepared successfully."
+                }
+            },
+            "info": {},
+            "warn": {
+                "add": {
+                    "alias_exists": "The alias \"{alias}\" that user \"{user}\" in guild \"{guild}\" tried to create already exists."
+                },
+                "list": {
+                    "no_aliases": "The alias list that user \"{user}\" queried for guild \"{guild}\" is empty."
+                },
+                "modify": {
+                    "alias_not_found": "The alias \"{alias}\" that user \"{user}\" in guild \"{guild}\" tried to modify was not found."
+                },
+                "remove": {
+                    "alias_not_found": "The alias \"{alias}\" that user \"{user}\" in guild \"{guild}\" tried to delete was not found."
+                }
+            },
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "Alias command settings for guild \"{guild}\" successfully processed into the database."
+                    }
+                }
+            }
+        }
+    }
 }

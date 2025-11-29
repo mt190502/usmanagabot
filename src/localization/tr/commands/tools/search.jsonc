@@ -6,11 +6,18 @@
         "description": "Belirtilen terim için arama yapar ve sonuçları döndürür.",
         "help": "Belirtilen terim için arama linki döndürür.\n\n**Kullanım:**\n- `/search <motor> <sorgu>` - Belirtilen arama motorunda sorgu için arama yapar.\n\n**Örnekler:**\n- `/search engine:Google query:Sütlaç Tarifi` - Google'da 'Sütlaç Tarifi' için arama yapar.\n- `/search engine:DuckDuckGo query:En iyi programlama dilleri` - DuckDuckGo'da 'En iyi programlama dilleri' için arama yapar.",
         "parameters": {
-            "engine_name": "Arama Motoru Adı",
-            "engine_url": "Arama Motoru URL'si",
-            "engine": "Arama motoru (örneğin: Google, DuckDuckGo)",
-            "query": "Arama sorgusu",
+            "engine": {
+                "name": "motor",
+                "description": "Kullanılacak arama motoru."
+            },
+            "query": {
+                "name": "sorgu",
+                "description": "Aranacak terim."
+            }
         },
+        "execute": {},
+        "subcommands": {},
+        "events": {},
         "settings": {
             "addengine": {
                 "description": "Yeni bir arama motoru ekler.",
@@ -18,31 +25,95 @@
                 "invalid_url": "URL \"{url}\" geçerli değil. http:// veya https:// ile başlamalıdır.",
                 "pretty_name": "Arama Motoru Ekle",
                 "parameters": {
-                    "engine_name": "Arama motoru adı",
-                    "engine_url": "Arama motoru URL'si",
-                },
+                    "engine_name": {
+                        "name": "Arama motoru adı",
+                        "description": "Yeni arama motorunun adı.",
+                        "placeholder": "Google, Bing, DuckDuckGo, vb."
+                    },
+                    "engine_url": {
+                        "name": "Arama motoru URL'si",
+                        "description": "Yeni arama motorunun URL'si.",
+                        "placeholder": "https://www.example.com/search?q="
+                    }
+                }
             },
             "editengine": {
-                "parameters": {
-                    "engine_name": "Arama motoru adı",
-                    "engine_url": "Arama motoru URL'si",
-                },
                 "description": "Mevcut bir arama motorunu düzenler.",
                 "display_name": "Arama Motorları",
                 "invalid_url": "URL \"{url}\" geçerli değil. http:// veya https:// ile başlamalıdır.",
                 "placeholder": "Düzenlenecek arama motorunu seçin",
                 "pretty_name": "Arama Motorunu Düzenle",
                 "title": "Arama Motorunu Düzenle: {name}",
+                "parameters": {
+                    "engine_name": {
+                        "name": "Arama motoru adı",
+                        "description": "Arama motorunun yeni adı."
+                    },
+                    "engine_url": {
+                        "name": "Arama motoru URL'si",
+                        "description": "Arama motorunun yeni URL'si."
+                    }
+                }
             },
             "removeengine": {
                 "description": "Mevcut bir arama motorunu kaldırır.",
                 "placeholder": "Kaldırılacak arama motorunu seçin",
                 "pretty_name": "Arama Motorunu Kaldır",
+                "parameters": {}
             },
             "toggle": {
                 "description": "Sunucuda arama komutunu etkinleştirir veya devre dışı bırakır.",
-                "pretty_name": "Arama Komutu Aktifliği",
-            },
+                "pretty_name": "Arama Komutunu Aç/Kapat",
+                "parameters": {}
+            }
         },
-    },
+        "logging": {
+            "debug": {
+                "execute": {
+                    "success": "{user} kullanıcısı, {guild} sunucusundaki {channel} kanalında, \"{engine}\" üzerinde \"{query}\" aramasını yaptı."
+                },
+                "settings": {
+                    "addengine": {
+                        "success": "{user} kullanıcısı, {guild} sunucusundaki {channel} kanalında, URL'si \"{engine_url}\" olan \"{engine_name}\" arama motorunu ekledi."
+                    },
+                    "editengine": {
+                        "success": "{user} kullanıcısı, {guild} sunucusundaki {channel} kanalında, URL'si \"{engine_url}\" olan \"{engine_name}\" arama motorunu düzenledi."
+                    },
+                    "removeengine": {
+                        "success": "{user} kullanıcısı, {guild} sunucusundaki {channel} kanalında, \"{engine_name}\" arama motorunu kaldırdı."
+                    },
+                    "modalsubmit": {
+                        "start": "\"{guild}\" sunucusunda Arama modal ayarı değiştirme işlemi başlatıldı.",
+                        "success": "\"{guild}\" sunucusunda Arama modal ayarı başarıyla değiştirildi."
+                    },
+                    "selectmenu": {
+                        "start": "\"{guild}\" sunucusunda Arama seçim menüsü ayarı değiştirme işlemi başlatıldı.",
+                        "success": "\"{guild}\" sunucusunda Arama seçim menüsü ayarı başarıyla değiştirildi."
+                    },
+                    "toggle": {
+                        "start": "\"{guild}\" sunucusunda Arama sistemi açma/kapatma işlemi başlatıldı.",
+                        "success": "\"{guild}\" sunucusunda Arama sistemi başarıyla \"{toggle}\" olarak güncellendi."
+                    }
+                }
+            },
+            "info": {},
+            "warn": {
+                "addengine": {
+                    "duplicate_engine": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı, \"{engine_name}\" adında yinelenen bir arama motoru eklemeye çalıştı.",
+                    "invalid_url": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı, geçersiz bir URL ile arama motoru eklemeye çalıştı: \"{url}\"."
+                },
+                "editengine": {
+                    "invalid_url": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı, geçersiz bir URL ile bir arama motorunu düzenlemeye çalıştı: \"{url}\"."
+                }
+            },
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "\"{guild}\" sunucusu için Arama komutu ayarları veritabanına başarıyla işlendi."
+                    }
+                }
+            }
+        }
+    }
 }

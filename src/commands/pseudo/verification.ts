@@ -20,7 +20,6 @@ import {
     SettingRoleSelectMenuComponent,
 } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
-import { Log } from '../../types/decorator/log';
 
 /**
  * A pseudo-command that implements a verification system for new members.
@@ -45,7 +44,7 @@ export default class VerificationCommand extends CustomizableCommand {
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
-        this.log.send('debug', 'command.prepare.start', { name: this.name, guild: guild_id });
+        this.log('debug', 'prepare.start', { name: this.name, guild: guild_id });
         const guild = await this.db.getGuild(guild_id);
         const system_user = await this.db.getUser(BigInt(0));
         let verification_system = await this.db.findOne(VerificationSystem, { where: { from_guild: guild! } });
@@ -55,10 +54,10 @@ export default class VerificationCommand extends CustomizableCommand {
             verification_system.from_guild = guild!;
             verification_system.latest_action_from_user = system_user!;
             verification_system = await this.db.save(VerificationSystem, verification_system);
-            this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
+            this.log('log', 'prepare.database.success', { name: this.name, guild: guild_id });
         }
         this.enabled = verification_system.is_enabled;
-        this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
+        this.log('debug', 'prepare.success', { name: this.name, guild: guild_id });
     }
     // ================================================================ //
 
@@ -71,9 +70,10 @@ export default class VerificationCommand extends CustomizableCommand {
      */
     @Cron({ schedule: '* * * * *' })
     public async routineCheck(): Promise<void> {
-        this.log.send('debug', 'command.cronjob.start', { name: 'routineCheck' });
+        this.log('debug', 'cronjob.start');
         const guilds = await this.db.find(Guilds);
         const client = BotClient.client;
+        let verified_count = 0;
         for (const guild of guilds) {
             const verification_system = await this.db.findOne(VerificationSystem, { where: { from_guild: guild } });
             if (!verification_system || !verification_system.is_enabled) continue;
@@ -87,11 +87,12 @@ export default class VerificationCommand extends CustomizableCommand {
                     const member = await g.members.fetch(verification.from_user.uid.toString()).catch(() => null);
                     if (!member) continue;
                     member.roles.remove(verification_system.role_id);
+                    verified_count++;
                     await this.db.delete(Verification, { id: verification.id });
                 }
             }
         }
-        this.log.send('debug', 'command.cronjob.success', { name: 'routineCheck' });
+        this.log('debug', 'cronjob.success', { guild: guilds.length, count: verified_count });
     }
 
     /**
@@ -100,7 +101,6 @@ export default class VerificationCommand extends CustomizableCommand {
      * @param member The guild member to prepare data for.
      * @returns An object containing message placeholders, the verification system settings, and the member's verification status.
      */
-    @Log()
     public async execute(member: GuildMember): Promise<{
         message: { key: string; value: string }[];
         verification_system: VerificationSystem;
@@ -128,13 +128,12 @@ export default class VerificationCommand extends CustomizableCommand {
      * @param member The member who just joined.
      */
     @ChainEvent({ type: Events.GuildMemberAdd })
-    @Log()
     public async onMemberAdd(member: GuildMember): Promise<void> {
-        this.log.send('debug', 'command.event.trigger.start', {
+        this.log('debug', 'event.trigger.start', {
             name: 'verification',
             event: 'GuildMemberAdd',
             guild: member.guild,
-            member: member,
+            member,
         });
         const { message, verification_system, verification } = await this.execute(member);
         if (!verification_system || !verification_system.is_enabled) return;
@@ -152,7 +151,7 @@ export default class VerificationCommand extends CustomizableCommand {
             const channel = BotClient.client.channels.cache.get(verification_system.channel_id);
             if (channel!.isSendable()) channel.send({ content: post_message });
         }
-        this.log.send('debug', 'command.event.trigger.success', {
+        this.log('debug', 'event.trigger.success', {
             name: 'verification',
             event: 'GuildMemberAdd',
             guild: member.guild,
@@ -166,9 +165,8 @@ export default class VerificationCommand extends CustomizableCommand {
      * @param member The member who just left.
      */
     @ChainEvent({ type: Events.GuildMemberRemove })
-    @Log()
     public async onMemberRemove(member: GuildMember): Promise<void> {
-        this.log.send('debug', 'command.event.trigger.start', {
+        this.log('debug', 'event.trigger.start', {
             name: 'verification',
             event: 'GuildMemberRemove',
             guild: member.guild,
@@ -178,7 +176,7 @@ export default class VerificationCommand extends CustomizableCommand {
         if (!verification_system || !verification_system.is_enabled) return;
         if (!verification.id) return;
         await this.db.delete(Verification, { id: verification.id });
-        this.log.send('debug', 'command.event.trigger.success', {
+        this.log('debug', 'event.trigger.success', {
             name: 'verification',
             event: 'GuildMemberRemove',
             guild: member.guild,
@@ -198,9 +196,8 @@ export default class VerificationCommand extends CustomizableCommand {
         database_key: 'is_enabled',
         format_specifier: '%s',
     })
-    @Log()
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.toggle.start', { name: this.name, guild: interaction.guild });
         const verification_system = await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -212,7 +209,7 @@ export default class VerificationCommand extends CustomizableCommand {
         this.enabled = verification_system!.is_enabled;
         await this.db.save(VerificationSystem, verification_system!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.toggle.success', {
+        this.log('debug', 'settings.toggle.success', {
             name: this.name,
             guild: interaction.guild,
             toggle: this.enabled,
@@ -231,9 +228,8 @@ export default class VerificationCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
-    @Log()
     public async setTargetChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.channel.start', { name: this.name, guild: interaction.guild });
         const verification_system = (await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         }))!;
@@ -245,7 +241,7 @@ export default class VerificationCommand extends CustomizableCommand {
         verification_system!.timestamp = new Date();
         await this.db.save(VerificationSystem, verification_system);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.channel.success', {
+        this.log('debug', 'settings.channel.success', {
             name: this.name,
             guild: interaction.guild,
             channel: selected_channel,
@@ -262,9 +258,8 @@ export default class VerificationCommand extends CustomizableCommand {
         database_key: 'role_id',
         format_specifier: '<@&%s>',
     })
-    @Log()
     public async setVerificationRole(interaction: RoleSelectMenuInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.role.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.role.start', { name: this.name, guild: interaction.guild });
         const verification_system = await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -274,7 +269,10 @@ export default class VerificationCommand extends CustomizableCommand {
         const requested_role = server_roles.get(interaction.values[0])!;
 
         if (requested_role.position >= bot_role.position) {
-            this.warning = this.t('settings.setverificationrole.role_hierarchy_error', undefined, interaction);
+            this.warning = this.t.commands({
+                key: 'settings.setverificationrole.role_hierarchy_error',
+                guild_id: BigInt(interaction.guildId!),
+            });
             await this.settingsUI(interaction);
             return;
         }
@@ -283,7 +281,7 @@ export default class VerificationCommand extends CustomizableCommand {
         verification_system!.timestamp = new Date();
         await this.db.save(VerificationSystem, verification_system!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.role.success', {
+        this.log('debug', 'settings.role.success', {
             name: this.name,
             guild: interaction.guild,
             role: verification_system!.role_id,
@@ -307,9 +305,8 @@ export default class VerificationCommand extends CustomizableCommand {
             },
         ],
     })
-    @Log()
     public async setVerificationSystemMessage(interaction: ModalSubmitInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const verification_system = await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -321,7 +318,7 @@ export default class VerificationCommand extends CustomizableCommand {
         verification_system!.timestamp = new Date();
         await this.db.save(VerificationSystem, verification_system!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.modalsubmit.success', {
+        this.log('debug', 'settings.modalsubmit.success', {
             name: this.name,
             guild: interaction.guild,
         });
@@ -341,13 +338,12 @@ export default class VerificationCommand extends CustomizableCommand {
                 id: 'minimum_age',
                 style: TextInputStyle.Short,
                 required: true,
-                max_length: 8,
+                max_length: 3,
             },
         ],
     })
-    @Log()
     public async setVerificationMinimumAge(interaction: ModalSubmitInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const verification_system = await this.db.findOne(VerificationSystem, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -357,8 +353,12 @@ export default class VerificationCommand extends CustomizableCommand {
         const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
         const new_age = parseInt(interaction.fields.getTextInputValue('minimum_age'));
-        if (isNaN(new_age) || new_age < 0) {
-            this.warning = this.t('settings.setverificationminimumage.invalid_age', { age: new_age }, interaction);
+        if (isNaN(new_age) || new_age < 0 || new_age > 730) {
+            this.warning = this.t.commands({
+                key: 'settings.setverificationminimumage.invalid_age',
+                replacements: { age: new_age },
+                guild_id: BigInt(interaction.guildId!),
+            });
             await this.settingsUI(interaction);
             return;
         }
@@ -373,7 +373,7 @@ export default class VerificationCommand extends CustomizableCommand {
         verification_system!.timestamp = new Date();
         await this.db.save(VerificationSystem, verification_system!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.modalsubmit.success', {
+        this.log('debug', 'settings.modalsubmit.success', {
             name: this.name,
             guild: interaction.guild,
         });

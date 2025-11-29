@@ -1,6 +1,5 @@
 import {
     ActionRowBuilder,
-    BaseInteraction,
     ButtonBuilder,
     ButtonInteraction,
     ButtonStyle,
@@ -9,13 +8,11 @@ import {
     ContextMenuCommandInteraction,
     EmbedBuilder,
     InteractionReplyOptions,
-    Message,
     StringSelectMenuInteraction,
-    ThreadChannel,
 } from 'discord.js';
-import { Translator } from '../../services/translator';
 import { InteractionResponseRegistry } from '../../utils/interactionRegistry';
 import { BaseCommand, CustomizableCommand } from '../structure/command';
+import { Translator } from '../../services/translator';
 
 /**
  * This module provides the `@CommandQuestionPrompt` decorator, which wraps a command
@@ -23,30 +20,12 @@ import { BaseCommand, CustomizableCommand } from '../structure/command';
  */
 
 /**
- * A local helper function for translating strings within this module.
- * @internal
+ * The translation function scoped to the 'commands' namespace.
+ * @private
+ * @static
+ * @type {(options: { key: string; replacements?: { [key: string]: unknown }; guild_id?: bigint }) => string}
  */
-function t<T extends BaseInteraction | Message | ThreadChannel | bigint | string>(
-    key: string,
-    replacements?: Record<string, unknown>,
-    id?: T,
-): string {
-    let guild_id: bigint | undefined;
-    if (typeof id === 'string') {
-        guild_id = BigInt(id);
-    } else if (typeof id === 'bigint') {
-        guild_id = id;
-    } else if (id?.guildId) {
-        guild_id = BigInt(id.guildId);
-    }
-
-    return Translator.querySync(
-        'commands',
-        key,
-        replacements,
-        guild_id
-    );
-}
+const t = Translator.generateQueryFunc({ caller: '' });
 
 /**
  * A method decorator that intercepts a command's execution to ask the user for confirmation.
@@ -64,10 +43,9 @@ function t<T extends BaseInteraction | Message | ThreadChannel | bigint | string
  * @param {object[]} [o.extra_buttons] An array of extra custom buttons to add to the prompt.
  */
 export function CommandQuestionPrompt(o: {
-    title: string;
     message: string;
-    ok_label: string;
-    cancel_label: string;
+    ok_label?: string;
+    cancel_label?: string;
     flags?: InteractionReplyOptions['flags'];
     extra_buttons?: {
         key: string;
@@ -94,14 +72,14 @@ export function CommandQuestionPrompt(o: {
             );
 
             const post = new EmbedBuilder()
-                .setTitle(`:warning: ${t(o.title, undefined, interaction)}`)
-                .setDescription(t(o.message, undefined, interaction))
+                .setTitle(`:warning: ${t.system({ caller: 'messages', key: 'warning', guild_id: BigInt(interaction.guildId!) })}`)
+                .setDescription(t.commands({ caller: name, key: o.message, guild_id: BigInt(interaction.guildId!) }))
                 .setColor(Colors.Yellow);
 
             if (interaction.isButton()) {
                 if (interaction.customId.endsWith(':ok')) {
-                    post.setTitle(`:hourglass_flowing_sand: ${t('question.processing', undefined, interaction)}`)
-                        .setDescription(t('question.please_wait', undefined, interaction))
+                    post.setTitle(`:hourglass_flowing_sand: ${t.system({ caller: 'messages', key: 'processing', guild_id: BigInt(interaction.guildId!) })}`)
+                        .setDescription(t.system({ caller: 'messages', key: 'pleaseWait', guild_id: BigInt(interaction.guildId!) }))
                         .setColor(Colors.Blue);
 
                     const stored_response = InteractionResponseRegistry.get(registry_key);
@@ -118,8 +96,8 @@ export function CommandQuestionPrompt(o: {
                     await orig.apply(this, [interaction, ...args]);
                     InteractionResponseRegistry.delete(registry_key);
                 } else if (interaction.customId.endsWith(':cancel')) {
-                    post.setTitle(`:x: ${t('question.cancelled', undefined, interaction)}`)
-                        .setDescription(t('question.cancelled_description', undefined, interaction))
+                    post.setTitle(`:x: ${t.system({ caller: 'messages', key: 'operationCancelled', guild_id: BigInt(interaction.guildId!) })}`)
+                        .setDescription(t.system({ caller: 'messages', key: 'operationCancelledByUser', guild_id: BigInt(interaction.guildId!) }))
                         .setColor(Colors.Red);
                     await interaction.update({ components: [], embeds: [post] });
                     InteractionResponseRegistry.delete(registry_key);
@@ -131,18 +109,18 @@ export function CommandQuestionPrompt(o: {
             const ok_btn = new ButtonBuilder()
                 .setCustomId(`command:${name}:${property_key.toString().toLowerCase()}:ok`)
                 .setEmoji('✅')
-                .setLabel(t(o.ok_label, undefined, interaction))
+                .setLabel(t.system({ caller: 'buttons', key: o.ok_label ?? 'ok', guild_id: BigInt(interaction.guildId!) }))
                 .setStyle(ButtonStyle.Success);
             const cancel_btn = new ButtonBuilder()
                 .setCustomId(`command:${name}:${property_key.toString().toLowerCase()}:cancel`)
                 .setEmoji('❌')
-                .setLabel(t(o.cancel_label, undefined, interaction))
+                .setLabel(t.system({ caller: 'buttons', key: o.cancel_label ?? 'cancel', guild_id: BigInt(interaction.guildId!) }))
                 .setStyle(ButtonStyle.Danger);
             const extra = o.extra_buttons
                 ? o.extra_buttons.map((b) =>
                     new ButtonBuilder()
                         .setCustomId(`command:${name}:${property_key.toString().toLowerCase()}:${b.key}`)
-                        .setLabel(t(b.label, undefined, interaction))
+                        .setLabel(t.system({ caller: 'buttons', key: b.label, guild_id: BigInt(interaction.guildId!) }))
                         .setEmoji(b.emoji ?? '')
                         .setStyle(b.style ?? ButtonStyle.Primary),
                 )

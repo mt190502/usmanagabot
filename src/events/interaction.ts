@@ -146,8 +146,8 @@ export default class InteractionEvent extends BaseEvent<Events.InteractionCreate
                 const expire = timestamps.get(BigInt(interaction.user.id))! + ms;
                 if (now < expire) {
                     const left = ((expire - now) / 1000).toFixed();
-                    interaction.reply({
-                        content: this.t('event.interaction.cooldown', { command: command.name, left }, interaction),
+                    await interaction.reply({
+                        content: this.t.events({ caller: 'interaction', key: 'execute.cooldown', replacements: { command: command.name, left }, guild_id: BigInt(interaction.guildId!) }),
                         flags: MessageFlags.Ephemeral,
                     });
                     return;

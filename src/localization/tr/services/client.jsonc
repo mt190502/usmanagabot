@@ -1,0 +1,12 @@
+{
+    "$schema": "../../../types/structure/schemas/service.json",
+    "client": {
+        "info": {
+            "ready": "İstemci hazır.",
+            "shard_ready": "Shard {id} hazır.",
+            "shard_reconnecting": "Shard {id} yeniden bağlanıyor.",
+            "shard_resumed": "Shard {id} devam ettirildi.",
+            "shard_disconnect": "Shard {id} bağlantısı kesildi."
+        }
+    }
+}

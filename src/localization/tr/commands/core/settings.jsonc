@@ -3,15 +3,29 @@
     "settings": {
         "name": "ayarlar",
         "pretty_name": "Ayarlar",
-        "help": "Belirli bir komutun ayarlarını yönetir.\n\n**Kullanım:**\n- `/settings` - Ayarları yönetmek için etkileşimli bir menü açar.",
         "description": "Komut ayarlarını yönetir.",
+        "help": "Belirli bir komutun ayarlarını yönetir.\n\n**Kullanım:**\n- `/settings` - Ayarları yönetmek için etkileşimli bir menü açar.",
+        "parameters": {},
         "execute": {
-            "back_to_main_menu_description": "Ana ayarlar menüsüne dönün.",
-            "back_to_main_menu": "Ana Menüye Dön",
             "last_modified_by": "Son etkileşim {user} tarafından {date} tarihinde yapıldı.",
             "not_set": "Ayarlanmamış",
             "placeholder": "Bir seçenek seçin...",
-            "title": "{command} Ayarları",
+            "title": "{command} Ayarları"
         },
-    },
+        "subcommands": {},
+        "events": {},
+        "settings": {},
+        "logging": {
+            "debug": {
+                "execute": {
+                    "commands_filtered": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için \"{length}\" adet komut filtrelendi.",
+                    "generating_page": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için ayarlar sayfası oluşturuluyor..."
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {},
+            "log": {}
+        }
+    }
 }

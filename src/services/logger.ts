@@ -149,14 +149,29 @@ export class Logger {
      *
      * @public
      * @static
-     * @param {keyof typeof LogLevels} type The severity level of the log message.
-     * @param {string} key The localization key for the message template.
-     * @param {Record<string, unknown>} [replacements] Optional placeholder values for the message.
+     * @param {'commands' | 'events' | 'services' | 'system'} namespace The translation namespace.
+     * @param {string} caller The caller identifier for translation context.
+     * @param {keyof typeof LogLevels} type The log level type.
+     * @param {string} key The translation key for the log message.
+     * @param {{ [key: string]: unknown }} [replacements] Optional replacements for the translation.
      * @returns {void}
      */
-    public static send(type: keyof typeof LogLevels, key: string, replacements?: { [key: string]: unknown }): void {
+    public static send(
+        namespace: 'commands' | 'events' | 'services' | 'system',
+        caller: string,
+        type: keyof typeof LogLevels,
+        key: string,
+        replacements?: { [key: string]: unknown },
+    ): void {
         if (LogLevels[type] > Logger.selected_log_level) return;
-        const msg = Translator.querySync(type, key, replacements);
+        const cmd = Translator.generateQueryFunc({ caller, lang: Logger.current_language });
+        let msg;
+        if (namespace === 'commands') {
+            msg = cmd.commands({ key: `logging.${type}.${key}`, replacements });
+            msg = msg.startsWith('logging.') ? '<missing translation> ' + msg : msg;
+        } else {
+            msg = cmd[namespace as keyof typeof cmd]({ key: `${type}.${key}`, replacements });
+        }
 
         const { filename, linenumber } = Logger.getCallerInfo();
         const formatted_message = Logger.format({ type: LogLevels[type], message: msg, filename, linenumber });
@@ -183,11 +198,4 @@ export class Logger {
     public static set setLogLevel(level: LogLevels) {
         if (level in LogLevels) Logger.selected_log_level = level;
     }
-
-    /**
-     * Initializes the Logger by setting the log level and language from the global configuration.
-     * This should be called once at startup after the `Config` service has been initialized.
-     * @public
-     * @static
-     */
 }

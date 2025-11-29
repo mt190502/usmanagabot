@@ -6,7 +6,6 @@ import {
     SettingStringSelectComponent,
 } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
-import { Log } from '../../types/decorator/log';
 
 /**
  * A "hidden" command that serves as a settings container for global, bot-owner-only configurations.
@@ -58,9 +57,8 @@ export default class BotSettings extends CustomizableCommand {
         format_specifier: '%s',
         is_bot_owner_only: true,
     })
-    @Log()
     public async toggleRandomStatus(interaction: StringSelectMenuInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.toggle.start', {
+        this.log('debug', 'settings.toggle.start', {
             name: this.name,
             guild: interaction.guild,
         });
@@ -89,9 +87,8 @@ export default class BotSettings extends CustomizableCommand {
             })),
         },
     })
-    @Log()
     public async setRandomStatusInterval(interaction: StringSelectMenuInteraction, args: string): Promise<void> {
-        this.log.send('debug', 'command.setting.selectmenu.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.selectmenu.start', { name: this.name, guild: interaction.guild });
         const settings = (await this.db.findOne(BotData, {
             where: { id: 1 },
         }))!;
@@ -99,7 +96,7 @@ export default class BotSettings extends CustomizableCommand {
         settings.random_status_interval = parseFloat(args);
         await this.db.save(settings!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.selectmenu.success', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.selectmenu.success', { name: this.name, guild: interaction.guild });
     }
 
     /**
@@ -125,14 +122,16 @@ export default class BotSettings extends CustomizableCommand {
             },
         ],
     })
-    @Log()
     public async manageRandomStatuses(interaction: ModalSubmitInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const settings = await this.db.findOne(BotData, { where: { id: 1 } });
 
-        const statuses = interaction.fields.getTextInputValue('bot_random_statuses').split(',').map((s) => s.trim());
+        const statuses = interaction.fields
+            .getTextInputValue('bot_random_statuses')
+            .split(',')
+            .map((s) => s.trim());
 
-        if (statuses.length === 0 || statuses.some(s => s.length === 0)) {
+        if (statuses.length === 0 || statuses.some((s) => s.length === 0)) {
             await this.settingsUI(interaction);
             return;
         }
@@ -140,7 +139,7 @@ export default class BotSettings extends CustomizableCommand {
         settings!.random_statuses = statuses;
         await this.db.save(settings!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.modalsubmit.success', {
+        this.log('debug', 'settings.modalsubmit.success', {
             name: this.name,
             guild: interaction.guild,
         });

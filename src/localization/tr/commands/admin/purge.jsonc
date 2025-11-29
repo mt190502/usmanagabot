@@ -1,19 +1,44 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "purge": {
-        "name": "silsupur",
+        "name": "sil_supur",
         "pretty_name": "Sil Süpür",
         "description": "Hedeflenen mesaja kadar olan mesajları siler.",
         "help": "Belirtilen mesaja kadar olan mesajları siler.\n\n**Kullanım:**\n- `/purge <message_id|message_url>` - Belirtilen mesaja kadar olan mesajları siler.\n- Bir mesajın üzerine sağ tıklayıp **Uygulamalar > Temizle** seçeneğini kullanarak da mesajları silebilirsiniz.\n\n**Örnekler:**\n- `/purge 123456789012345678` - 123456789012345678 ID'li mesaja kadar olan mesajları siler.\n- `/purge https://discord.com/channels/987654321098765432/123456789012345678/234567890123456789` - Belirtilen URL'deki mesaja kadar olan mesajları siler.",
         "parameters": {
-            "message_id": "Mesaj ID'si veya URL'si",
+            "message_id": {
+                "name": "mesaj",
+                "description": "Temizlenecek son mesajın ID'si veya URL'si."
+            }
         },
         "execute": {
             "are_you_sure": "Mesajları temizlemek istediğinizden emin misiniz?",
             "error": "Bazı mesajlar silinemedi:\n```\n{error}\n```",
             "message_id_required": "Mesaj ID'si veya URL'si gereklidir.",
             "message_not_found_in_channel": "Bu kanalda mesaj bulunamadı\nMesaj ID'sinin doğru olduğundan veya mesajın bu kanalda bulunduğundan emin misiniz?",
-            "success": "**{count}** mesaj silindi.",
+            "success": "**{count}** mesaj silindi."
         },
-    },
+        "subcommands": {},
+        "events": {},
+        "settings": {},
+        "logging": {
+            "debug": {
+                "execute": {
+                    "delete": {
+                        "success": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından \"{channel}\" kanalındaki son \"{count}\" mesaj silindi."
+                    }
+                }
+            },
+            "info": {},
+            "warn": {
+                "execute": {
+                    "delete": {
+                        "failed": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için \"{channel}\" kanalında mesaj silme işlemi başarısız oldu: {message}"
+                    }
+                }
+            },
+            "error": {},
+            "log": {}
+        }
+    }
 }

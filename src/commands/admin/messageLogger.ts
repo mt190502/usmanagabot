@@ -22,7 +22,6 @@ import { CommandLoader } from '..';
 import { MessageLogger } from '../../types/database/entities/message_logger';
 import { Messages } from '../../types/database/entities/messages';
 import { ChainEvent } from '../../types/decorator/chainevent';
-import { Log } from '../../types/decorator/log';
 import { SettingChannelMenuComponent, SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
 
@@ -47,7 +46,12 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         (this.base_cmd_data as SlashCommandBuilder)
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
             .addStringOption((option) =>
-                option.setName('message_id').setDescription(this.t('parameters.message_id')!).setRequired(true),
+                option
+                    .setName('message_id')
+                    .setDescription(this.t.commands({ key: 'parameters.message_id.description' })!)
+                    .setNameLocalizations(this.getLocalizations('parameters.message_id.name'))
+                    .setDescriptionLocalizations(this.getLocalizations('parameters.message_id.description'))
+                    .setRequired(true),
             ) as SlashCommandBuilder;
         this.push_cmd_data = new ContextMenuCommandBuilder()
             .setName(this.pretty_name)
@@ -57,7 +61,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
-        this.log.send('debug', 'command.prepare.start', { name: this.name, guild: guild_id });
+        this.log('debug', 'prepare.start', { name: this.name, guild: guild_id });
         const guild = await this.db.getGuild(guild_id);
         const system_user = await this.db.getUser(BigInt(0));
         let message_logger = await this.db.findOne(MessageLogger, { where: { from_guild: guild! } });
@@ -67,10 +71,13 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             message_logger.from_guild = guild!;
             message_logger.latest_action_from_user = system_user!;
             message_logger = await this.db.save(MessageLogger, message_logger);
-            this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
+            this.log('log', 'prepare.database.success', {
+                name: this.name,
+                guild: guild_id,
+            });
         }
         this.enabled = message_logger.is_enabled;
-        this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
+        this.log('debug', 'prepare.success', { name: this.name, guild: guild_id });
     }
     // ================================================================ //
 
@@ -84,10 +91,9 @@ export default class MessageLoggerCommand extends CustomizableCommand {
      *
      * @param interaction The interaction from the slash command or context menu.
      */
-    @Log()
     public async execute(interaction: ContextMenuCommandInteraction | ChatInputCommandInteraction): Promise<void> {
         const logger = (await this.db.findOne(MessageLogger, {
-            where: { from_guild: { gid: BigInt(interaction.guild!.id) } },
+            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         }))!;
 
         const post = new EmbedBuilder();
@@ -103,16 +109,24 @@ export default class MessageLoggerCommand extends CustomizableCommand {
                 message_id = input;
             } else {
                 post.setColor(Colors.Yellow)
-                    .setTitle(`:warning: ${this.t('execute.invalid_input', undefined, interaction)}`)
-                    .setDescription(this.t('execute.invalid_input_description', { input }, interaction)!);
+                    .setTitle(
+                        `:warning: ${this.t.commands({ key: 'execute.invalid_input', guild_id: BigInt(interaction.guildId!) })}`,
+                    )
+                    .setDescription(
+                        this.t.commands({
+                            key: 'execute.invalid_input_description',
+                            replacements: { input },
+                            guild_id: BigInt(interaction.guildId!),
+                        })!,
+                    );
                 await interaction.reply({
                     embeds: [post],
                     flags: MessageFlags.Ephemeral,
                 });
-                this.log.send('warn', 'command.messagelogger.execute.invalid_input', {
+                this.log('warn', 'execute.invalid_input', {
                     guild: interaction.guild,
                     user: interaction.user,
-                    input: input,
+                    input,
                 });
                 return;
             }
@@ -123,33 +137,43 @@ export default class MessageLoggerCommand extends CustomizableCommand {
 
         if (!message_in_logger) {
             post.setColor(Colors.Yellow)
-                .setTitle(`:warning: ${this.t('execute.message_not_found', undefined, interaction)}`)
-                .setDescription(this.t('execute.message_not_found_description', { message_id }, interaction)!);
+                .setTitle(
+                    `:warning: ${this.t.commands({ key: 'execute.message_not_found', guild_id: BigInt(interaction.guildId!) })}`,
+                )
+                .setDescription(
+                    this.t.commands({
+                        key: 'execute.message_not_found_description',
+                        replacements: { message_id },
+                        guild_id: BigInt(interaction.guildId!),
+                    })!,
+                );
             await interaction.reply({
                 embeds: [post],
                 flags: MessageFlags.Ephemeral,
             });
-            this.log.send('warn', 'command.messagelogger.execute.message_not_found', {
+            this.log('warn', 'execute.message_not_found', {
                 guild: interaction.guild,
                 user: interaction.user,
-                message_id: message_id,
+                message_id,
             });
             return;
         }
 
         post.setColor(Colors.Green)
-            .setTitle(`:mag: ${this.t('execute.message_found', undefined, interaction)}`)
+            .setTitle(
+                `:mag: ${this.t.commands({ key: 'execute.message_found', guild_id: BigInt(interaction.guildId!) })}`,
+            )
             .setDescription(
-                this.t(
-                    'execute.message_found_description',
-                    {
+                this.t.commands({
+                    key: 'execute.message_found_description',
+                    replacements: {
                         message_id,
                         guild_id: logger.from_guild.gid,
                         channel_id: logger.channel_id,
                         message_in_logger,
                     },
-                    interaction,
-                )!,
+                    guild_id: BigInt(interaction.guildId!),
+                })!,
             );
         await interaction.reply({
             embeds: [post],
@@ -172,7 +196,6 @@ export default class MessageLoggerCommand extends CustomizableCommand {
      * @param message The message that triggered the event.
      * @returns A promise that resolves with the logger and webhook client, or `undefined` if any check fails.
      */
-    @Log()
     public async preCheck(
         message: Message<true>,
     ): Promise<{ logger: MessageLogger; webhook: WebhookClient } | undefined> {
@@ -203,16 +226,9 @@ export default class MessageLoggerCommand extends CustomizableCommand {
      * @param message The message that was created.
      */
     @ChainEvent({ type: Events.MessageCreate })
-    @Log()
     public async onMessageCreate(message: Message<true>): Promise<void> {
         const pre_check_result = await this.preCheck(message);
         if (!pre_check_result) return;
-        this.log.send('debug', 'command.event.trigger.start', {
-            name: 'messagelogger',
-            event: 'MessageCreate',
-            guild: message.guild,
-            author: message.author,
-        });
         const { logger, webhook } = pre_check_result;
 
         let content = message.url;
@@ -222,13 +238,13 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             });
             const url = ref_message
                 ? `https://discord.com/channels/${ref_message.from_guild.gid}/${logger.channel_id}/${ref_message.logged_message_id}`
-                : `https://discord.com/channels/${message.guild!.id}/${message.channel.id}/${message.reference.messageId}`;
-            content += ` | [${this.t('events.onmessagecreate.reply', undefined, message)}](${url})`;
+                : `https://discord.com/channels/${message.guildId!}/${message.channel.id}/${message.reference.messageId}`;
+            content += ` | [${this.t.commands({ key: 'events.onmessagecreate.reply', guild_id: BigInt(message.guildId!) })}](${url})`;
         }
 
         if (message.stickers.size > 0) {
             content +=
-                ` | ${this.t('events.onmessagecreate.stickers', undefined, message)}: ` +
+                ` | ${this.t.commands({ key: 'events.onmessagecreate.stickers', guild_id: BigInt(message.guildId!) })}: ` +
                 message.stickers.map((sticker) => sticker.url).join('\n');
             content += '\n';
         }
@@ -265,12 +281,6 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         }))!;
         db_message.logged_message_id = BigInt(webhook_msg_id!);
         await this.db.save(Messages, db_message);
-        this.log.send('debug', 'command.event.trigger.success', {
-            name: 'messagelogger',
-            event: 'MessageCreate',
-            guild: message.guild,
-            author: message.author,
-        });
         return;
     }
 
@@ -283,14 +293,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
      * @param message The message that was deleted.
      */
     @ChainEvent({ type: Events.MessageDelete })
-    @Log()
     public async onMessageDelete(message: Message<true>): Promise<void> {
-        this.log.send('debug', 'command.event.trigger.start', {
-            name: 'messagelogger',
-            event: 'MessageDelete',
-            guild: message.guild,
-            user: message.author,
-        });
         const pre_check_result = await this.preCheck(message);
         if (!pre_check_result) return;
         const { webhook } = pre_check_result;
@@ -300,18 +303,14 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             where: { message_id: BigInt(message.id) },
         });
         const embed = new EmbedBuilder()
-            .setTitle(this.t('events.onmessagedelete.deleted_message', undefined, message))
+            .setTitle(
+                this.t.commands({ key: 'events.onmessagedelete.deleted', guild_id: BigInt(message.guildId!) }),
+            )
             .setColor(Colors.Red)
             .setTimestamp();
         if (db_message?.logged_message_id) {
             await webhook.editMessage(db_message.logged_message_id.toString(), { embeds: [embed] });
         }
-        this.log.send('debug', 'command.event.trigger.success', {
-            name: 'messagelogger',
-            event: 'MessageDelete',
-            guild: message.guild,
-            author: message.author,
-        });
     }
 
     /**
@@ -325,30 +324,28 @@ export default class MessageLoggerCommand extends CustomizableCommand {
      * @param new_message The message after the update.
      */
     @ChainEvent({ type: Events.MessageUpdate })
-    @Log()
     public async onMessageUpdate(old_message: Message<true>, new_message: Message<true>): Promise<void> {
         if (new_message.author?.bot) return;
-        this.log.send('debug', 'command.event.trigger.start', {
-            name: 'messagelogger',
-            event: 'MessageUpdate',
-            guild: old_message.guild,
-            author: old_message.author,
-        });
         const pre_check_result = await this.preCheck(old_message);
         if (!pre_check_result) return;
         const { webhook } = pre_check_result;
         await setTimeout(500);
 
         const embed = new EmbedBuilder()
-            .setTitle(this.t('events.onmessageupdate.updated_message', undefined, new_message))
+            .setTitle(
+                this.t.commands({
+                    key: 'events.onmessageupdate.updated_message',
+                    guild_id: BigInt(new_message.guildId),
+                }),
+            )
             .setColor(Colors.Yellow)
             .setTimestamp()
             .setDescription(
                 (new_message.content !== ''
-                    ? `**${this.t('events.onmessageupdate.new_message', undefined, new_message)}:**\n${new_message.content}\n\n`
+                    ? `**${this.t.commands({ key: 'events.onmessageupdate.new_message', guild_id: BigInt(new_message.guildId) })}:**\n${new_message.content}\n\n`
                     : '') +
                     (new_message.attachments.size > 0
-                        ? `**${this.t('events.onmessageupdate.new_attachments', undefined, new_message)}:**\n${new_message.attachments.map((a) => a.url).join('\n')}`
+                        ? `**${this.t.commands({ key: 'events.onmessageupdate.new_attachments', guild_id: BigInt(new_message.guildId) })}:**\n${new_message.attachments.map((a) => a.url).join('\n')}`
                         : ''),
             );
         const db_message = await this.db.findOne(Messages, {
@@ -357,12 +354,6 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         if (db_message?.logged_message_id) {
             await webhook.editMessage(db_message.logged_message_id.toString(), { embeds: [embed] });
         }
-        this.log.send('debug', 'command.event.trigger.success', {
-            name: 'messagelogger',
-            event: 'MessageUpdate',
-            guild: old_message.guild,
-            author: old_message.author,
-        });
     }
     // ================================================================ //
 
@@ -381,9 +372,11 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         database_key: 'is_enabled',
         format_specifier: '%s',
     })
-    @Log()
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.toggle.start', {
+            name: this.name,
+            guild: interaction.guild,
+        });
         const msg_logger = await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -396,7 +389,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         await this.db.save(MessageLogger, msg_logger!);
         CommandLoader.RESTCommandLoader(this, interaction.guildId!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.toggle.success', {
+        this.log('debug', 'settings.toggle.success', {
             name: this.name,
             guild: interaction.guild,
             toggle: this.enabled,
@@ -420,9 +413,11 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
-    @Log()
     public async setLogChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.channel.start', {
+            name: this.name,
+            guild: interaction.guild,
+        });
         const msg_logger = (await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         }))!;
@@ -446,7 +441,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         msg_logger.webhook_token = webhook.token;
         await this.db.save(MessageLogger, msg_logger!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.channel.success', {
+        this.log('debug', 'settings.channel.success', {
             name: this.name,
             guild: interaction.guild,
             channel: selected_channel,
@@ -473,9 +468,11 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             max_values: 25,
         },
     })
-    @Log()
     public async manageIgnoredChannels(interaction: ChannelSelectMenuInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.ignored_channels.start', {
+            name: this.name,
+            guild: interaction.guild,
+        });
         const msg_logger = await this.db.findOne(MessageLogger, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -486,10 +483,10 @@ export default class MessageLoggerCommand extends CustomizableCommand {
         msg_logger!.timestamp = new Date();
         await this.db.save(MessageLogger, msg_logger!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.channel.success', {
+        this.log('debug', 'settings.ignored_channels.success', {
             name: this.name,
             guild: interaction.guild,
-            channel: interaction.values.join(', '),
+            channels: interaction.values.join(', '),
         });
     }
     // ================================================================ //

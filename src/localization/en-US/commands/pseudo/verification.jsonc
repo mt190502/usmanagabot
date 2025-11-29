@@ -2,45 +2,106 @@
     "$schema": "../../../../types/structure/schemas/command.json",
     "verification": {
         "pretty_name": "Verification System",
-        "description": "Verifies newly joined users to the server.",
-        "help": "Checks the account age of newly joined users and assigns a specific role to those below the limit.",
+        "description": "Verifies new users who join the server.",
+        "help": "Checks the account age of new users who join the server and assigns a specific role to those below the limit.",
+        "parameters": {},
+        "execute": {},
+        "subcommands": {},
+        "events": {},
         "settings": {
             "settargetchannel": {
                 "description": "Sets the channel where verification messages will be sent.",
                 "display_name": "Target Channel",
-                "placeholder": "Select verification channel",
+                "placeholder": "Select a verification channel",
                 "pretty_name": "Set Target Channel",
+                "parameters": {}
             },
             "setverificationminimumage": {
-                "description": "Sets the minimum requirement for users' account age.",
+                "description": "Sets the minimum account age requirement for users.",
                 "display_name": "Minimum Account Age (days)",
-                "invalid_age": "Invalid age value: {age}. Please enter a positive number.",
-                "placeholder": "Enter minimum account age in days",
+                "invalid_age": "Invalid age value: {age}. Please enter a number between 1 and 730.",
+                "placeholder": "Enter the minimum account age in days",
                 "pretty_name": "Set Minimum Account Age",
                 "parameters": {
-                    "minimum_age": "Minimum Account Age (days)",
-                },
+                    "minimum_age": {
+                        "name": "Minimum Account Age",
+                        "description": "The minimum account age (in days) required for a user to be verified.",
+                        "placeholder": "Enter a number between 1 and 730"
+                    }
+                }
             },
             "setverificationrole": {
                 "description": "Sets the role to be assigned to unverified users.",
                 "display_name": "Verification Role",
-                "placeholder": "Select verification role",
+                "placeholder": "Select the verification role",
                 "pretty_name": "Set Verification Role",
-                "role_hierarchy_error": "The selected role is above the bot role. Please select a different role.",
+                "role_hierarchy_error": "The selected role is higher than the bot's role. Please select a different role.",
+                "parameters": {}
             },
             "setverificationsystemmessage": {
                 "description": "Customizes the verification system message.",
                 "display_name": "Verification Message",
-                "placeholder": "Enter verification message (Available variables: {variables})",
+                "placeholder": "Enter the verification message (Available variables: {variables})",
                 "pretty_name": "Set Verification Message",
                 "parameters": {
-                    "verification_message": "Verification Message",
-                },
+                    "verification_message": {
+                        "name": "Verification Message",
+                        "description": "The message to be sent to users who need to be verified.",
+                        "placeholder": "Available variables: {{user}}, {{user_id}}, {{guild}}, {{minimum_age}}"
+                    }
+                }
             },
             "toggle": {
                 "description": "Enables or disables the verification system on the server.",
                 "pretty_name": "Verification System Status",
-            },
+                "parameters": {}
+            }
         },
-    },
+        "logging": {
+            "debug": {
+                "event": {
+                    "trigger": {
+                        "start": "Verification event \"{event}\" triggered for user \"{member}\" in guild \"{guild}\".",
+                        "success": "Verification event \"{event}\" processed successfully for user \"{member}\" in guild \"{guild}\"."
+                    }
+                },
+                "settings": {
+                    "channel": {
+                        "start": "Verification System notification channel change process initiated in guild \"{guild}\".",
+                        "success": "Verification System notification channel successfully changed to \"{channel}\" in guild \"{guild}\"."
+                    },
+                    "modalsubmit": {
+                        "start": "Verification System modal setting change process initiated in guild \"{guild}\".",
+                        "success": "Verification System modal setting successfully changed in guild \"{guild}\"."
+                    },
+                    "role": {
+                        "start": "Verification System role change process initiated in guild \"{guild}\".",
+                        "success": "Verification System role successfully changed to \"{role}\" in guild \"{guild}\"."
+                    },
+                    "toggle": {
+                        "start": "Verification System enable/disable process initiated in guild \"{guild}\".",
+                        "success": "Verification System successfully updated to \"{toggle}\" in guild \"{guild}\"."
+                    }
+                },
+                "cronjob": {
+                    "start": "Starting verification check for new users...",
+                    "success": "Verification check for new users in {guild} guilds completed. {count} users verified."
+                },
+                "prepare": {
+                    "start": "Preparing Verification command for guild \"{guild}\".",
+                    "success": "Verification command for guild \"{guild}\" prepared successfully."
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "Verification command settings for guild \"{guild}\" successfully processed into the database."
+                    }
+                }
+            }
+        }
+    }
 }

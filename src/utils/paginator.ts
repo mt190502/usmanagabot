@@ -99,16 +99,18 @@ export class Paginator {
         const prev = new ButtonBuilder()
             .setCustomId(`page:${command_name}:prev`)
             .setEmoji('⬅️')
-            .setLabel(Paginator.t('paginator.previous', undefined, BigInt(guild_id!)))
+            .setLabel(Paginator.t({ caller: 'buttons', key: 'previous', guild_id: BigInt(guild_id!) }))
             .setStyle(ButtonStyle.Primary);
         const next = new ButtonBuilder()
             .setCustomId(`page:${command_name}:next`)
             .setEmoji('➡️')
-            .setLabel(Paginator.t('paginator.next', undefined, BigInt(guild_id!)))
+            .setLabel(Paginator.t({ caller: 'buttons', key: 'next', guild_id: BigInt(guild_id!) }))
             .setStyle(ButtonStyle.Primary);
         const string_select_menu = new StringSelectMenuBuilder()
             .setCustomId(`command:${command_name}:pageitem`)
-            .setPlaceholder(select_menu_placeholder || Paginator.t('paginator.select', undefined, BigInt(guild_id!)));
+            .setPlaceholder(
+                select_menu_placeholder || Paginator.t({ caller: 'placeholders', key: 'selectItemFromList', guild_id: BigInt(guild_id!) }),
+            );
 
         post.setTitle(title).setColor(color);
         let description = '';
@@ -137,7 +139,7 @@ export class Paginator {
         }
         post.setDescription(description.trim());
         post.setFooter({
-            text: Paginator.t('paginator.page_status', { current_page, total_pages }, BigInt(guild_id!)),
+            text: Paginator.t({ caller: 'labels', key: 'pageStatus', replacements: { current_page, total_pages }, guild_id: BigInt(guild_id!) }),
         });
 
         return {
@@ -216,7 +218,7 @@ export class Paginator {
             new ButtonBuilder()
                 .setCustomId(`page:${command_name}:back`)
                 .setEmoji('⬅️')
-                .setLabel(Paginator.t('paginator.back', undefined, BigInt(guild_id)))
+                .setLabel(Paginator.t({ caller: 'buttons', key: 'back', guild_id: BigInt(guild_id!) }))
                 .setStyle(ButtonStyle.Secondary),
         );
         return {
@@ -302,15 +304,10 @@ export class Paginator {
     }
 
     /**
-     * A convenience method for translating paginator-specific strings.
-     * @protected
+     * The translation function for localizing paginator text.
+     * @private
      * @static
-     * @param {string} key The localization key (e.g., 'paginator.next').
-     * @param {Record<string, unknown>} [replacements] Optional placeholder values.
-     * @param {bigint} [guild_id] The ID of the guild for language-specific translation.
-     * @returns {string} The translated string.
+     * @type {(options: { key: string; replacements?: { [key: string]: unknown }; guild_id?: bigint }) => string}
      */
-    protected static t(key: string, replacements?: Record<string, unknown>, guild_id?: bigint): string {
-        return Translator.querySync('commands', key, replacements, guild_id);
-    }
+    private static t = Translator.generateQueryFunc({ caller: 'paginator' }).system;
 }

@@ -1,9 +1,7 @@
 import {
     ActionRowBuilder,
-    BaseInteraction,
     ChannelSelectMenuBuilder,
     ChannelType,
-    Message,
     ModalActionRowComponentBuilder,
     ModalBuilder,
     ModalSubmitInteraction,
@@ -12,13 +10,12 @@ import {
     StringSelectMenuInteraction,
     TextInputBuilder,
     TextInputStyle,
-    ThreadChannel,
     UserSelectMenuBuilder,
 } from 'discord.js';
 import { EntityTarget, ObjectLiteral } from 'typeorm';
 import { Database } from '../../services/database';
-import { Translator } from '../../services/translator';
 import { BaseCommand, CustomizableCommand } from '../structure/command';
+import { Translator } from '../../services/translator';
 
 /**
  * This module provides a collection of method decorators for creating dynamic,
@@ -58,6 +55,14 @@ type descriptorType = (
 ) => Promise<void>;
 
 /**
+ * The translation function scoped to the 'commands' namespace.
+ * @private
+ * @static
+ * @type {(options: { key: string; replacements?: { [key: string]: unknown }; guild_id?: bigint }) => string}
+ */
+const t = Translator.generateQueryFunc({ caller: '' });
+
+/**
  * A factory function that generates the core logic for a setting component decorator.
  *
  * It handles metadata registration using `Reflect.defineMetadata` and wraps the original
@@ -91,14 +96,14 @@ function generateSettingComponent(
         }
 
         metadata.set(pretty_key, {
-            pretty: `${name}.settings.${pretty_key}.pretty_name`,
+            pretty: `settings.${pretty_key}.pretty_name`,
             database: o.database,
             database_key: o.database_key,
             display_name:
                 pretty_key == 'toggle'
                     ? 'command.settings.toggle.display_name'
-                    : `${name}.settings.${pretty_key}.display_name`,
-            description: `${name}.settings.${pretty_key}.description`,
+                    : `settings.${pretty_key}.display_name`,
+            description: `settings.${pretty_key}.description`,
             format_specifier: o.format_specifier ?? 'command.settings.view_in_edit_mode',
             db_column_is_array: o.db_column_is_array ?? false,
             is_bot_owner_only: o.is_bot_owner_only ?? false,
@@ -108,30 +113,6 @@ function generateSettingComponent(
 
         Reflect.defineMetadata('custom:settings', metadata, target.constructor);
     };
-}
-
-/**
- * A local helper function for translating strings within this module.
- * It scopes all translations to the 'commands' category.
- * @internal
- */
-function t<T extends BaseInteraction | Message | ThreadChannel | bigint | string>(
-    key: string,
-    replacements?: Record<string, unknown>,
-    id?: T,
-): string {
-    return Translator.querySync(
-        'commands',
-        key,
-        replacements,
-        typeof id === 'string'
-            ? BigInt(id)
-            : typeof id === 'bigint'
-                ? id
-                : id?.guildId
-                    ? BigInt(id.guildId)
-                    : undefined,
-    );
 }
 
 /**
@@ -171,7 +152,7 @@ export function SettingStringSelectComponent(
                         new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
                             new StringSelectMenuBuilder()
                                 .setCustomId(`settings:${name}:${pretty_key}`)
-                                .setPlaceholder(t(`${name}.settings.${pretty_key}.placeholder`, undefined, interaction))
+                                .setPlaceholder(t.commands({ caller: name, key: `settings.${pretty_key}.placeholder`, guild_id: BigInt(interaction.guildId!) }))
                                 .setMinValues((options as typeof o).options?.min_values ?? 1)
                                 .setMaxValues((options as typeof o).options?.max_values ?? 1)
                                 .addOptions(
@@ -220,12 +201,12 @@ export function SettingChannelMenuComponent(
                         new ChannelSelectMenuBuilder()
                             .setCustomId(`settings:${name}:${pretty_key}`)
                             .setPlaceholder(
-                                t(
-                                    (options as typeof o).options?.placeholder ??
-                                        `${name}.settings.${pretty_key}.placeholder`,
-                                    undefined,
-                                    interaction,
-                                ),
+                                t.commands({
+                                    caller: name,
+                                    key: (options as typeof o).options?.placeholder ??
+                                        `settings.${pretty_key}.placeholder`,
+                                    guild_id: BigInt(interaction.guildId!),
+                                }),
                             )
                             .setMinValues((options as typeof o).options?.min_values ?? 1)
                             .setMaxValues((options as typeof o).options?.max_values ?? 1)
@@ -267,12 +248,12 @@ export function SettingRoleSelectMenuComponent(
                         new RoleSelectMenuBuilder()
                             .setCustomId(`settings:${name}:${pretty_key}`)
                             .setPlaceholder(
-                                t(
-                                    (options as typeof o).options?.placeholder ??
-                                        `${name}.settings.${pretty_key}.placeholder`,
-                                    undefined,
-                                    interaction,
-                                ),
+                                t.commands({
+                                    caller: name,
+                                    key: (options as typeof o).options?.placeholder ??
+                                        `settings.${pretty_key}.placeholder`,
+                                    guild_id: BigInt(interaction.guildId!),
+                                }),
                             )
                             .setMinValues((options as typeof o).options?.min_values ?? 1)
                             .setMaxValues((options as typeof o).options?.max_values ?? 1),
@@ -313,12 +294,12 @@ export function SettingUserSelectMenuComponent(
                         new UserSelectMenuBuilder()
                             .setCustomId(`settings:${name}:${pretty_key}`)
                             .setPlaceholder(
-                                t(
-                                    (options as typeof o).options?.placeholder ??
-                                        `${name}.settings.${pretty_key}.placeholder`,
-                                    undefined,
-                                    interaction,
-                                ),
+                                t.commands({
+                                    caller: name,
+                                    key: (options as typeof o).options?.placeholder ??
+                                        `settings.${pretty_key}.placeholder`,
+                                    guild_id: BigInt(interaction.guildId!),
+                                }),
                             )
                             .setMinValues((options as typeof o).options?.min_values ?? 1)
                             .setMaxValues((options as typeof o).options?.max_values ?? 1),
@@ -386,8 +367,8 @@ export function SettingModalComponent(
             const buildTextInput = (input: (typeof o.inputs)[number], value?: string) => {
                 const ti = new TextInputBuilder()
                     .setCustomId(input.id)
-                    .setLabel(t(`${name}.settings.${pretty_key}.parameters.${input.id}`, undefined, interaction))
-                    .setPlaceholder(t(`${name}.settings.${pretty_key}.parameters.${input.id}`, undefined, interaction))
+                    .setLabel(t.commands({ caller: name, key: `settings.${pretty_key}.parameters.${input.id}.name`, guild_id: BigInt(interaction.guildId!) }))
+                    .setPlaceholder(t.commands({ caller: name, key: `settings.${pretty_key}.parameters.${input.id}.placeholder`, guild_id: BigInt(interaction.guildId!) }))
                     .setStyle(input.style ?? TextInputStyle.Short)
                     .setRequired(input.required ?? true);
 
@@ -410,8 +391,8 @@ export function SettingModalComponent(
 
                     if (config!.include_cancel !== false) {
                         select_options.push({
-                            label: t('command.settings.cancel.display_name', undefined, interaction),
-                            description: t('command.settings.cancel.description', undefined, interaction),
+                            label: t.system({ caller: 'buttons', key: 'back', guild_id: BigInt(interaction.guildId!) }),
+                            description: t.system({ caller: 'labels', key: 'backDescription', guild_id: BigInt(interaction.guildId!) }),
                             value: `settings:${name}`,
                         });
                     }
@@ -422,7 +403,7 @@ export function SettingModalComponent(
                                 new StringSelectMenuBuilder()
                                     .setCustomId(`settings:${name}:${pretty_key}`)
                                     .setPlaceholder(
-                                        t(`${name}.settings.${pretty_key}.placeholder`, undefined, interaction),
+                                        t.commands({ caller: name, key: `settings.${pretty_key}.placeholder`, guild_id: BigInt(interaction.guildId!) }),
                                     )
                                     .addOptions(select_options),
                             ),
@@ -446,7 +427,7 @@ export function SettingModalComponent(
                     await interaction.showModal(
                         new ModalBuilder()
                             .setCustomId(`settings:${name}:${pretty_key}:${selected_value}`)
-                            .setTitle(t(`${name}.settings.${pretty_key}.title`, { name: selected_value }, interaction))
+                            .setTitle(t.commands({ caller: name, key: `settings.${pretty_key}.title`, replacements: { name: selected_value }, guild_id: BigInt(interaction.guildId!) }))
                             .addComponents(components),
                     );
                     return;
@@ -482,7 +463,7 @@ export function SettingModalComponent(
             await interaction.showModal(
                 new ModalBuilder()
                     .setCustomId(`settings:${name}:${pretty_key}`)
-                    .setTitle(t(`${name}.settings.${pretty_key}.pretty_name`, undefined, interaction))
+                    .setTitle(t.commands({ caller: name, key: `settings.${pretty_key}.pretty_name`, guild_id: BigInt(interaction.guildId!) }))
                     .addComponents(components),
             );
         };

@@ -1,0 +1,12 @@
+{
+    "$schema": "../../../types/structure/schemas/service.json",
+    "client": {
+        "info": {
+            "ready": "Client is ready.",
+            "shard_ready": "Shard {id} is ready.",
+            "shard_reconnecting": "Shard {id} is reconnecting.",
+            "shard_resumed": "Shard {id} has resumed.",
+            "shard_disconnect": "Shard {id} has disconnected."
+        }
+    }
+}

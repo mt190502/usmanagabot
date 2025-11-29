@@ -6,11 +6,9 @@ import {
     ContextMenuCommandBuilder,
     EmbedBuilder,
     Interaction,
-    Message,
     MessageFlags,
     SlashCommandBuilder,
     StringSelectMenuBuilder,
-    ThreadChannel,
     User,
 } from 'discord.js';
 import moment from 'moment';
@@ -19,7 +17,7 @@ import { format } from 'util';
 import { BotClient } from '../../services/client';
 import { Config } from '../../services/config';
 import { Database } from '../../services/database';
-import { Logger } from '../../services/logger';
+import { Logger, LogLevels } from '../../services/logger';
 import { SupportedLanguages, Translator } from '../../services/translator';
 import { Paginator } from '../../utils/paginator';
 import { Users } from '../database/entities/users';
@@ -146,11 +144,12 @@ export abstract class BaseCommand {
     constructor(options: Partial<BaseCommand> & { name: string }) {
         this.enabled = options.enabled ?? true;
         this.name = options.name;
-        this.pretty_name = this.t(options.pretty_name ?? 'pretty_name') ?? 'No pretty name provided.';
-        this.description = this.t(options.description ?? 'description') ?? 'No description provided.';
+        this.t = Translator.generateQueryFunc({ caller: this.name });
+        this.pretty_name = this.t.commands({ key: options.pretty_name ?? 'pretty_name' }) ?? 'No pretty name provided.';
+        this.description = this.t.commands({ key: options.description ?? 'description' }) ?? 'No description provided.';
         this.is_admin_command = options.is_admin_command ?? false;
         this.is_bot_owner_command = options.is_bot_owner_command ?? false;
-        this.help = this.t(options.help ?? 'help') ?? 'No help provided.';
+        this.help = this.t.commands({ key: options.help ?? 'help' }) ?? 'No help provided.';
         this.cooldown = options.cooldown ?? 0;
         this.aliases = options.aliases;
         this.main_command_data = new SlashCommandBuilder().setName(this.name).setDescription(this.description);
@@ -179,12 +178,14 @@ export abstract class BaseCommand {
     }
 
     /**
-     * Provides access to the static `Logger` class.
+     * A logging function that prefixes log messages with the 'commands' context.
      * @protected
-     * @returns {typeof Logger} The `Logger` class.
+     * @returns {(type: keyof typeof LogLevels, key: string, replacements?: { [key: string]: unknown }) => void} The logging function.
      */
-    protected get log(): typeof Logger {
-        return Logger;
+    protected get log(): (type: keyof typeof LogLevels, key: string, replacements?: { [key: string]: unknown }) => void {
+        return (type: keyof typeof LogLevels, key: string, replacements?: { [key: string]: unknown }) => {
+            return Logger.send('commands', this.name, type, key, replacements);
+        };
     }
 
     /**
@@ -194,40 +195,6 @@ export abstract class BaseCommand {
      */
     protected get paginator(): typeof Paginator {
         return Paginator;
-    }
-
-    /**
-     * A convenience method for translating command-specific strings using the `Translator` service.
-     *
-     * This method automatically scopes the translation query to the current command's name.
-     *
-     * @protected
-     * @template T - The type of the interaction or context identifier (e.g., `BaseInteraction`, `Message`, `string`).
-     * @param {string} key The localization key (e.g., 'success_message').
-     * @param {Record<string, unknown>} [replacements] Optional placeholder values.
-     * @param {T} [id] Optional context identifier to determine the guild for localization.
-     * @param {SupportedLanguages} [lang] Optional specific language to use.
-     * @returns {string} The translated string.
-     */
-    protected t<T extends BaseInteraction | Message | ThreadChannel | bigint | string>(
-        key: string,
-        replacements?: Record<string, unknown>,
-        id?: T,
-        lang?: SupportedLanguages,
-    ): string {
-        return Translator.querySync(
-            this.name,
-            key,
-            replacements,
-            typeof id === 'string'
-                ? BigInt(id)
-                : typeof id === 'bigint'
-                    ? id
-                    : id?.guildId
-                        ? BigInt(id.guildId)
-                        : undefined,
-            lang,
-        );
     }
 
     /**
@@ -271,6 +238,14 @@ export abstract class BaseCommand {
     }
 
     /**
+     * Translates a given key using the command's translation context.
+     * @protected
+     * @param {{ key: string; replacements?: { [key: string]: unknown }; lang?: SupportedLanguages; id?: bigint | Interaction }} o The translation options.
+     * @returns {string} The translated string.
+     */
+    protected t!: ReturnType<typeof Translator.generateQueryFunc>;
+
+    /**
      * Generates localized names or descriptions for all supported languages.
      * @protected
      * @param {string} key The localization key to translate.
@@ -282,7 +257,7 @@ export abstract class BaseCommand {
             .reduce(
                 (acc, lang) => {
                     if (lang === SupportedLanguages.AUTO) return acc;
-                    acc[lang] = this.t(key, replacements, undefined, lang);
+                    acc[lang] = this.t.commands({ key, replacements, lang });
                     return acc;
                 },
                 {} as Record<string, string>,
@@ -333,13 +308,17 @@ export abstract class CustomizableCommand extends BaseCommand {
      */
     public async settingsUI(interaction: BaseInteraction | CommandInteraction): Promise<void> {
         const subsettings = Reflect.getMetadata('custom:settings', this.constructor);
+        const cmd_name = this.t.commands({ key: 'pretty_name', guild_id: BigInt(interaction.guildId!) });
         const ui = new EmbedBuilder().setTitle(
-            `:gear: ${this.t('settings.execute.title', { command: this.t(`${this.name}.pretty_name`, undefined, interaction) }, interaction)}`,
+            `:gear: ${this.t.commands({ caller: 'settings', key: 'execute.title', replacements: { command: cmd_name }, guild_id: BigInt(interaction.guildId!) })}`,
         );
-        const menu = new StringSelectMenuBuilder()
-            .setCustomId(`settings:${this.name}`)
-            .setPlaceholder(this.t('settings.execute.placeholder', undefined, interaction));
-
+        const menu = new StringSelectMenuBuilder().setCustomId(`settings:${this.name}`).setPlaceholder(
+            this.t.commands({
+                caller: 'settings',
+                key: 'execute.placeholder',
+                guild_id: BigInt(interaction.guildId!),
+            }),
+        );
         if (this.warning) {
             ui.setColor(Colors.Yellow);
             ui.addFields({ name: ':warning:', value: this.warning });
@@ -387,40 +366,54 @@ export abstract class CustomizableCommand extends BaseCommand {
                         row = db[setting.database_key as keyof unknown];
                     }
                 }
+                let key = this.t.commands({ key: setting.display_name, guild_id: BigInt(interaction.guildId!) });
                 let value;
                 if (typeof row === 'boolean') {
+                    key = this.t.system({ caller: 'labels', key: 'active', guild_id: BigInt(interaction.guildId!) });
                     value = row
-                        ? `:green_circle: ${this.t('command.execute.true', undefined, interaction)}`
-                        : `:red_circle: ${this.t('command.execute.false', undefined, interaction)}`;
+                        ? `:green_circle: ${this.t.system({ caller: 'buttons', key: 'yes', guild_id: BigInt(interaction.guildId!) })}`
+                        : `:red_circle: ${this.t.system({ caller: 'buttons', key: 'no', guild_id: BigInt(interaction.guildId!) })}`;
                 } else if (setting.db_column_is_array) {
                     value = setting.database_key
                         ? Array.isArray(row) && row.length > 0
                             ? row.length == 1 && row[0] === null
-                                ? `:orange_circle: ${this.t('settings.execute.not_set', undefined, interaction)}`
+                                ? `:orange_circle: ${this.t.commands({ caller: 'settings', key: 'execute.not_set', guild_id: BigInt(interaction.guildId!) })}`
                                 : row.map((val) => format(setting.format_specifier, val)).join(', ')
-                            : `:orange_circle: ${this.t('settings.execute.not_set', undefined, interaction)}`
-                        : this.t('settings.execute.view_in_edit_mode', undefined, interaction);
+                            : `:orange_circle: ${this.t.commands({ caller: 'settings', key: 'execute.not_set', guild_id: BigInt(interaction.guildId!) })}`
+                        : this.t.commands({
+                            caller: 'settings',
+                            key: 'execute.view_in_edit_mode',
+                            guild_id: BigInt(interaction.guildId!),
+                        });
                 } else {
                     value = setting.database_key
                         ? row
                             ? format(setting.format_specifier, row ?? '')
-                            : `:orange_circle: ${this.t('settings.execute.not_set', undefined, interaction)}`
-                        : this.t('settings.execute.view_in_edit_mode', undefined, interaction);
+                            : `:orange_circle: ${this.t.commands({ caller: 'settings', key: 'execute.not_set', guild_id: BigInt(interaction.guildId!) })}`
+                        : this.t.commands({
+                            caller: 'settings',
+                            key: 'execute.view_in_edit_mode',
+                            guild_id: BigInt(interaction.guildId!),
+                        });
                 }
                 ui.addFields({
-                    name: this.t(setting.display_name, undefined, interaction),
+                    name: key,
                     value: value,
                 });
             }
             menu.addOptions({
-                label: this.t(setting.pretty, undefined, interaction),
-                description: this.t(setting.description, undefined, interaction),
+                label: this.t.commands({ key: setting.pretty, guild_id: BigInt(interaction.guildId!) }),
+                description: this.t.commands({ key: setting.description, guild_id: BigInt(interaction.guildId!) }),
                 value: `settings:${this.name}:${name}`,
             });
         }
         menu.addOptions({
-            label: this.t('settings.execute.back_to_main_menu', undefined, interaction),
-            description: this.t('settings.execute.back_to_main_menu_description', undefined, interaction),
+            label: this.t.system({ caller: 'buttons', key: 'back', guild_id: BigInt(interaction.guildId!) }),
+            description: this.t.system({
+                caller: 'labels',
+                key: 'backDescription',
+                guild_id: BigInt(interaction.guildId!),
+            }),
             value: 'command:settings',
         });
 
@@ -447,14 +440,25 @@ export abstract class CustomizableCommand extends BaseCommand {
                 ui.addFields({ name: '\u00A0', value: '' });
                 ui.setFooter({
                     iconURL: user ? user.displayAvatarURL() : undefined,
-                    text: this.t(
-                        'settings.execute.last_modified_by',
-                        {
-                            user: user ? user.tag : this.t('settings.execute.unknown_user', undefined, interaction),
-                            date: date ? date : this.t('settings.execute.unknown_date', undefined, interaction),
+                    text: this.t.commands({
+                        caller: 'settings',
+                        key: 'execute.last_modified_by',
+                        replacements: {
+                            user: user
+                                ? user.tag
+                                : this.t.commands({
+                                    key: 'execute.unknown_user',
+                                    guild_id: BigInt(interaction.guildId!),
+                                }),
+                            date: date
+                                ? date
+                                : this.t.commands({
+                                    key: 'execute.unknown_date',
+                                    guild_id: BigInt(interaction.guildId!),
+                                }),
                         },
-                        interaction,
-                    ),
+                        guild_id: BigInt(interaction.guildId!),
+                    }),
                 });
             }
         }

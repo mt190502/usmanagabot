@@ -1,0 +1,8 @@
+{
+    "$schema": "../../../types/structure/schemas/service.json",
+    "system": {
+        "info": {
+            "started": "{name}@v{version} başarıyla başlatıldı."
+        }
+    }
+}

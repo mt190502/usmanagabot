@@ -1,4 +1,4 @@
-import { Awaitable, BaseInteraction, ClientEvents } from 'discord.js';
+import { Awaitable, ClientEvents } from 'discord.js';
 import { Config } from '../../services/config';
 import { Database } from '../../services/database';
 import { Logger } from '../../services/logger';
@@ -60,6 +60,7 @@ export abstract class BaseEvent<T extends keyof ClientEvents> {
     constructor(options: Omit<BaseEvent<T>, 'once' | 'execute'> & { once?: boolean }) {
         this.enabled = options.enabled;
         this.once = options.once;
+        this.t = Translator.generateQueryFunc({ caller: '' });
         this.type = options.type;
     }
     // ================================================================ //
@@ -93,18 +94,11 @@ export abstract class BaseEvent<T extends keyof ClientEvents> {
     }
 
     /**
-     * A convenience method for translating strings using the `Translator` service.
-     *
-     * This method automatically scopes the translation query to the 'commands' category.
-     *
+     * Translates a given key using the command's translation context.
      * @protected
-     * @param {string} key The localization key.
-     * @param {Record<string, unknown>} [replacements] Optional placeholder values.
-     * @param {BaseInteraction} [interaction] The interaction to derive the guild ID from.
+     * @param {{ key: string; replacements?: { [key: string]: unknown }; lang?: SupportedLanguages; id?: bigint | Interaction }} o The translation options.
      * @returns {string} The translated string.
      */
-    protected t(key: string, replacements?: Record<string, unknown>, interaction?: BaseInteraction): string {
-        return Translator.querySync('commands', key, replacements, BigInt(interaction!.guildId!));
-    }
+    protected t!: ReturnType<typeof Translator.generateQueryFunc>;
     // ================================================================ //
 }

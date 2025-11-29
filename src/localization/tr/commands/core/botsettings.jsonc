@@ -4,26 +4,78 @@
         "pretty_name": "Bot",
         "description": "Bot genel ayarlarını yönetir.",
         "help": "Bot genel ayarlarını yönetir.\n\n**Kullanım:**\n- Ayarlar menüsünden `/settings` komutu ile erişilebilir.\n- Sadece bot sahibi bu ayarları görebilir.",
+        "parameters": {},
+        "execute": {},
+        "subcommands": {},
+        "events": {},
         "settings": {
             "managerandomstatuses": {
                 "description": "Botun rastgele durum mesajlarını yönetir.",
                 "display_name": "Rastgele Durum Mesajları",
                 "pretty_name": "Rastgele Durum Mesajlarını Yönet",
                 "parameters": {
-                    "bot_random_statuses": "Rastgele Durum Mesajları (virgülle ayrılmış)",
-                },
+                    "bot_random_statuses": {
+                        "name": "Rastgele Durum Mesajları (virgülle ayrılmış)",
+                        "description": "Botun döngüye gireceği durum mesajlarının virgülle ayrılmış listesi.",
+                        "placeholder": "YouTube, Kurtlar Vadisi, Deli Yürek, Akasya Durağı"
+                    }
+                }
             },
             "setrandomstatusinterval": {
                 "description": "Botun durum mesajlarını ne sıklıkla değiştireceğini belirler.",
                 "display_name": "Rastgele Durum Değiştirme Aralığı (dakika)",
                 "placeholder": "Durum değiştirme aralığını seçin",
                 "pretty_name": "Rastgele Durum Değiştirme Aralığı",
+                "parameters": {}
             },
             "togglerandomstatus": {
                 "description": "Botun rastgele durum mesajlarını etkinleştirir veya devre dışı bırakır.",
                 "display_name": "Rastgele Durum Mesajları Aktifliği",
-                "pretty_name": "Rastgele Durum Mesajlarını Etkinleştir",
-            },
+                "pretty_name": "Rastgele Durum Mesajlarını Aç/Kapat",
+                "parameters": {}
+            }
         },
-    },
+        "logging": {
+            "debug": {
+                "settings": {
+                    "toggle": {
+                        "start": "Bot ayarı açma/kapama ayarı, \"{guild}\" sunucusunda başlatıldı."
+                    },
+                    "selectmenu": {
+                        "start": "Bot ayarı seçim menüsü, \"{guild}\" sunucusunda başlatıldı.",
+                        "success": "Bot ayarı seçim menüsü, \"{guild}\" sunucusunda başarıyla güncellendi."
+                    },
+                    "modalsubmit": {
+                        "start": "Bot ayarı modalı, \"{guild}\" sunucusunda başlatıldı.",
+                        "success": "Bot ayarı modalı, \"{guild}\" sunucusunda başarıyla güncellendi."
+                    },
+                    "managerandomstatuses": {
+                        "success": "{user} kullanıcısı, {guild} sunucusundaki {channel} kanalında rastgele durumları güncelledi. Yeni durumlar: {statuses}"
+                    },
+                    "setrandomstatusinterval": {
+                        "success": "{user} kullanıcısı, {guild} sunucusundaki {channel} kanalında rastgele durum aralığını {interval} dakika olarak ayarladı."
+                    },
+                    "togglerandomstatus": {
+                        "success": "{user} kullanıcısı, {guild} sunucusundaki {channel} kanalında rastgele durumu {status} olarak değiştirdi."
+                    }
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {
+                "settings": {
+                    "managerandomstatuses": {
+                        "failed": "{user} kullanıcısı, {guild} sunucusundaki {channel} kanalında rastgele durumları güncelleyemedi: {message}"
+                    },
+                    "setrandomstatusinterval": {
+                        "failed": "{user} kullanıcısı, {guild} sunucusundaki {channel} kanalında rastgele durum aralığını ayarlayamadı: {message}"
+                    },
+                    "togglerandomstatus": {
+                        "failed": "{user} kullanıcısı, {guild} sunucusundaki {channel} kanalında rastgele durumu değiştiremedi: {message}"
+                    }
+                }
+            },
+            "log": {}
+        }
+    }
 }

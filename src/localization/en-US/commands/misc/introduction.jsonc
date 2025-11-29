@@ -4,61 +4,109 @@
         "name": "introduction",
         "pretty_name": "Introduction",
         "description": "Creates and manages user introduction information.",
-        "help": "Creates user-specific introduction information\n\n**Usage:**\n- `/introduction <parameters>` - Creates or updates introduction information.\n\n**Examples:**\n- `/introduction os:linux de:gnome` - Sets introduction information to 'os:linux de:gnome'.\n - `/introduction car:peugeot bike:yamaha` - Sets introduction information to 'car:peugeot bike:yamaha'.",
+        "help": "Creates user-specific introduction information.\n\n**Usage:**\n- `/introduction <parameters>` - Creates or updates introduction information.\n\n**Examples:**\n- `/introduction os:linux de:gnome` - Sets the introduction information to 'os:linux de:gnome'.\n - `/introduction car:peugeot bike:yamaha` - Sets the introduction information to 'car:peugeot bike:yamaha'.",
+        "parameters": {},
         "execute": {
             "account_info": "Account Information",
-            "created_at": "Account Created",
+            "created_at": "Account Creation Date",
             "header": "About {user}",
             "id": "ID",
-            "joined_at": "Joined Server",
+            "joined_at": "Server Join Date",
             "nickname": "Nickname",
             "no_roles": "No Roles",
-            "not_configured": "Introduction system is not properly configured. Please contact the server administrator.",
-            "rate_limited": "Daily introduction command limit reached. Please wait until {date}.",
+            "not_configured": "The introduction system is not properly configured. Please contact the server administrator.",
+            "rate_limited": "The daily introduction command limit has been reached. Please wait until {date}.",
             "roles": "Roles",
-            "submission_successful": "Introduction successfully submitted.\nYou have **{remaining}** submissions remaining for today.\nIntroduction URL: {url}",
+            "submission_successful": "Introduction submitted successfully.\nYou have **{remaining}** submissions left for today.\nIntroduction URL: {url}",
             "updated": "Introduction Updated",
             "username": "Username",
-            "validation_failed": "Please provide at least one value.",
+            "validation_failed": "Please provide at least one value."
         },
+        "subcommands": {},
+        "events": {},
         "settings": {
             "changetargetchannel": {
                 "description": "Changes the channel where introduction posts will be sent.",
                 "display_name": "Target Channel",
-                "placeholder": "Select target introduction channel",
+                "placeholder": "Select the target introduction channel",
                 "pretty_name": "Change Target Channel",
+                "parameters": {}
             },
             "customizecolumns": {
-                "description": "Customizes the names and descriptions of introduction command columns.",
-                "duplicated": "Column name {column} cannot be used more than once.",
-                "parameters": {
-                    "column_names_placeholder": "- name: key\n   value: value\n(maximum 8 columns)",
-                    "column_names": "Column Names",
-                },
+                "description": "Customizes the names and descriptions of the introduction command columns.",
+                "duplicated": "The column name {column} cannot be used more than once.",
+                "too_many_columns": "You cannot have more than 8 columns.",
                 "pretty_name": "Customize Columns",
-            },
-            "customizecommand": {
-                "description": "Customizes the name and description of the introduction command for this server.",
                 "parameters": {
-                    "cmd_desc": "Command Description",
-                    "cmd_name": "Command Name",
-                },
-                "pretty_name": "Customize Introduction Command",
+                    "column_names": {
+                        "name": "Column Names",
+                        "description": "The names of the columns for the introduction command.",
+                        "placeholder": "- name: editor\n   value: Favorite Editor\n(maximum 8 columns)"
+                    }
+                }
             },
             "setdailysubmissionlimit": {
-                "description": "Sets the daily submission limit for users' introductions.",
+                "description": "Sets the daily introduction submission limit for users.",
                 "display_name": "Daily Submission Limit",
-                "limit_range": "Limit must be between 1 and 100.",
-                "parameters": {
-                    "label": "Daily Submission Limit (1-100)",
-                    "daily_limit": "Daily Submission Limit",
-                },
+                "limit_range": "The limit must be between 1 and 100.",
                 "pretty_name": "Set Daily Submission Limit",
+                "parameters": {
+                    "daily_limit": {
+                        "name": "Daily Submission Limit",
+                        "description": "The maximum number of introductions a user can send per day.",
+                        "placeholder": "Enter a limit between 1 and 100"
+                    }
+                }
             },
             "toggle": {
                 "description": "Enables or disables the introduction command on the server.",
-                "pretty_name": "Introduction Command Status",
-            },
+                "pretty_name": "Toggle Introduction Command",
+                "parameters": {}
+            }
         },
-    },
+        "logging": {
+            "debug": {
+                "prepare": {
+                    "start": "Preparing Introduction command for guild \"{guild}\".",
+                    "success": "Introduction command for guild \"{guild}\" prepared successfully."
+                },
+                "execute": {
+                    "deleted": "Deleting old post with ID \"{messageId}\" for user \"{user}\" in guild \"{guild}\" as a new \"Introduction\" command post is being created...",
+                    "published": "Post for \"Introduction\" command published at \"{messageId}\" for user \"{user}\" in guild \"{guild}\"."
+                },
+                "settings": {
+                    "toggle": {
+                        "start": "Introduction system toggle setting initiated by user in guild \"{guild}\".",
+                        "success": "Introduction system toggle setting successfully updated to \"{toggle}\" in guild \"{guild}\"."
+                    },
+                    "modalsubmit": {
+                        "start": "Introduction system modal initiated by user in guild \"{guild}\".",
+                        "success": "Introduction system modal successfully updated in guild \"{guild}\"."
+                    },
+                    "channel": {
+                        "start": "Introduction system channel setting initiated by user in guild \"{guild}\".",
+                        "success": "Introduction system channel successfully updated to \"{channel}\" in guild \"{guild}\"."
+                    }
+                }
+            },
+            "info": {},
+            "warn": {
+                "execute": {
+                    "rate_limited": "Daily \"Introduction\" command limit reached for user \"{user}\" in guild \"{guild}\".",
+                    "validation_failed": "\"Introduction\" command input validation failed for user \"{user}\" in guild \"{guild}\"."
+                },
+                "settings": {
+                    "validation_failed": "\"Introduction\" command setting validation failed for user \"{user}\" in guild \"{guild}\"."
+                }
+            },
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "Introduction command settings for guild \"{guild}\" successfully processed into the database."
+                    }
+                }
+            }
+        }
+    }
 }

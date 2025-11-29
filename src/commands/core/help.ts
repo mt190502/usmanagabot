@@ -1,7 +1,6 @@
 import { ButtonInteraction, ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import { CommandLoader } from '..';
 import { HandleAction } from '../../types/decorator/command';
-import { Log } from '../../types/decorator/log';
 import { BaseCommand } from '../../types/structure/command';
 import { Paginator } from '../../utils/paginator';
 
@@ -31,9 +30,8 @@ export default class HelpCommand extends BaseCommand {
      *
      * @param interaction The interaction from the slash command or a button press.
      */
-    @Log()
     public async execute(interaction: ChatInputCommandInteraction | ButtonInteraction): Promise<void> {
-        this.log.send('debug', 'command.help.execute.generating_page', {
+        this.log('debug', 'execute.generating_page', {
             guild: interaction.guild,
             user: interaction.user,
         });
@@ -59,24 +57,34 @@ export default class HelpCommand extends BaseCommand {
                     : true,
             );
         const payload = await Paginator.generatePage(interaction.guild!.id, interaction.user.id, this.name, {
-            title: `:information_source: ${this.t('execute.main_title', undefined, interaction)}`,
+            title: `:information_source: ${this.t.commands({ key: 'execute.main_title', guild_id: BigInt(interaction.guildId!) })}`,
             color: 0x00ffff,
             items: commands
                 .map((cmd) => ({
                     name: cmd.name,
                     pretty_name:
-                        this.t(`${cmd.name}.pretty_name`, undefined, interaction) ||
-                        this.t(`${cmd.name}.name`, undefined, interaction) ||
+                        this.t.commands({
+                            caller: cmd.name,
+                            key: 'pretty_name',
+                            guild_id: BigInt(interaction.guildId!),
+                        }) ||
+                        this.t.commands({ caller: cmd.name, key: 'name', guild_id: BigInt(interaction.guildId!) }) ||
                         cmd.pretty_name ||
                         cmd.name,
                     description:
-                        this.t(`${cmd.name}.description`, undefined, interaction) || cmd.description || '<missing>',
+                        this.t.commands({
+                            caller: cmd.name,
+                            key: 'description',
+                            guild_id: BigInt(interaction.guildId!),
+                        }) ||
+                        cmd.description ||
+                        '<missing>',
                     namespace: 'command' as const,
                 }))
                 .sort((a, b) => a.pretty_name.localeCompare(b.pretty_name)),
             items_per_page: 5,
         });
-        this.log.send('debug', 'command.help.execute.commands_filtered', {
+        this.log('debug', 'execute.commands_filtered', {
             length: commands.length,
             guild: interaction.guild,
             user: interaction.user,
@@ -106,9 +114,8 @@ export default class HelpCommand extends BaseCommand {
      * @param item_name The name of the command that was clicked, passed from the button's custom ID.
      */
     @HandleAction('pageitem')
-    @Log()
     public async handlePageItem(interaction: ButtonInteraction, item_name: string): Promise<void> {
-        this.log.send('debug', 'command.handlePageItem.start', {
+        this.log('debug', 'handlePageItem.start', {
             name: this.name,
             guild: interaction.guild,
             user: interaction.user,
@@ -117,16 +124,23 @@ export default class HelpCommand extends BaseCommand {
             ...CommandLoader.BotCommands.get(interaction.guild!.id)!.values(),
             ...CommandLoader.BotCommands.get('global')!.values(),
         ].find((cmd) => cmd.name === item_name)!;
+        const title = this.t.commands({
+            caller: command.name,
+            key: 'pretty_name',
+            guild_id: BigInt(interaction.guildId!),
+        });
         const payload = await Paginator.viewPage(interaction.guild!.id, interaction.user.id, this.name, {
-            title: `:information_source: ${this.t('execute.command_title', { command: this.t(`${command.name}.pretty_name`, undefined, interaction) }, interaction)}`,
+            title: `:information_source: ${this.t.commands({ key: 'execute.command_title', replacements: { command: title }, guild_id: BigInt(interaction.guildId!) })}`,
             color: 0x00ffff,
-            description: this.t(`${command.name}.help`, undefined, interaction) || '<missing>',
+            description:
+                this.t.commands({ caller: command.name, key: 'help', guild_id: BigInt(interaction.guildId!) }) ||
+                '<missing>',
         });
         await interaction.update({
             embeds: payload.embeds,
             components: payload.components,
         });
-        this.log.send('debug', 'command.handlePageItem.success', {
+        this.log('debug', 'handlePageItem.success', {
             name: this.name,
             guild: interaction.guild,
             user: interaction.user,

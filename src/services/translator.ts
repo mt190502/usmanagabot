@@ -1,8 +1,8 @@
 import { BaseChannel, Guild, Locale, User } from 'discord.js';
+import { readFile } from 'fs/promises';
 import { glob } from 'glob';
 import jsonc from 'jsonc-parser';
 import path from 'path';
-import { readFile } from 'fs/promises';
 
 /**
  * Supported languages for localization files under src/localization.
@@ -36,7 +36,15 @@ export class Translator {
      * The cache is populated at startup and is read-only during runtime.
      * @private
      */
-    private static translation_cache: Map<string, Record<string, unknown>> = new Map();
+    private static translation_cache: Map<
+        string,
+        {
+            commands: { [key: string]: object };
+            events: { [key: string]: object };
+            services: { [key: string]: object };
+            system: { [key: string]: object };
+        }
+    > = new Map();
 
     /**
      * A static cache for guild-specific language preferences to reduce database queries.
@@ -74,15 +82,27 @@ export class Translator {
      */
     public static async init(): Promise<void> {
         const languages = Object.values(SupportedLanguages);
-        for (const lang of languages) {
-            if (lang === SupportedLanguages.AUTO) continue;
-            const dir = path.join(__dirname, `../localization/${lang}`);
-            let lang_cache: Record<string, unknown> = {};
-            const files = await glob(path.join(dir, '**/*.jsonc'));
-            for (const f of files) {
-                const content = jsonc.parse(await readFile(f, 'utf-8'));
-                lang_cache = { ...lang_cache, ...content };
+        for (const lang of languages.filter((l) => l !== SupportedLanguages.AUTO)) {
+            const lang_cache = {
+                commands: {},
+                system: {},
+                services: {},
+                events: {},
+            };
+
+            for (const section of Object.keys(lang_cache)) {
+                const dir = path.join(__dirname, `../localization/${lang}/${section}`);
+                const files = await glob(`${dir}/**/*.jsonc`);
+                for (const file of files) {
+                    const content = jsonc.parse(await readFile(file, 'utf-8'));
+                    if (section === 'commands') {
+                        Object.assign(lang_cache.commands, content);
+                    } else {
+                        Object.assign(lang_cache[section as keyof typeof lang_cache], content);
+                    }
+                }
             }
+
             Translator.translation_cache.set(lang, lang_cache);
         }
     }
@@ -95,7 +115,7 @@ export class Translator {
      * @param {string} key The dot-separated key path.
      * @returns {string | null} The resolved string value, or `null` if not found.
      */
-    private static resolveNestedKey(obj: unknown, key: string): string | null {
+    private static resolveNestedKey(obj: object, key: string): string | null {
         const parts = key.split('.');
         let current: unknown = obj;
 
@@ -111,61 +131,61 @@ export class Translator {
     }
 
     /**
-     * Queries the cache for a localized string and applies placeholder replacements.
-     *
-     * This method provides the core translation functionality, with support for guild-specific languages,
-     * fallbacks, and dynamic value replacement.
-     *
+     * Generates a translation lookup function for a specific namespace and caller.
+     * The returned function can be used to fetch localized strings with optional replacements.
      * @public
      * @static
-     * @param {string} caller The category or command name, used to find the right translation section.
-     * @param {string} key The specific localization key to look up.
-     * @param {Record<string, unknown>} [replacements] An object of placeholder-value pairs.
-     * @param {bigint} [guild_id] The ID of the guild to check for a custom language preference.
-     * @param {SupportedLanguages} [custom_lang] A specific language to use, overriding guild and default settings.
-     * @returns {string} The final, localized string.
+     * @param {{ caller: string; lang?: SupportedLanguages }} o An object containing the caller identifier and optional language override.
+     * @returns {{
+     *   command: (q: { key: string; replacements?: { [key: string]: unknown }; guild_id?: bigint; lang?: SupportedLanguages }) => string;
+     *   event: (q: { key: string; replacements?: { [key: string]: unknown }; guild_id?: bigint; lang?: SupportedLanguages }) => string;
+     *   service: (q: { key: string; replacements?: { [key: string]: unknown }; guild_id?: bigint; lang?: SupportedLanguages }) => string;
+     *   system: (q: { key: string; replacements?: { [key: string]: unknown }; guild_id?: bigint; lang?: SupportedLanguages }) => string;
+     * }} An object containing translation functions for each namespace.
      */
-    public static querySync(
-        caller: string,
-        key: string,
-        replacements?: { [key: string]: unknown },
-        guild_id?: bigint,
-        custom_lang?: SupportedLanguages,
-    ): string {
-        const old_lang = Translator.current_language;
-        let translation;
-        let cache;
+    public static generateQueryFunc(o: { caller: string; lang?: SupportedLanguages }) {
+        const makeQuery =
+            (namespace: 'commands' | 'events' | 'services' | 'system') =>
+                (
+                    q: Partial<typeof o> & {
+                        key: string;
+                        replacements?: { [key: string]: unknown };
+                        guild_id?: bigint;
+                    },
+                ): string => {
+                    const old_lang = Translator.current_language;
+                    let translation;
+                    let cache;
+                    if (q.lang && q.lang !== SupportedLanguages.AUTO) {
+                        Translator.current_language = q.lang;
+                    }
+                    if (Translator.current_language === SupportedLanguages.AUTO) {
+                        const target_lang = Translator.guild_language_cache.get(q.guild_id!) ?? SupportedLanguages.EN_US;
+                        cache = Translator.translation_cache.get(target_lang);
+                    } else {
+                        cache = Translator.translation_cache.get(Translator.current_language);
+                    }
+                    translation = Translator.resolveNestedKey(cache![namespace][q.caller ?? o.caller], q.key) || q.key;
+                    if (q.replacements) {
+                        for (const [k, v] of Object.entries(q.replacements)) {
+                            const formatted_value =
+                            typeof v === 'object' && v !== null
+                                ? Translator.formatDiscordEntity(v as BaseChannel | Guild | User)
+                                : String(v);
+                            translation = translation.replace(new RegExp(`\\{${k}\\}`, 'g'), formatted_value);
+                        }
+                    }
 
-        if (custom_lang && custom_lang !== SupportedLanguages.AUTO) {
-            Translator.current_language = custom_lang;
-        }
+                    Translator.current_language = old_lang;
+                    return translation;
+                };
 
-        if (Translator.current_language === SupportedLanguages.AUTO) {
-            const lang = Translator.guild_language_cache.get(guild_id!) ?? SupportedLanguages.EN_US;
-            cache = Translator.translation_cache.get(lang);
-        } else {
-            cache = Translator.translation_cache.get(Translator.current_language);
-        }
-
-        translation =
-            Translator.resolveNestedKey(
-                cache![caller] ?? cache![caller?.replace(/([A-Z])/g, '_$1').toLowerCase()],
-                key,
-            ) ?? key;
-        if (translation === key) translation = Translator.resolveNestedKey(cache!, key) ?? key;
-
-        if (replacements && Object.keys(replacements).length > 0) {
-            for (const [k, v] of Object.entries(replacements)) {
-                const formatted_value =
-                    typeof v === 'object' && v !== null
-                        ? Translator.formatDiscordEntity(v as BaseChannel | Guild | User)
-                        : String(v);
-                translation = translation.replace(new RegExp(`\\{${k}\\}`, 'g'), formatted_value);
-            }
-        }
-
-        Translator.current_language = old_lang;
-        return translation;
+        return {
+            commands: makeQuery('commands'),
+            events: makeQuery('events'),
+            services: makeQuery('services'),
+            system: makeQuery('system'),
+        };
     }
 
     /**

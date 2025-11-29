@@ -18,7 +18,6 @@ import {
     SettingModalComponent,
 } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
-import { Log } from '../../types/decorator/log';
 
 /**
  * A pseudo-command that notifies a channel about recent earthquakes.
@@ -43,7 +42,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
     }
 
     public async prepareCommandData(guild_id: bigint): Promise<void> {
-        this.log.send('debug', 'command.prepare.start', { name: this.name, guild: guild_id });
+        this.log('debug', 'prepare.start', { name: this.name, guild: guild_id });
         const guild = await this.db.getGuild(guild_id);
         const system_user = await this.db.getUser(BigInt(0));
         let earthquake = await this.db.findOne(Earthquake, { where: { from_guild: guild! } });
@@ -53,10 +52,10 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
             new_settings.latest_action_from_user = system_user!;
             new_settings.from_guild = guild!;
             earthquake = await this.db.save(new_settings);
-            this.log.send('log', 'command.prepare.database.success', { name: this.name, guild: guild_id });
+            this.log('log', 'prepare.database.success', { name: this.name, guild: guild_id });
         }
         this.enabled = earthquake.is_enabled;
-        this.log.send('debug', 'command.prepare.success', { name: this.name, guild: guild_id });
+        this.log('debug', 'prepare.success', { name: this.name, guild: guild_id });
     }
     // ================================================================ //
 
@@ -70,13 +69,14 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
      */
     @Cron({ schedule: '*/5 * * * *' })
     public async execute(): Promise<void> {
-        this.log.send('debug', 'command.cronjob.start', { name: 'execute' });
+        this.log('debug', 'cronjob.start');
         const earthquake = await this.db.find(Earthquake, { where: { is_enabled: true } });
         if (!earthquake || !earthquake.length) {
-            this.log.send('debug', 'command.configuration.missing', { name: this.name, guild: 0 });
+            this.log('debug', 'configuration.missing');
             return;
         }
 
+        let delivered_count = 0;
         for (const guild of earthquake) {
             if (!guild.channel_id || !guild.seismicportal_api_url) continue;
             const earthquakes = await this.db.find(EarthquakeLogs, { where: { from_guild: guild.from_guild } });
@@ -108,46 +108,51 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
                 ).locality;
 
                 const post = new EmbedBuilder();
-                post.setTitle(`:warning: ${this.t('execute.title', undefined, guild.from_guild.gid)}`);
+                post.setTitle(
+                    `:warning: ${this.t.commands({ key: 'execute.title', guild_id: BigInt(guild.from_guild.gid) })}`,
+                );
                 post.setColor(Colors.Yellow);
                 post.setTimestamp();
                 post.addFields(
                     {
-                        name: this.t('execute.time', undefined, guild.from_guild.gid),
+                        name: this.t.commands({ key: 'execute.time', guild_id: BigInt(guild.from_guild.gid) }),
                         value: new Date(eq.properties.time).toLocaleString(),
                         inline: true,
                     },
                     {
-                        name: this.t('execute.id', undefined, guild.from_guild.gid),
+                        name: this.t.commands({ key: 'execute.id', guild_id: BigInt(guild.from_guild.gid) }),
                         value: eq.id,
                         inline: true,
                     },
                     {
-                        name: this.t('execute.location', undefined, guild.from_guild.gid),
+                        name: this.t.commands({ key: 'execute.location', guild_id: BigInt(guild.from_guild.gid) }),
                         value: geo_translate || 'Unknown',
                         inline: true,
                     },
                     {
-                        name: this.t('execute.source', undefined, guild.from_guild.gid),
+                        name: this.t.commands({ key: 'execute.source', guild_id: BigInt(guild.from_guild.gid) }),
                         value: eq.properties.auth,
                         inline: true,
                     },
                     {
-                        name: this.t('execute.magnitude', undefined, guild.from_guild.gid),
+                        name: this.t.commands({ key: 'execute.magnitude', guild_id: BigInt(guild.from_guild.gid) }),
                         value: eq.properties.mag.toString(),
                         inline: true,
                     },
                     {
-                        name: this.t('execute.coordinates', undefined, guild.from_guild.gid),
+                        name: this.t.commands({ key: 'execute.coordinates', guild_id: BigInt(guild.from_guild.gid) }),
                         value: `Lat: ${eq.properties.lat}\nLon: ${eq.properties.lon}`,
                         inline: true,
                     },
                     {
-                        name: this.t('execute.link', undefined, guild.from_guild.gid),
+                        name: this.t.commands({ key: 'execute.link', guild_id: BigInt(guild.from_guild.gid) }),
                         value: `https://www.seismicportal.eu/eventdetails.html?unid=${eq.id}`,
                     },
                     {
-                        name: this.t('execute.other_earthquakes', undefined, guild.from_guild.gid),
+                        name: this.t.commands({
+                            key: 'execute.other_earthquakes',
+                            guild_id: BigInt(guild.from_guild.gid),
+                        }),
                         value: 'https://deprem.core.xeome.dev',
                     },
                 );
@@ -171,6 +176,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
                         .send({ embeds: [post] })
                         .then(() => {
                             logs.is_delivered = true;
+                            delivered_count++;
                         })
                         .catch(() => {
                             logs.is_delivered = false;
@@ -179,7 +185,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
                 }
             }
         }
-        this.log.send('debug', 'command.cronjob.success', { name: 'execute' });
+        this.log('debug', 'cronjob.success', { guild: earthquake.length, count: delivered_count });
     }
     // ================================================================ //
 
@@ -193,9 +199,8 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         database_key: 'is_enabled',
         format_specifier: '%s',
     })
-    @Log()
     public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.toggle.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.toggle.start', { name: this.name, guild: interaction.guild });
         const earthquake = await this.db.findOne(Earthquake, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -207,7 +212,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         this.enabled = earthquake!.is_enabled;
         await this.db.save(Earthquake, earthquake!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.toggle.success', {
+        this.log('debug', 'settings.toggle.success', {
             name: this.name,
             guild: interaction.guild,
             toggle: this.enabled,
@@ -226,9 +231,8 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
             channel_types: [ChannelType.GuildText],
         },
     })
-    @Log()
     public async setNotificationChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.channel.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.channel.start', { name: this.name, guild: interaction.guild });
         const earthquake = await this.db.findOne(Earthquake, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -239,7 +243,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         earthquake!.timestamp = new Date();
         await this.db.save(Earthquake, earthquake!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.channel.success', {
+        this.log('debug', 'settings.channel.success', {
             name: this.name,
             guild: interaction.guild,
             channel: earthquake!.channel_id,
@@ -258,9 +262,8 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         database_key: 'magnitude_limit',
         format_specifier: '%s',
     })
-    @Log()
     public async setMagnitudeLimit(interaction: StringSelectMenuInteraction, args: string): Promise<void> {
-        this.log.send('debug', 'command.setting.selectmenu.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.selectmenu.start', { name: this.name, guild: interaction.guild });
         const earthquake = (await this.db.findOne(Earthquake, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         }))!;
@@ -272,7 +275,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
             earthquake!.timestamp = new Date();
             await this.db.save(Earthquake, earthquake!);
             await this.settingsUI(interaction);
-            this.log.send('debug', 'command.setting.selectmenu.success', { name: this.name, guild: interaction.guild });
+            this.log('debug', 'settings.selectmenu.success', { name: this.name, guild: interaction.guild });
             return;
         }
 
@@ -283,11 +286,10 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
                         new StringSelectMenuBuilder()
                             .setCustomId('settings:earthquake:setmagnitude')
                             .setPlaceholder(
-                                this.t(
-                                    'settings.setmagnitudelimit.placeholder',
-                                    undefined,
-                                    BigInt(interaction.guildId!),
-                                ),
+                                this.t.commands({
+                                    key: 'settings.setmagnitudelimit.placeholder',
+                                    guild_id: BigInt(interaction.guildId!),
+                                }),
                             )
                             .addOptions(
                                 ['1.0', '1.5', '2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0'].map((magnitude) => ({
@@ -319,9 +321,8 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
             },
         ],
     })
-    @Log()
     public async setSeismicportalApiUrl(interaction: ModalSubmitInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const earthquake = await this.db.findOne(Earthquake, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -329,16 +330,15 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
 
         const api_url = interaction.fields.getTextInputValue('seismicportal_api_url');
         if (!api_url.match(/^https?:\/\/(www\.)?seismicportal\.eu\/fdsnws\/event\/1\/query.*/)) {
-            this.log.send('debug', 'command.earthquake.settings.invalid_url', {
+            this.log('debug', 'settings.invalid_url', {
                 guild: interaction.guild,
                 user: interaction.user,
                 url: api_url,
             });
-            this.warning = this.t(
-                'settings.setseismicportalapiurl.invalid_url',
-                undefined,
-                BigInt(interaction.guildId!),
-            );
+            this.warning = this.t.commands({
+                key: 'settings.setseismicportalapiurl.invalid_url',
+                guild_id: BigInt(interaction.guildId!),
+            });
             await this.settingsUI(interaction);
             return;
         }
@@ -348,7 +348,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         earthquake!.timestamp = new Date();
         await this.db.save(Earthquake, earthquake!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.modalsubmit.success', {
+        this.log('debug', 'settings.modalsubmit.success', {
             name: this.name,
             guild: interaction.guild,
         });
@@ -372,9 +372,8 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
             },
         ],
     })
-    @Log()
     public async setRegionCode(interaction: ModalSubmitInteraction): Promise<void> {
-        this.log.send('debug', 'command.setting.modalsubmit.start', { name: this.name, guild: interaction.guild });
+        this.log('debug', 'settings.modalsubmit.start', { name: this.name, guild: interaction.guild });
         const earthquake = await this.db.findOne(Earthquake, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
@@ -386,7 +385,7 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
         earthquake!.timestamp = new Date();
         await this.db.save(Earthquake, earthquake!);
         await this.settingsUI(interaction);
-        this.log.send('debug', 'command.setting.modalsubmit.success', {
+        this.log('debug', 'settings.modalsubmit.success', {
             name: this.name,
             guild: interaction.guild,
         });

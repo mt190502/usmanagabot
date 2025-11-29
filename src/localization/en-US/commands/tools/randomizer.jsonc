@@ -3,15 +3,38 @@
     "randomizer": {
         "name": "randomizer",
         "pretty_name": "Randomizer",
-        "description": "Makes a random selection from the specified options.",
-        "help": "Makes a random selection from the specified options.\n\n**Usage:**\n- `/randomizer <option1> <option2> [option3] ...` - Randomly selects one of the specified options.\n\n**Examples:**\n- `/randomizer apple banana strawberry` - Randomly selects one of 'apple', 'banana', or 'strawberry'.",
+        "description": "Randomly selects from the specified options.",
+        "help": "Randomly selects from the specified options.\n\n**Usage:**\n- `/randomizer <option1> <option2> [option3] ...` - Randomly selects one of the specified options.\n\n**Examples:**\n- `/randomizer apple banana strawberry` - Randomly selects one from 'apple', 'banana', or 'strawberry'.",
         "parameters": {
-            "first": "First parameter to choose from",
-            "second": "Second parameter to choose from",
-            "other": "Other parameters to choose from",
+            "first": {
+                "name": "first",
+                "description": "The first option to choose from."
+            },
+            "second": {
+                "name": "second",
+                "description": "The second option to choose from."
+            },
+            "other": {
+                "name": "others",
+                "description": "All other options to choose from (comma-separated)."
+            }
         },
         "execute": {
-            "result": "My choice: {result}",
+            "result": "My choice: {result}"
         },
-    },
+        "subcommands": {},
+        "events": {},
+        "settings": {},
+        "logging": {
+            "debug": {
+                "execute": {
+                    "success": "A random selection was made from the options \"{options}\" by user \"{user}\" in channel \"{channel}\" on guild \"{guild}\". Result: {result}"
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {},
+            "log": {}
+        }
+    }
 }

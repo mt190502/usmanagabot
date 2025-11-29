@@ -1,48 +1,116 @@
 {
     "$schema": "../../../../types/structure/schemas/command.json",
     "channel_restrict": {
-        "pretty_name": "Channel Restrict",
-        "description": "Restricts certain content types in specific channels.",
-        "help": "Restricts certain content types in specific channels.",
+        "pretty_name": "Channel Restriction",
+        "description": "Restricts certain types of content in specific channels.",
+        "help": "Restricts certain types of content in specific channels.",
+        "parameters": {},
         "execute": {
-            "admin_post": "A message in channel <#{channel_id}> was deleted for not complying with channel restriction rules.\nMessage URL: {message_url}\nRestrictions: {restrictions}",
-            "message_deleted_description": "Your message in channel {channel} was deleted for not complying with channel restriction rules.\nAllowed content types: {restrictions}",
-            "message_deleted": "Your Message Was Deleted!",
+            "admin_post": "A message in channel {channel_id} was deleted because it did not comply with the channel restriction rules.\nMessage URL: {message_url}\nRestrictions: {restrictions}",
+            "message_deleted_description": "Your message in channel {channel} was deleted because it did not comply with the channel restriction rules.\nAllowed content types: {restrictions}",
+            "message_deleted": "Your Message Has Been Deleted!"
         },
+        "subcommands": {},
+        "events": {},
         "settings": {
             "addchannel": {
-                "already_added": "Channel {channel} has already been added to the restriction system.",
+                "already_added": "The {channel} channel has already been added to the restriction system.",
                 "description": "Adds a new channel to the channel restriction system.",
-                "placeholder": "Select channel to add to restriction system",
+                "placeholder": "Select the channel to be added to the restriction system",
                 "pretty_name": "Add Channel",
+                "parameters": {}
             },
             "changemodnotifierchannel": {
                 "description": "Changes the channel where channel restriction notifications will be sent.",
                 "display_name": "Notification Channel",
-                "placeholder": "Select notification channel",
+                "placeholder": "Select a notification channel",
                 "pretty_name": "Change Notification Channel",
+                "parameters": {}
             },
             "definechannelrestrictions": {
-                "channels": {
-                    "placeholder": "Select the channel you want to define restrictions for",
-                },
-                "description": "Defines restrictions for a specific channel.",
+                "description": "Defines the restrictions for a specific channel.",
                 "display_name": "Restricted Channels",
                 "pretty_name": "Define Channel Restrictions",
-                "restricts": {
-                    "placeholder": "Select restrictions to apply for the channel",
-                },
+                "parameters": {
+                    "channels": {
+                        "placeholder": "Select the channel for which you want to define restrictions"
+                    },
+                    "restricts": {
+                        "placeholder": "Select the restrictions to be applied to the channel"
+                    }
+                }
             },
             "removechannel": {
                 "description": "Removes a channel from the channel restriction system.",
-                "not_found": "Channel {channel} was not found in the restriction system.",
-                "placeholder": "Select channel to remove from restriction system",
+                "not_found": "The {channel} channel was not found in the restriction system.",
+                "placeholder": "Select the channel to be removed from the restriction system",
                 "pretty_name": "Remove Channel",
+                "parameters": {}
             },
             "toggle": {
                 "description": "Enables or disables the channel restriction system on the server.",
-                "pretty_name": "Channel Restriction Status",
-            },
+                "pretty_name": "Toggle Channel Restriction System",
+                "parameters": {}
+            }
         },
-    },
+        "logging": {
+            "debug": {
+                "prepare": {
+                    "start": "Preparing Channel Restriction command for guild \"{guild}\".",
+                    "success": "Channel Restriction command for guild \"{guild}\" prepared successfully."
+                },
+                "event": {
+                    "trigger": {
+                        "start": "Channel Restriction event \"{event}\" triggered for user \"{user}\" in guild \"{guild}\".",
+                        "success": "Channel Restriction event \"{event}\" processed successfully for user \"{user}\" in guild \"{guild}\"."
+                    }
+                },
+                "configuration": {
+                    "missing": "Channel Restriction system is not configured in guild \"{guild}\"."
+                },
+                "settings": {
+                    "toggle": {
+                        "start": "Channel Restriction system toggle setting initiated by user in guild \"{guild}\".",
+                        "success": "Channel Restriction system toggle setting successfully updated to \"{toggle}\" in guild \"{guild}\"."
+                    },
+                    "addchannel": {
+                        "start": "Channel addition process for \"Channel Restrict\" command initiated for guild \"{guild}\"...",
+                        "success": "Channel \"{channel}\" successfully added to the restriction system for guild \"{guild}\"."
+                    },
+                    "changenotifierchannel": {
+                        "start": "Notification channel change process for \"Channel Restrict\" command initiated for guild \"{guild}\"...",
+                        "success": "Notification channel for \"Channel Restrict\" command successfully changed to {channel} for guild \"{guild}\"."
+                    },
+                    "definechannelrestrictions": {
+                        "start": "Channel restriction definition process for \"Channel Restrict\" command requested for guild \"{guild}\"...",
+                        "success": "Channel restriction for \"Channel Restrict\" command successfully defined for guild \"{guild}\": {restrictions}."
+                    },
+                    "removechannel": {
+                        "start": "Channel removal process for \"Channel Restrict\" command initiated for guild \"{guild}\"...",
+                        "success": "Channel \"{channel}\" successfully removed from the restriction system for guild \"{guild}\"."
+                    }
+                }
+            },
+            "info": {},
+            "warn": {
+                "addchannel": {
+                    "exists": "Channel \"{channel}\" in guild \"{guild}\" has already been added to the restriction system."
+                },
+                "execute": {
+                    "could_not_notify_user": "Could not send notification to user \"{user}\" about message deletion in channel \"{channel}\" in guild \"{guild}\"."
+                },
+                "removechannel": {
+                    "not_found": "Channel \"{channel}\" not found in the restriction system in guild \"{guild}\"."
+                }
+            },
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "Channel Restriction command settings for guild \"{guild}\" successfully processed into the database."
+                    }
+                }
+            }
+        }
+    }
 }
