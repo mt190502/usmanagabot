@@ -127,21 +127,35 @@ export default class AFKCommand extends BaseCommand {
                         guild_id: BigInt(message.guild.id),
                     }),
                 );
-                await message.author.send({
-                    content: this.t.commands({
-                        key: 'events.onmessagecreate.dm_description',
-                        replacements: {
-                            message_list: user_afk.mentions.join('\n'),
-                        },
-                        guild_id: BigInt(message.guild.id),
-                    }),
-                }).catch((err) => {
-                    this.log('warn', 'events.onmessagecreate.dm_failed', {
-                        guild: message.guild,
-                        user: message.author,
-                        error: err,
+
+                await message.author
+                    .send({
+                        content: this.t.commands({
+                            key: 'events.onmessagecreate.dm_description',
+                            replacements: {
+                                message_list: user_afk.mentions.join('\n'),
+                            },
+                            guild_id: BigInt(message.guild.id),
+                        }),
+                    })
+                    .catch((err) => {
+                        post.setColor(Colors.Yellow);
+                        post.setTitle(
+                            `:warning: ${this.t.system({ caller: 'messages', key: 'warning', guild_id: BigInt(message.guild.id) })}`,
+                        );
+                        post.setDescription(
+                            this.t.commands({
+                                key: 'events.onmessagecreate.dm_failed',
+                                replacements: { length: user_afk.mentions.length },
+                                guild_id: BigInt(message.guild.id),
+                            }),
+                        );
+                        this.log('warn', 'events.onmessagecreate.dm_failed', {
+                            guild: message.guild,
+                            user: message.author,
+                            error: err,
+                        });
                     });
-                });
             }
             await this.db.delete(Afk, { id: user_afk.id });
             await message.reply({ embeds: [post] });
