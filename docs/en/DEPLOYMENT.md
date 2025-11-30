@@ -21,13 +21,13 @@ This guide explains how to deploy the UsmanAga bot to a production environment u
 2. **Configure Environment Variables:**
     The recommended way to configure the bot for production is through environment variables. The `docker-compose.yml` file is set up to pass environment variables to the bot and database services.
 
-    Create a `.env` file in the root of the project:
+    Create a `.envrc` file in the root of the project:
 
     ```bash
-    cp .envrc.example .env
+    cp .envrc.example .envrc
     ```
 
-    Edit the `.env` file and provide the following values:
+    Edit the `.envrc` file and provide the following values:
 
     ```bash
     # Bot Configuration
