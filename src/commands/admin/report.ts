@@ -11,6 +11,7 @@ import {
     TextChannel,
 } from 'discord.js';
 import { CommandLoader } from '..';
+import { MessageLogger } from '../../types/database/entities/message_logger';
 import { Messages } from '../../types/database/entities/messages';
 import { Reports } from '../../types/database/entities/reports';
 import {
@@ -100,6 +101,12 @@ export default class ReportCommand extends CustomizableCommand {
         const report = await this.db.findOne(Reports, {
             where: { from_guild: { gid: BigInt(interaction.guildId!) } },
         });
+        const msg_logger = await this.db.findOne(MessageLogger, {
+            where: {
+                is_enabled: true,
+                from_guild: { gid: BigInt(interaction.guildId!) },
+            },
+        });
         const user = interaction.options.getUser('user')!;
         const reporter = interaction.user;
         const reason = interaction.options.getString('reason');
@@ -109,6 +116,7 @@ export default class ReportCommand extends CustomizableCommand {
         const message_in_database = await this.db.findOne(Messages, {
             where: {
                 from_user: { uid: BigInt(user.id) },
+                from_guild: { gid: BigInt(interaction.guildId!) },
                 message_is_deleted: false,
             },
             order: { id: 'DESC' },
@@ -128,10 +136,31 @@ export default class ReportCommand extends CustomizableCommand {
             return;
         }
 
-        let message_urls;
+        let message_urls: { real: string; in_database: string }[] = [];
         if (message_url) {
-            message_urls = message_url.split(' ');
-            for (const url of message_urls) {
+            const list = message_url.split(', ').map((u) => u.trim());
+            if (list.length > 5) {
+                user_post
+                    .setTitle(
+                        `:warning: ${this.t.system({ caller: 'messages', key: 'warning', guild_id: BigInt(interaction.guildId!) })}`,
+                    )
+                    .setDescription(
+                        this.t.commands({
+                            key: 'execute.too_many_urls',
+                            replacements: { count: list.length },
+                            guild_id: BigInt(interaction.guildId!),
+                        }),
+                    )
+                    .setColor(Colors.Red);
+                await interaction.reply({ embeds: [user_post], flags: MessageFlags.Ephemeral });
+                this.log('warn', 'execute.too_many_urls', {
+                    guild: interaction.guild,
+                    user: interaction.user,
+                    count: list.length,
+                });
+                return;
+            }
+            for (const url of list) {
                 if (!pattern.test(url)) {
                     user_post
                         .setTitle(
@@ -153,6 +182,22 @@ export default class ReportCommand extends CustomizableCommand {
                     });
                     return;
                 }
+                const message_id = url.split('/').pop()!;
+                const message_in_db = await this.db.findOne(Messages, {
+                    where: {
+                        from_user: { uid: BigInt(user.id) },
+                        from_guild: { gid: BigInt(interaction.guildId!) },
+                        message_id: BigInt(message_id),
+                        message_is_deleted: false,
+                    },
+                });
+                message_urls.push({
+                    real: url,
+                    in_database:
+                        msg_logger && message_in_db
+                            ? `https://discord.com/channels/${message_in_db.from_guild.gid}/${msg_logger!.channel_id}/${message_in_db.logged_message_id}`
+                            : '`-`',
+                });
             }
         } else {
             if (!message_in_database) {
@@ -176,7 +221,12 @@ export default class ReportCommand extends CustomizableCommand {
             }
 
             message_urls = [
-                `https://discord.com/channels/${message_in_database.from_guild.gid}/${message_in_database.from_channel.cid}/${message_in_database.message_id}`,
+                {
+                    real: `https://discord.com/channels/${message_in_database.from_guild.gid}/${message_in_database.from_channel.cid}/${message_in_database.message_id}`,
+                    in_database: msg_logger
+                        ? `https://discord.com/channels/${message_in_database.from_guild.gid}/${msg_logger!.channel_id}/${message_in_database.logged_message_id}`
+                        : '`-`',
+                },
             ];
         }
         admin_post
@@ -191,7 +241,13 @@ export default class ReportCommand extends CustomizableCommand {
                         username: user.username,
                         user_id: user.id,
                         reason,
-                        message_urls: message_urls.join(' '),
+                        message_urls: message_urls.map((mu) => mu.real).join(', '),
+                        in_database_urls: msg_logger
+                            ? message_urls.map((mu) => mu.in_database).join(', ')
+                            : this.t.commands({
+                                key: 'execute.message_logger_disabled',
+                                guild_id: BigInt(interaction.guildId!),
+                            }),
                         channel_id: interaction.channel!.id,
                     },
                     guild_id: BigInt(interaction.guildId!),

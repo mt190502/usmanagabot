@@ -20,10 +20,12 @@
             }
         },
         "execute": {
-            "admin_report_description": ":mag: **Report**: {username} (ID {user_id})\n:page_facing_up: **Reason**: {reason}\n:envelope: **Messages**: {message_urls}\n:triangular_flag_on_post: **Channel**: <#{channel_id}>",
+            "admin_report_description": ":mag: **Report**: {username} (ID {user_id})\n:page_facing_up: **Reason**: {reason}\n:envelope: **Messages**: {message_urls}\n:floppy_disk: **Database Messages**: {in_database_urls}\n:triangular_flag_on_post: **Channel**: <#{channel_id}>",
             "command_not_configured": "The report command is not configured. Please contact an administrator.",
             "invalid_url": "Invalid message URL: {url}",
+            "message_logger_disabled": "Message logger is disabled.",
             "message_not_found": "Could not retrieve the user's last message. Please provide a message URL.",
+            "too_many_urls": "Cannot provide more than 5 message URLs ({count} URLs provided).",
             "user_reported_description": "**User**: {user} has been successfully reported.\n**Reason**: {reason}"
         },
         "subcommands": {},
@@ -86,7 +88,8 @@
             "warn": {
                 "execute": {
                     "invalid_url": "Invalid message URL shared by user {user} in guild {guild}: {url}.",
-                    "message_not_found": "Message to be reported not found for user {user} in guild {guild}."
+                    "message_not_found": "Message to be reported not found for user {user} in guild {guild}.",
+                    "too_many_urls": "{user} provided too many message URLs ({count}) in guild {guild}."
                 },
                 "configuration": {
                     "missing": "The report system is not configured in guild \"{guild}\"."

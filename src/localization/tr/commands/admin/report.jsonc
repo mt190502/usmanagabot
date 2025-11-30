@@ -20,10 +20,12 @@
             }
         },
         "execute": {
-            "admin_report_description": ":mag: **Rapor**: {username} (ID {user_id})\n:page_facing_up: **Sebep**: {reason}\n:envelope: **Mesajlar**: {message_urls}\n:triangular_flag_on_post: **Kanal**: <#{channel_id}>",
+            "admin_report_description": ":mag: **Rapor**: {username} (ID {user_id})\n:page_facing_up: **Sebep**: {reason}\n:envelope: **Mesajlar**: {message_urls}\n:floppy_disk: **Veritabanı Mesajları**: {in_database_urls}\n:triangular_flag_on_post: **Kanal**: <#{channel_id}>",
             "command_not_configured": "Rapor komutu yapılandırılmamış. Lütfen bir yönetici ile iletişime geçin.",
             "invalid_url": "Geçersiz mesaj URL'si: {url}",
+            "message_logger_disabled": "Mesaj Günlüğü devre dışı.",
             "message_not_found": "Kullanıcıya ait son mesaj alınamadı. Lütfen bir mesaj URL'si sağlayın.",
+            "too_many_urls": "5'ten fazla mesaj URL'si verilemez ({count} URL sağlandı).",
             "user_reported_description": "**Kullanıcı**: {user} başarıyla rapor edildi.\n**Sebep**: {reason}"
         },
         "subcommands": {},
@@ -86,7 +88,8 @@
             "warn": {
                 "execute": {
                     "invalid_url": "{user} kullanıcısı tarafından {guild} sunucusunda paylaşılan geçersiz mesaj URL'si: {url}.",
-                    "message_not_found": "{user} kullanıcısı için {guild} sunucusunda rapor edilecek mesaj bulunamadı."
+                    "message_not_found": "{user} kullanıcısı için {guild} sunucusunda rapor edilecek mesaj bulunamadı.",
+                    "too_many_urls": "{guild} sunucusunda {user} kullanıcısı tarafından çok fazla mesaj URL'si ({count}) sağlandı."
                 },
                 "configuration": {
                     "missing": "Rapor sistemi \"{guild}\" sunucusunda yapılandırılmamış."
