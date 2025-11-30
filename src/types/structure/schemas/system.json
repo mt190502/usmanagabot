@@ -1,0 +1,28 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "event.json",
+    "title": "Event Translations and Log Messages",
+    "description": "Translation strings and log messages for a specific event",
+    "type": "object",
+    "patternProperties": {
+        "^[a-z_]+$": {
+            "type": "object",
+            "properties": {
+                "$schema": { "type": "string" },
+                "userlog": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^[a-zA-Z0-9_]+$": { "type": ["object", "string"] }
+                    }
+                },
+                "syslog": {
+                    "type": "object",
+                    "patternProperties": {
+                        "^[a-zA-Z0-9_]+$": { "type": ["object", "string"] }
+                    }
+                }
+            },
+            "additionalProperties": true
+        }
+    }
+}

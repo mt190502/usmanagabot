@@ -1,198 +1,150 @@
+import { Events, GuildMember, RoleSelectMenuInteraction, StringSelectMenuInteraction } from 'discord.js';
+import { BotClient } from '../../services/client';
+import { Autorole } from '../../types/database/entities/autorole';
+import { ChainEvent } from '../../types/decorator/chainevent';
 import {
-    ActionRowBuilder,
-    APIActionRowComponent,
-    APIMessageActionRowComponent,
-    Colors,
-    EmbedBuilder,
-    GuildMember,
-    RoleSelectMenuBuilder,
-    StringSelectMenuBuilder,
-    StringSelectMenuInteraction,
-} from 'discord.js';
-import { BotClient, DatabaseConnection } from '../../main';
-import { Autorole } from '../../types/database/autorole';
-import { Guilds } from '../../types/database/guilds';
-import { Users } from '../../types/database/users';
-import { Command_t } from '../../types/interface/commands';
-import { Logger } from '../../utils/logger';
+    SettingGenericSettingComponent,
+    SettingRoleSelectMenuComponent,
+} from '../../types/decorator/settingcomponents';
+import { CustomizableCommand } from '../../types/structure/command';
 
-const settings = async (interaction: StringSelectMenuInteraction) => {
-    const autorole_system = await DatabaseConnection.manager
-        .findOne(Autorole, {
-            where: { from_guild: { gid: BigInt(interaction.guild.id) } },
-        })
-        .catch((err) => {
-            Logger('error', err, interaction);
-            throw err;
-        });
-
-    if (!autorole_system) {
-        const new_autorole = new Autorole();
-        new_autorole.from_guild = await DatabaseConnection.manager
-            .findOne(Guilds, {
-                where: { gid: BigInt(interaction.guild.id) },
-            })
-            .catch((err) => {
-                Logger('error', err, interaction);
-                throw err;
-            });
-        new_autorole.latest_action_from_user = await DatabaseConnection.manager
-            .findOne(Users, {
-                where: { uid: BigInt(interaction.user.id) },
-            })
-            .catch((err) => {
-                Logger('error', err, interaction);
-                throw err;
-            });
-        await DatabaseConnection.manager.save(new_autorole).catch((err) => {
-            Logger('error', err, interaction);
-        });
-        return settings(interaction);
+/**
+ * A pseudo-command that automatically assigns a role to new members when they join a guild.
+ *
+ * This command is triggered by the `GuildMemberAdd` event and is configurable through the settings system.
+ * It allows administrators to enable or disable the feature and to select the specific role to be assigned.
+ */
+export default class AutoroleCommand extends CustomizableCommand {
+    // ============================ HEADER ============================ //
+    constructor() {
+        super({ name: 'autorole', is_admin_command: true });
+        this.base_cmd_data = null;
     }
 
-    let status = autorole_system.is_enabled ? 'Disable' : 'Enable';
-    const role_select_menu = new RoleSelectMenuBuilder()
-        .setCustomId('settings:autorole:21')
-        .setPlaceholder('Select a role');
-
-    const genPostEmbed = (warn?: string): EmbedBuilder => {
-        const post = new EmbedBuilder().setTitle(':gear: Autorole Settings');
-        const fields: { name: string; value: string }[] = [];
-
-        if (warn) {
-            post.setColor(Colors.Yellow);
-            fields.push({ name: ':warning: Warning', value: warn });
-        } else {
-            post.setColor(Colors.Blurple);
+    public async prepareCommandData(guild_id: bigint): Promise<void> {
+        this.log('debug', 'prepare.start', { name: this.name, guild: guild_id });
+        const guild = await this.db.getGuild(guild_id);
+        const system_user = await this.db.getUser(BigInt(0));
+        let autorole = await this.db.findOne(Autorole, { where: { from_guild: guild! } });
+        if (!autorole) {
+            autorole = new Autorole();
+            autorole.is_enabled = false;
+            autorole.from_guild = guild!;
+            autorole.latest_action_from_user = system_user!;
+            autorole = await this.db.save(Autorole, autorole);
+            this.log('log', 'prepare.database.success', { name: this.name, guild: guild_id });
         }
-
-        fields.push(
-            {
-                name: 'Enabled',
-                value: autorole_system.is_enabled ? ':green_circle: True' : ':red_circle: False',
-            },
-            {
-                name: 'Role',
-                value: autorole_system.role_id ? `<@&${autorole_system.role_id}>` : 'Not set',
-            }
-        );
-
-        post.addFields(fields);
-        return post;
-    };
-
-    const genMenuOptions = (): APIActionRowComponent<APIMessageActionRowComponent> => {
-        const menu = new StringSelectMenuBuilder().setCustomId('settings:autorole:0').addOptions([
-            {
-                label: `${status} Autorole System`,
-                description: `${status} the autorole system`,
-                value: 'settings:autorole:1',
-            },
-            {
-                label: 'Change Autorole Role',
-                description: 'Edit the role that is given to new users',
-                value: 'settings:autorole:2',
-            },
-            { label: 'Back', description: 'Go back to the previous menu', value: 'settings' },
-        ]);
-
-        return new ActionRowBuilder()
-            .addComponents(menu)
-            .toJSON() as APIActionRowComponent<APIMessageActionRowComponent>;
-    };
-
-    const menu_path = interaction.values
-        ? interaction.values[0].includes('settings:')
-            ? interaction.values[0].split(':').at(-1)
-            : interaction.customId.split(':').at(-1)
-        : interaction.customId.split(':').at(-1);
-
-    switch (menu_path) {
-        case '1':
-            autorole_system.is_enabled = !autorole_system.is_enabled;
-            status = autorole_system.is_enabled ? 'Disable' : 'Enable';
-            await DatabaseConnection.manager.save(autorole_system).catch((err) => {
-                Logger('error', err, interaction);
-            });
-
-            await interaction.update({
-                embeds: [genPostEmbed()],
-                components: [genMenuOptions()],
-            });
-            break;
-
-        case '2':
-            await interaction.update({
-                embeds: [genPostEmbed()],
-                components: [
-                    new ActionRowBuilder()
-                        .addComponents(role_select_menu)
-                        .toJSON() as APIActionRowComponent<APIMessageActionRowComponent>,
-                ],
-            });
-            break;
-
-        case '21': {
-            const server_roles = interaction.guild.roles.cache.sort((a, b) => b.position - a.position);
-            const bot_role = server_roles.find((role) => role.name === BotClient.user.username);
-            const requested_role = server_roles.get(interaction.values[0]);
-
-            if (requested_role.position >= bot_role.position) {
-                await interaction.update({
-                    embeds: [genPostEmbed('The role is behind the bot role. Please select another role.')],
-                    components: [genMenuOptions()],
-                });
-                return;
-            }
-
-            autorole_system.role_id = interaction.values[0];
-            await DatabaseConnection.manager.save(autorole_system).catch((err) => {
-                Logger('error', err, interaction);
-            });
-            await interaction.update({
-                embeds: [genPostEmbed()],
-                components: [genMenuOptions()],
-            });
-            break;
-        }
-        default:
-            await interaction.update({
-                embeds: [genPostEmbed()],
-                components: [genMenuOptions()],
-            });
-            break;
+        this.enabled = autorole.is_enabled;
+        this.log('debug', 'prepare.success', { name: this.name, guild: guild_id });
     }
-};
+    // ================================================================ //
 
-const exec = async (event_name: string, member: GuildMember) => {
-    if (event_name === 'guildMemberAdd') {
-        const autorole_system = await DatabaseConnection.manager
-            .findOne(Autorole, {
-                where: { from_guild: { gid: BigInt(member.guild.id) } },
-            })
-            .catch((err) => {
-                Logger('error', err, member);
-            });
+    // =========================== EXECUTE ============================ //
+    /**
+     * Executes the autorole logic when a new member joins the guild.
+     * This method is decorated with `@ChainEvent` to listen for the `GuildMemberAdd` event.
+     * It checks if the feature is enabled for the guild and if a valid role is configured.
+     * If so, it assigns the configured role to the new member.
+     * @param member The member who just joined the guild.
+     */
+    @ChainEvent({ type: Events.GuildMemberAdd })
+    public async execute(member: GuildMember): Promise<void> {
+        this.log('debug', 'event.trigger.start', {
+            name: 'autorole',
+            event: 'GuildMemberAdd',
+            guild: member.guild,
+            user: member,
+        });
+        const autorole = await this.db.findOne(Autorole, {
+            where: { from_guild: { gid: BigInt(member.guild.id) } },
+        });
+        if (!autorole || !autorole.is_enabled) return;
 
-        if (!autorole_system || !autorole_system.is_enabled) return;
-
-        const role = member.guild.roles.cache.get(autorole_system.role_id);
+        const role = member.guild.roles.cache.get(autorole.role_id.toString());
         if (!role) return;
 
-        member.roles.add(role);
+        await member.roles.add(role);
+        this.log('debug', 'event.trigger.success', {
+            name: 'autorole',
+            event: 'GuildMemberAdd',
+            guild: member.guild,
+            user: member,
+        });
     }
-};
+    // ================================================================ //
 
-export default {
-    enabled: true,
-    name: 'autorole',
-    type: 'customizable',
-    description: 'Autorole system settings wrapper.',
+    // =========================== SETTINGS =========================== //
+    /**
+     * Toggles the autorole feature on or off for the guild.
+     * This method is a setting component that handles a `StringSelectMenuInteraction`.
+     * It updates the `is_enabled` flag in the database and refreshes the settings UI.
+     * @param interaction The interaction from the settings select menu.
+     */
+    @SettingGenericSettingComponent({
+        database: Autorole,
+        database_key: 'is_enabled',
+        format_specifier: '%s',
+    })
+    public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
+        this.log('debug', 'settings.toggle.start', { name: this.name, guild: interaction.guild });
+        const autorole = await this.db.findOne(Autorole, {
+            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+        });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
-    category: 'pseudo',
-    cooldown: 0,
+        autorole!.is_enabled = !autorole!.is_enabled;
+        autorole!.latest_action_from_user = user;
+        autorole!.timestamp = new Date();
+        this.enabled = autorole!.is_enabled;
+        await this.db.save(Autorole, autorole!);
+        await this.settingsUI(interaction);
+        this.log('debug', 'settings.toggle.success', {
+            name: this.name,
+            guild: interaction.guild,
+            toggle: this.enabled,
+        });
+    }
 
-    usewithevent: ['guildMemberAdd'],
-    execute_when_event: exec,
-    settings: settings,
-} as Command_t;
+    /**
+     * Changes the role to be assigned to new members.
+     * This method is a setting component that handles a `RoleSelectMenuInteraction`.
+     * It validates that the selected role is below the bot's highest role in the hierarchy
+     * before updating the `role_id` in the database and refreshes the settings UI.
+     * @param interaction The interaction from the settings role select menu.
+     */
+    @SettingRoleSelectMenuComponent({
+        database: Autorole,
+        database_key: 'role_id',
+        format_specifier: '<@&%s>',
+    })
+    public async changeRole(interaction: RoleSelectMenuInteraction): Promise<void> {
+        this.log('debug', 'settings.role.start', { name: this.name, guild: interaction.guild });
+        const autorole = await this.db.findOne(Autorole, {
+            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+        });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+        const server_roles = interaction.guild!.roles.cache.sort((a, b) => b.position - a.position);
+        const bot_role = server_roles.find((r) => r.name === BotClient.client.user!.username)!;
+        const requested_role = server_roles.get(interaction.values[0])!;
+
+        if (requested_role.position >= bot_role.position) {
+            this.warning = this.t.commands({
+                key: 'settings.changerole.role_hierarchy_error',
+                guild_id: BigInt(interaction.guildId!),
+            });
+            await this.settingsUI(interaction);
+            return;
+        }
+        autorole!.role_id = requested_role.id;
+        autorole!.latest_action_from_user = user;
+        autorole!.timestamp = new Date();
+        await this.db.save(Autorole, autorole!);
+        await this.settingsUI(interaction);
+        this.log('debug', 'settings.role.success', {
+            name: this.name,
+            guild: interaction.guild,
+            role: autorole!.role_id,
+        });
+    }
+    // ================================================================ //
+}

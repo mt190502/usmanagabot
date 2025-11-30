@@ -1,0 +1,17 @@
+{
+    "$schema": "../../../types/structure/schemas/service.json",
+    "database": {
+        "debug": {
+            "connecting": "Connecting to the database...",
+            "connected": "Database connection successful.",
+        },
+        "error": {
+            "connection_failed": "Database connection failed: {message}"
+        },
+        "info": {
+            "init": {
+                "success": "Database initialized successfully."
+            }
+        }
+    }
+}

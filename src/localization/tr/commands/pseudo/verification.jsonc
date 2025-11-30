@@ -1,0 +1,107 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "verification": {
+        "pretty_name": "Doğrulama Sistemi",
+        "description": "Sunucuya yeni katılan kullanıcıları doğrular.",
+        "help": "Sunucuya yeni katılan kullanıcıların hesap yaşlarını kontrol eder ve limit altında olanlara belirli bir rol atar.",
+        "parameters": {},
+        "execute": {},
+        "subcommands": {},
+        "events": {},
+        "settings": {
+            "settargetchannel": {
+                "description": "Doğrulama mesajlarının gönderileceği kanalı ayarlar.",
+                "display_name": "Hedef Kanal",
+                "placeholder": "Doğrulama kanalı seçin",
+                "pretty_name": "Hedef Kanalı Ayarla",
+                "parameters": {}
+            },
+            "setverificationminimumage": {
+                "description": "Kullanıcıların hesap yaşları için minimum gereksinimi ayarlar.",
+                "display_name": "Minimum Hesap Yaşı (gün)",
+                "invalid_age": "Geçersiz yaş değeri: {age}. Lütfen 1 ile 730 arasında bir sayı girin.",
+                "placeholder": "Minimum hesap yaşını gün cinsinden girin",
+                "pretty_name": "Minimum Hesap Yaşını Ayarla",
+                "parameters": {
+                    "minimum_age": {
+                        "name": "Minimum Hesap Yaşı",
+                        "description": "Bir kullanıcının doğrulanması için gereken minimum hesap yaşı (gün).",
+                        "placeholder": "1 ile 730 arasında bir sayı girin"
+                    }
+                }
+            },
+            "setverificationrole": {
+                "description": "Doğrulanmamış kullanıcılara atanacak rolü ayarlar.",
+                "display_name": "Doğrulama Rolü",
+                "placeholder": "Doğrulama rolünü seçin",
+                "pretty_name": "Doğrulama Rolünü Ayarla",
+                "role_hierarchy_error": "Seçilen rol, bot rolünden üstte. Lütfen farklı bir rol seçin.",
+                "parameters": {}
+            },
+            "setverificationsystemmessage": {
+                "description": "Doğrulama sistemi mesajını özelleştirir.",
+                "display_name": "Doğrulama Mesajı",
+                "placeholder": "Doğrulama mesajını girin (Kullanılabilir değişkenler: {variables})",
+                "pretty_name": "Doğrulama Mesajını Ayarla",
+                "parameters": {
+                    "verification_message": {
+                        "name": "Doğrulama Mesajı",
+                        "description": "Doğrulanması gereken kullanıcılara gönderilecek mesaj.",
+                        "placeholder": "Kullanılabilir değişkenler: {{user}}, {{user_id}}, {{guild}}, {{minimum_age}}"
+                    }
+                }
+            },
+            "toggle": {
+                "description": "Sunucuda doğrulama sistemini etkinleştirir veya devre dışı bırakır.",
+                "pretty_name": "Doğrulama Sistemini Aç/Kapat",
+                "parameters": {}
+            }
+        },
+        "logging": {
+            "debug": {
+                "event": {
+                    "trigger": {
+                        "start": "\"{guild}\" sunucusunda \"{user}\" kullanıcısı için \"{event}\" doğrulama etkinliği tetiklendi.",
+                        "success": "\"{guild}\" sunucusunda \"{user}\" kullanıcısı için \"{event}\" doğrulama etkinliği başarıyla işlendi."
+                    }
+                },
+                "settings": {
+                    "channel": {
+                        "start": "\"{guild}\" sunucusunda Doğrulama Sistemi bildirim kanalı değiştirme işlemi başlatıldı.",
+                        "success": "\"{guild}\" sunucusunda Doğrulama Sistemi bildirim kanalı başarıyla \"{channel}\" olarak değiştirildi."
+                    },
+                    "modalsubmit": {
+                        "start": "\"{guild}\" sunucusunda Doğrulama Sistemi modal ayarı değiştirme işlemi başlatıldı.",
+                        "success": "\"{guild}\" sunucusunda Doğrulama Sistemi modal ayarı başarıyla değiştirildi."
+                    },
+                    "role": {
+                        "start": "\"{guild}\" sunucusunda Doğrulama Sistemi rol değiştirme işlemi başlatıldı.",
+                        "success": "\"{guild}\" sunucusunda Doğrulama Sistemi rolü başarıyla \"{role}\" olarak değiştirildi."
+                    },
+                    "toggle": {
+                        "start": "\"{guild}\" sunucusunda Doğrulama Sistemi açma/kapatma işlemi başlatıldı.",
+                        "success": "\"{guild}\" sunucusunda Doğrulama Sistemi başarıyla \"{toggle}\" olarak güncellendi."
+                    }
+                },
+                "cronjob": {
+                    "start": "Yeni katılan kullanıcılar için doğrulama kontrolü başlatılıyor...",
+                    "success": "{guild} sunucularındaki yeni katılan kullanıcılar için doğrulama kontrolü tamamlandı. {count} kullanıcı doğrulandı."
+                },
+                "prepare": {
+                    "start": "\"{guild}\" sunucusu için Doğrulama komutu hazırlanıyor.",
+                    "success": "\"{guild}\" sunucusu için Doğrulama komutu başarıyla hazırlandı."
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "\"{guild}\" sunucusu için Doğrulama komutu ayarları veritabanına başarıyla işlendi."
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,112 +1,150 @@
-import {
-    ChatInputCommandInteraction,
-    Colors,
-    EmbedBuilder,
-    MessageFlags,
-    PermissionFlagsBits,
-    SlashCommandBuilder,
-} from 'discord.js';
-import { BotClient, BotCommands } from '../../main';
-import { Guilds } from '../../types/database/guilds';
-import { Command_t } from '../../types/interface/commands';
+import { ButtonInteraction, ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits } from 'discord.js';
+import { CommandLoader } from '..';
+import { HandleAction } from '../../types/decorator/command';
+import { BaseCommand } from '../../types/structure/command';
+import { Paginator } from '../../utils/paginator';
 
-const standard_commands = BotCommands.get(BigInt(0));
-
-const exec = async (interaction: ChatInputCommandInteraction): Promise<void> => {
-    const customizable_commands = BotCommands.get(BigInt(interaction.guild.id)).filter(
-        (command) => command.category != 'pseudo'
-    );
-
-    let commands = [...standard_commands, ...customizable_commands].sort();
-    if (interaction.commandName == 'mod_help') {
-        commands = commands.filter(([, c]) => c.category == 'admin');
-    } else {
-        commands = commands.filter(([, c]) => c.category != 'admin');
+/**
+ * A dynamic, paginated help command.
+ *
+ * This command displays a list of all available and accessible commands to the user.
+ * The command list is filtered based on user permissions (regular vs. admin) and
+ * whether a command is marked as bot-owner-only. The list is presented in a
+ * paginated embed, allowing the user to browse through commands. Clicking a
+ * command button shows its detailed help information.
+ */
+export default class HelpCommand extends BaseCommand {
+    // ============================ HEADER ============================ //
+    constructor() {
+        super({ name: 'help', cooldown: 5 });
     }
-    const post = new EmbedBuilder();
+    // ================================================================ //
 
-    const bot_commands_on_dc = await BotClient.application.commands.fetch();
-    const guild_commands_on_dc = await interaction.guild.commands.fetch();
-
-    if (!interaction.options.getString('command')) {
-        post.setTitle(':information: List of commands');
-        post.setColor(Colors.Blue);
-        let message: string = '';
-        for (const [, command] of commands) {
-            message += `**${command.pretty_name}** - ${command.description}\n`;
-        }
-        post.setDescription(message);
-        await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
-        return;
-    } else {
-        const [, command] = commands.find(([, c]) => c.name == interaction.options.getString('command'));
-        if (command) {
-            const command_id =
-                command.type == 'customizable'
-                    ? guild_commands_on_dc.find((c) => command.name == c.name && c.type != 3).id
-                    : bot_commands_on_dc.find((c) => command.name == c.name && c.type != 3).id;
-            post.setTitle(`:information: ${command.pretty_name}`);
-            post.setColor(Colors.Blue);
-            let message = '';
-            message += `**Description:** ${command.description}\n`;
-            message += `**Usage:** </${command.name}:${command_id}> ` + (command.parameters ??= '') + '\n';
-            message += `**Cooldown:** ${command.cooldown} seconds\n`;
-            post.setDescription(message);
-            await interaction.reply({ embeds: [post], flags: MessageFlags.Ephemeral });
+    // ============================ EXECUTE =========================== //
+    /**
+     * The main execution method for the help command.
+     *
+     * It filters the global list of commands based on the user's permissions and
+     * generates the first page of the paginated help menu. It can be triggered
+     * by the initial slash command or by pagination buttons.
+     *
+     * @param interaction The interaction from the slash command or a button press.
+     */
+    public async execute(interaction: ChatInputCommandInteraction | ButtonInteraction): Promise<void> {
+        this.log('debug', 'execute.generating_page', {
+            guild: interaction.guild,
+            user: interaction.user,
+        });
+        const user_is_admin =
+            interaction
+                .guild!.members.cache.get(interaction.user.id)
+                ?.permissions.has(
+                    PermissionFlagsBits.Administrator |
+                        PermissionFlagsBits.ManageGuild |
+                        PermissionFlagsBits.ManageMessages,
+                ) || false;
+        const commands = [
+            ...CommandLoader.BotCommands.get(interaction.guildId!)!.values(),
+            ...CommandLoader.BotCommands.get('global')!.values(),
+        ]
+            .filter((cmd) => cmd.enabled)
+            .filter((cmd) => (cmd.is_admin_command ? user_is_admin : true))
+            .filter((cmd) => !cmd.help?.includes('missing'))
+            .filter((cmd) =>
+                cmd.is_bot_owner_command
+                    ? interaction.guildId === this.cfg.current_botcfg.management.guild_id &&
+                      interaction.user.id === this.cfg.current_botcfg.management.user_id
+                    : true,
+            );
+        const payload = await Paginator.generatePage(interaction.guild!.id, interaction.user.id, this.name, {
+            title: `:information_source: ${this.t.commands({ key: 'execute.main_title', guild_id: BigInt(interaction.guildId!) })}`,
+            color: 0x00ffff,
+            items: commands
+                .map((cmd) => ({
+                    name: cmd.name,
+                    pretty_name:
+                        this.t.commands({
+                            caller: cmd.name,
+                            key: 'pretty_name',
+                            guild_id: BigInt(interaction.guildId!),
+                        }) ||
+                        this.t.commands({ caller: cmd.name, key: 'name', guild_id: BigInt(interaction.guildId!) }) ||
+                        cmd.pretty_name ||
+                        cmd.name,
+                    description:
+                        this.t.commands({
+                            caller: cmd.name,
+                            key: 'description',
+                            guild_id: BigInt(interaction.guildId!),
+                        }) ||
+                        cmd.description ||
+                        '<missing>',
+                    namespace: 'command' as const,
+                }))
+                .sort((a, b) => a.pretty_name.localeCompare(b.pretty_name)),
+            items_per_page: 5,
+        });
+        this.log('debug', 'execute.commands_filtered', {
+            length: commands.length,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
+        if (interaction.isButton()) {
+            await interaction.update({
+                embeds: payload.embeds,
+                components: payload.components,
+            });
             return;
         }
+        await interaction.reply({
+            embeds: payload.embeds,
+            components: payload.components,
+            flags: MessageFlags.Ephemeral,
+        });
     }
-};
 
-const modscb = async (guild: Guilds): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>> => {
-    const customizable_commands = BotCommands.get(BigInt(guild.gid.toString())).filter(
-        (command) => command.category != 'pseudo'
-    );
-    const data = new SlashCommandBuilder()
-        .setName('mod_help')
-        .setDescription('Get help with commands (Moderators only)')
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers | PermissionFlagsBits.KickMembers);
-    const choices: { name: string; value: string }[] = [];
-    for (const [command_name, command_data] of [...standard_commands, ...customizable_commands]
-        .sort()
-        .filter(([, c]) => c.category == 'admin')) {
-        choices.push({ name: command_data.pretty_name, value: command_name });
+    /**
+     * Handles the button press for a specific command in the help menu.
+     *
+     * When a user clicks a command's button on a help page, this method is invoked.
+     * It finds the detailed help text for the selected command and displays it in a
+     * new "view page" provided by the Paginator, which includes a "Back" button.
+     *
+     * @param interaction The button interaction from the help page.
+     * @param item_name The name of the command that was clicked, passed from the button's custom ID.
+     */
+    @HandleAction('pageitem')
+    public async handlePageItem(interaction: ButtonInteraction, item_name: string): Promise<void> {
+        this.log('debug', 'handlePageItem.start', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
+        const command = [
+            ...CommandLoader.BotCommands.get(interaction.guild!.id)!.values(),
+            ...CommandLoader.BotCommands.get('global')!.values(),
+        ].find((cmd) => cmd.name === item_name)!;
+        const title = this.t.commands({
+            caller: command.name,
+            key: 'pretty_name',
+            guild_id: BigInt(interaction.guildId!),
+        });
+        const payload = await Paginator.viewPage(interaction.guild!.id, interaction.user.id, this.name, {
+            title: `:information_source: ${this.t.commands({ key: 'execute.command_title', replacements: { command: title }, guild_id: BigInt(interaction.guildId!) })}`,
+            color: 0x00ffff,
+            description:
+                this.t.commands({ caller: command.name, key: 'help', guild_id: BigInt(interaction.guildId!) }) ||
+                '<missing>',
+        });
+        await interaction.update({
+            embeds: payload.embeds,
+            components: payload.components,
+        });
+        this.log('debug', 'handlePageItem.success', {
+            name: this.name,
+            guild: interaction.guild,
+            user: interaction.user,
+        });
     }
-    data.addStringOption((option) =>
-        option.setName('command').setDescription('Command name').setRequired(false).setChoices(choices)
-    );
-    return data;
-};
-
-const scb = async (guild: Guilds): Promise<Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>> => {
-    const customizable_commands = BotCommands.get(BigInt(guild.gid.toString())).filter(
-        (command) => command.category != 'pseudo'
-    );
-    const data = new SlashCommandBuilder().setName('help').setDescription('Get help with commands');
-    const choices: { name: string; value: string }[] = [];
-    for (const [command_name, command_data] of [...standard_commands, ...customizable_commands]
-        .sort()
-        .filter(([, c]) => c.category != 'admin')) {
-        choices.push({ name: command_data.pretty_name, value: command_name });
-    }
-    data.addStringOption((option) =>
-        option.setName('command').setDescription('Command name').setRequired(false).setChoices(choices)
-    );
-    return data;
-};
-
-export default {
-    enabled: true,
-    name: 'help',
-    pretty_name: 'Help',
-    type: 'customizable',
-    description: 'Get help with commands',
-    load_after_ready: true,
-
-    aliases: ['mod_help'],
-    category: 'utils',
-    cooldown: 5,
-
-    data: [scb, modscb],
-    execute: exec,
-} as Command_t;
+    // ================================================================ //
+}

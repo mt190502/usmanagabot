@@ -1,0 +1,61 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "autorole": {
+        "pretty_name": "Autorole",
+        "description": "Automatically assigns a role to new users.",
+        "help": "Automatically assigns a role to new users.",
+        "parameters": {},
+        "execute": {},
+        "subcommands": {},
+        "events": {},
+        "settings": {
+            "changerole": {
+                "description": "Changes the role to be assigned to new users.",
+                "display_name": "Role",
+                "placeholder": "Select the role to be assigned",
+                "pretty_name": "Role to Assign",
+                "role_hierarchy_error": "The selected role is higher than the bot's highest role. Please select a different role.",
+                "parameters": {}
+            },
+            "toggle": {
+                "description": "Enables or disables the autorole system on the server.",
+                "pretty_name": "Toggle Autorole System",
+                "parameters": {}
+            }
+        },
+        "logging": {
+            "debug": {
+                "prepare": {
+                    "start": "Preparing Autorole command for guild \"{guild}\".",
+                    "success": "Autorole command for guild \"{guild}\" prepared successfully."
+                },
+                "event": {
+                    "trigger": {
+                        "start": "Autorole event \"{event}\" triggered by user \"{user}\" in guild \"{guild}\".",
+                        "success": "Autorole event \"{event}\" processed successfully for user \"{user}\" in guild \"{guild}\"."
+                    }
+                },
+                "settings": {
+                    "toggle": {
+                        "start": "Autorole system toggle setting initiated by user in guild \"{guild}\".",
+                        "success": "Autorole system toggle setting successfully updated to \"{toggle}\" in guild \"{guild}\"."
+                    },
+                    "role": {
+                        "start": "Autorole system role setting initiated by user in guild \"{guild}\".",
+                        "success": "Autorole system role successfully updated to \"{role}\" in guild \"{guild}\"."
+                    }
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "Autorole command settings for guild \"{guild}\" successfully processed into the database."
+                    }
+                }
+            }
+        }
+    }
+}

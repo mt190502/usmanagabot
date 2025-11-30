@@ -1,0 +1,117 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "earthquake": {
+        "pretty_name": "Earthquake Notifier",
+        "description": "Receives notifications about earthquakes occurring in the specified region.",
+        "help": "Receives notifications about earthquakes occurring in the specified region.",
+        "parameters": {},
+        "execute": {
+            "coordinates": "Coordinates",
+            "id": "ID",
+            "link": "Link",
+            "location": "Location",
+            "magnitude": "Magnitude",
+            "other_earthquakes": "For Other Earthquakes",
+            "source": "Source",
+            "time": "Time",
+            "title": "New Earthquake Alert!"
+        },
+        "subcommands": {},
+        "events": {},
+        "settings": {
+            "setmagnitudelimit": {
+                "description": "Sets the minimum earthquake magnitude to receive notifications.",
+                "display_name": "Magnitude Limit",
+                "placeholder": "Select the minimum earthquake magnitude",
+                "pretty_name": "Magnitude Limit",
+                "parameters": {}
+            },
+            "setnotificationchannel": {
+                "description": "Sets the channel where earthquake notifications will be sent.",
+                "display_name": "Notification Channel",
+                "placeholder": "Select the earthquake notification channel",
+                "pretty_name": "Notification Channel",
+                "parameters": {}
+            },
+            "setregioncode": {
+                "description": "Sets the region code for earthquake notification location information.",
+                "display_name": "Region Code (api-bdc.net)",
+                "placeholder": "Enter the region code (e.g., en, tr)",
+                "pretty_name": "Region Code (api-bdc.net)",
+                "parameters": {
+                    "region_code": {
+                        "name": "Region Code",
+                        "description": "The region code for earthquake notification location information.",
+                        "placeholder": "en"
+                    }
+                }
+            },
+            "setseismicportalapiurl": {
+                "description": "Sets the Seismic Portal API URL to be used.",
+                "display_name": "Seismic Portal API URL",
+                "placeholder": "Enter the Seismic Portal API URL",
+                "pretty_name": "Seismic Portal API URL",
+                "invalid_url": "Invalid Seismic Portal API URL provided.",
+                "parameters": {
+                    "seismicportal_api_url": {
+                        "name": "Seismic Portal API URL",
+                        "placeholder": "https://www.seismicportal.eu/fdsnws/event/1/query?..."
+                    }
+                }
+            },
+            "toggle": {
+                "description": "Enables or disables the earthquake notifier system on the server.",
+                "pretty_name": "Toggle Earthquake Notifier System",
+                "parameters": {}
+            }
+        },
+        "logging": {
+            "debug": {
+                "settings": {
+                    "invalid_url": "Invalid Seismic Portal API URL provided by user \"{user}\" in guild \"{guild}\": \"{url}\".",
+                    "channel": {
+                        "start": "Earthquake Notifier notification channel change process initiated in guild \"{guild}\".",
+                        "success": "Earthquake Notifier notification channel successfully changed to \"{channel}\" in guild \"{guild}\"."
+                    },
+                    "modalsubmit": {
+                        "start": "Earthquake Notifier modal setting change process initiated in guild \"{guild}\".",
+                        "success": "Earthquake Notifier modal setting successfully changed in guild \"{guild}\"."
+                    },
+                    "selectmenu": {
+                        "start": "Earthquake Notifier select menu setting change process initiated in guild \"{guild}\".",
+                        "success": "Earthquake Notifier select menu setting successfully changed in guild \"{guild}\"."
+                    },
+                    "toggle": {
+                        "start": "Earthquake Notifier system enable/disable process initiated in guild \"{guild}\".",
+                        "success": "Earthquake Notifier system successfully updated to \"{toggle}\" in guild \"{guild}\"."
+                    }
+                },
+                "configuration": {
+                    "missing": "No configuration found for the Earthquake command."
+                },
+                "cronjob": {
+                    "start": "Starting earthquake check...",
+                    "success": "Earthquake check completed in {guild} guilds. {count} earthquakes reported."
+                },
+                "prepare": {
+                    "start": "Preparing Earthquake Notifier command for guild \"{guild}\".",
+                    "success": "Earthquake Notifier command for guild \"{guild}\" prepared successfully."
+                }
+            },
+            "info": {},
+            "warn": {
+                "settings": {
+                    "invalid_url": "Invalid Seismic Portal API URL provided by user \"{user}\" in guild \"{guild}\": \"{url}\"."
+                }
+            },
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "Earthquake Notifier command settings for guild \"{guild}\" successfully processed into the database."
+                    }
+                }
+            }
+        }
+    }
+}

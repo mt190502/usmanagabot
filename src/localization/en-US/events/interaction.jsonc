@@ -1,0 +1,11 @@
+{
+    "$schema": "../../../types/structure/schemas/event.json",
+    "interaction": {
+        "execute": {
+            "cooldown": "Please wait **{left}** seconds before using the \"{command}\" command again."
+        },
+        "warn": {
+            "cooldown": "User {user} tried to use the \"{command}\" command before the cooldown ended. Time remaining: **{left}** seconds."
+        }
+    }
+}

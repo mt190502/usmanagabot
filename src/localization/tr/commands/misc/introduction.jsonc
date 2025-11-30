@@ -1,0 +1,112 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "introduction": {
+        "name": "tanitim",
+        "pretty_name": "Tanıtım",
+        "description": "Kullanıcı tanıtım bilgilerini oluşturur ve yönetir.",
+        "help": "Kullanıcıya özel tanıtım bilgilerini oluşturur\n\n**Kullanım:**\n- `/introduction <parametreler>` - Tanıtım bilgilerini oluşturur veya günceller.\n\n**Örnekler:**\n- `/introduction os:linux de:gnome` - Tanıtım bilgilerini 'os:linux de:gnome' olarak ayarlar.\n - `/introduction car:peugeot bike:yamaha` - Tanıtım bilgilerini 'car:peugeot bike:yamaha' olarak ayarlar.",
+        "parameters": {},
+        "execute": {
+            "account_info": "Hesap Bilgileri",
+            "created_at": "Hesap Oluşturulma Tarihi",
+            "header": "{user} Hakkında",
+            "id": "ID",
+            "joined_at": "Sunucuya Katılma Tarihi",
+            "nickname": "Takma Ad",
+            "no_roles": "Rol Yok",
+            "not_configured": "Tanıtım sistemi düzgün bir şekilde ayarlanmamış. Lütfen sunucu yöneticisi ile iletişime geçin.",
+            "rate_limited": "Günlük tanıtım komutu limitine ulaşıldı. Lütfen {date} tarihine kadar bekleyin.",
+            "roles": "Roller",
+            "submission_successful": "Tanıtım başarıyla gönderildi.\nBugün için **{remaining}** gönderim hakkınız kaldı.\nTanıtım URL'si: {url}",
+            "updated": "Tanıtım Güncellendi",
+            "username": "Kullanıcı Adı",
+            "validation_failed": "Lütfen en az bir değer sağlayın."
+        },
+        "subcommands": {},
+        "events": {},
+        "settings": {
+            "changetargetchannel": {
+                "description": "Tanıtım gönderilerinin gönderileceği kanalı değiştirir.",
+                "display_name": "Hedef Kanal",
+                "placeholder": "Hedef tanıtım kanalı seçin",
+                "pretty_name": "Hedef Kanalı Değiştir",
+                "parameters": {}
+            },
+            "customizecolumns": {
+                "description": "Tanıtım komutu sütunlarının adlarını ve açıklamalarını özelleştirir.",
+                "duplicated": "{column} sütun adı birden fazla kez kullanılamaz.",
+                "too_many_columns": "8'den fazla sütun olamaz.",
+                "pretty_name": "Sütunları Özelleştir",
+                "parameters": {
+                    "column_names": {
+                        "name": "Sütun Adları",
+                        "description": "Tanıtım komutu için sütunların adları.",
+                        "placeholder": "- name: editor\n   value: Favori Editör\n(maksimum 8 sütun)"
+                    }
+                }
+            },
+            "setdailysubmissionlimit": {
+                "description": "Kullanıcıların günlük tanıtım gönderim limitini ayarlar.",
+                "display_name": "Günlük Gönderim Limiti",
+                "limit_range": "Limit 1 ile 100 arasında olmalıdır.",
+                "pretty_name": "Günlük Gönderim Limitini Ayarla",
+                "parameters": {
+                    "daily_limit": {
+                        "name": "Günlük Gönderim Limiti",
+                        "description": "Bir kullanıcının günde gönderebileceği maksimum tanıtım sayısı.",
+                        "placeholder": "1 ile 100 arasında bir limit girin"
+                    }
+                }
+            },
+            "toggle": {
+                "description": "Sunucuda tanıtım komutunu etkinleştirir veya devre dışı bırakır.",
+                "pretty_name": "Tanıtım Komutunu Aç/Kapat",
+                "parameters": {}
+            }
+        },
+        "logging": {
+            "debug": {
+                "prepare": {
+                    "start": "\"{guild}\" sunucusu için Tanıtım komutu hazırlanıyor.",
+                    "success": "\"{guild}\" sunucusu için Tanıtım komutu başarıyla hazırlandı."
+                },
+                "execute": {
+                    "deleted": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için yeni \"Introduction\" komutu gönderisi oluşturulduğundan dolayı \"{messageId}\" ID'li eski gönderi siliniyor...",
+                    "published": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için \"Introduction\" komutu için gönderi \"{messageId}\" adresinde yayınlandı."
+                },
+                "settings": {
+                    "toggle": {
+                        "start": "Tanıtım sistemi açma/kapama ayarı, \"{guild}\" sunucusunda kullanıcı tarafından başlatıldı.",
+                        "success": "Tanıtım sistemi açma/kapama ayarı, \"{guild}\" sunucusunda başarıyla \"{toggle}\" olarak güncellendi."
+                    },
+                    "modalsubmit": {
+                        "start": "Tanıtım sistemi modalı, \"{guild}\" sunucusunda kullanıcı tarafından başlatıldı.",
+                        "success": "Tanıtım sistemi modalı, \"{guild}\" sunucusunda başarıyla güncellendi."
+                    },
+                    "channel": {
+                        "start": "Tanıtım sistemi kanal ayarı, \"{guild}\" sunucusunda kullanıcı tarafından başlatıldı.",
+                        "success": "Tanıtım sistemi kanalı, \"{guild}\" sunucusunda başarıyla \"{channel}\" olarak güncellendi."
+                    }
+                }
+            },
+            "info": {},
+            "warn": {
+                "execute": {
+                    "rate_limited": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için günlük \"Introduction\" komutu limitine ulaşıldı.",
+                    "validation_failed": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için \"Introduction\" komutu giriş doğrulaması başarısız oldu."
+                },
+                "settings": {
+                    "validation_failed": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için \"Introduction\" komutu ayar doğrulaması başarısız oldu."
+                }
+            },
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "\"{guild}\" sunucusu için Tanıtım komutu ayarları veritabanına başarıyla işlendi."
+                    }
+                }
+            }
+        }
+    }
+}

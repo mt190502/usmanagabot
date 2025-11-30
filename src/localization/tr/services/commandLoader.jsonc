@@ -1,0 +1,44 @@
+{
+    "$schema": "../../../types/structure/schemas/service.json",
+    "command_loader": {
+        "debug": {
+            "loaded": "Yüklenen komut: {command}",
+            "unloaded": "Kaldırılan komut: {command}",
+            "execute": {
+                "start": "Çalıştırılan komut: {name}",
+                "success": "Komut başarıyla çalıştırıldı: {name}"
+            }
+        },
+        "error": {
+            "load_failed": "{command} komutu yüklenemedi: {message}",
+            "unload_failed": "{command} komutu kaldırılamadı: {message}",
+            "execute": {
+                "failed": "{name} komutu çalıştırılamadı: {message}"
+            },
+            "registerGuilds": {
+                "no_guilds_found": "Hiç sunucu bulunamadı. Bot herhangi bir sunucuda olmayabilir."
+            },
+            "readCommandFiles": {
+                "database_metadata_missing": "Veritabanı meta verileri eksik. Lütfen TypeORM yapılandırmanızı kontrol edin."
+            },
+            "RESTCommandLoader": {
+                "failed": "{guild} sunucusu için komutlar dağıtılamadı. Sebep: {message}"
+            }
+        },
+        "info": {
+            "readCommandFiles": {
+                "custom_disabled": "Komut {name}, {guild} sunucusu için devre dışı. Atlanıyor...",
+                "invalid_name": "{name} komut dosyası geçersiz bir isme sahip. Atlanıyor...",
+                "command_disabled": "Komut {name} devre dışı. Atlanıyor..."
+            }
+        },
+        "log": {
+            "readCommandFiles": {
+                "command_loading": "Komut {name}, {filename} dosyasından yükleniyor"
+            }
+        },
+        "warn": {
+            "not_found": "'{command}' komutu bulunamadı."
+        }
+    }
+}

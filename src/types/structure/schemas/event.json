@@ -1,0 +1,23 @@
+{
+    "$schema": "http://json-schema.org/draft/2020-12/schema",
+    "$id": "event.json",
+    "title": "Event Translations",
+    "description": "Translation strings for event-related logs.",
+    "type": "object",
+    "patternProperties": {
+        "^[a-zA-Z0-9_]+$": {
+            "type": "object",
+            "description": "Event category",
+            "properties": {
+                "execute": { "type": "object" },
+                "debug": { "type": "object" },
+                "log": { "type": "object" },
+                "error": { "type": "object" },
+                "info": { "type": "object" },
+                "warn": { "type": "object" }
+            },
+            "additionalProperties": false
+        }
+    }
+        
+}

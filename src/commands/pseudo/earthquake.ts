@@ -1,437 +1,394 @@
 import {
     ActionRowBuilder,
-    APIActionRowComponent,
-    APIMessageActionRowComponent,
-    ChannelSelectMenuBuilder,
     ChannelSelectMenuInteraction,
     ChannelType,
     Colors,
     EmbedBuilder,
-    ModalActionRowComponentBuilder,
-    ModalBuilder,
     ModalSubmitInteraction,
     StringSelectMenuBuilder,
     StringSelectMenuInteraction,
-    TextInputBuilder,
     TextInputStyle,
 } from 'discord.js';
-import { BotClient, DatabaseConnection } from '../../main';
-import { Earthquake } from '../../types/database/earthquake';
-import { EarthquakeLogs } from '../../types/database/earthquake_logs';
-import { Guilds } from '../../types/database/guilds';
-import { Users } from '../../types/database/users';
-import { Command_t } from '../../types/interface/commands';
-import { Logger } from '../../utils/logger';
+import { BotClient } from '../../services/client';
+import { Earthquake, EarthquakeLogs } from '../../types/database/entities/earthquake';
+import { Cron } from '../../types/decorator/cronjob';
+import {
+    SettingChannelMenuComponent,
+    SettingGenericSettingComponent,
+    SettingModalComponent,
+} from '../../types/decorator/settingcomponents';
+import { CustomizableCommand } from '../../types/structure/command';
 
-const intervals = new Map<string, NodeJS.Timeout>();
-
-const settings = async (
-    interaction: StringSelectMenuInteraction | ModalSubmitInteraction | ChannelSelectMenuInteraction
-) => {
-    const earthquake = await DatabaseConnection.manager
-        .findOne(Earthquake, {
-            where: { from_guild: { gid: BigInt(interaction.guild.id) } },
-        })
-        .catch((err) => {
-            Logger('error', err, interaction);
-            throw err;
-        });
-
-    if (!earthquake) {
-        const new_earthquake = new Earthquake();
-        new_earthquake.from_guild = await DatabaseConnection.manager
-            .findOne(Guilds, {
-                where: { gid: BigInt(interaction.guild.id) },
-            })
-            .catch((err) => {
-                Logger('error', err, interaction);
-                throw err;
-            });
-        new_earthquake.latest_action_from_user = await DatabaseConnection.manager
-            .findOne(Users, {
-                where: { uid: BigInt(interaction.user.id) },
-            })
-            .catch((err) => {
-                Logger('error', err, interaction);
-                throw err;
-            });
-        await DatabaseConnection.manager.save(new_earthquake).catch((err) => {
-            Logger('error', err, interaction);
-        });
-        return settings(interaction);
+/**
+ * A pseudo-command that notifies a channel about recent earthquakes.
+ *
+ * This command uses a cron job to periodically fetch earthquake data from the Seismic Portal API.
+ * It filters earthquakes based on a configurable magnitude limit and sends a detailed notification
+ * to a designated channel for each new earthquake that meets the criteria.
+ * The location of the earthquake is reverse-geocoded to provide a human-readable locality.
+ *
+ * The command is highly configurable through the settings UI, allowing administrators to:
+ * - Enable or disable the notifier.
+ * - Set the notification channel.
+ * - Define the minimum magnitude for an earthquake to be reported.
+ * - Set the specific Seismic Portal API URL.
+ * - Specify a region code for reverse-geocoding.
+ */
+export default class EarthquakeNotifierCommand extends CustomizableCommand {
+    // ============================ HEADER ============================ //
+    constructor() {
+        super({ name: 'earthquake' });
+        this.base_cmd_data = null;
     }
 
-    let status = earthquake.is_enabled ? 'Disable' : 'Enable';
-    const channel_select_menu = new ChannelSelectMenuBuilder()
-        .setCustomId('settings:earthquake:21')
-        .setPlaceholder('Select a channel')
-        .setChannelTypes(ChannelType.GuildText);
-    const magnitude = new TextInputBuilder()
-        .setCustomId('magnitude')
-        .setLabel('Earthquake Magnitude Limit')
-        .setPlaceholder('3.0')
-        .setValue(earthquake.magnitude_limit ? `${earthquake.magnitude_limit}` : '')
-        .setStyle(TextInputStyle.Short);
-    const check_interval = new TextInputBuilder()
-        .setCustomId('check_interval')
-        .setLabel('Check Interval (in minutes)')
-        .setPlaceholder('1')
-        .setValue(earthquake.check_interval ? `${earthquake.check_interval}` : '')
-        .setStyle(TextInputStyle.Short);
-    const seismic_portal_api_url = new TextInputBuilder()
-        .setCustomId('seismic_portal_api_url')
-        .setLabel('SeismicPortal API URL')
-        .setPlaceholder('https://www.seismicportal.eu/fdsnws/event/1/query?.....')
-        .setValue(earthquake.seismic_portal_api_url ? earthquake.seismic_portal_api_url : '')
-        .setStyle(TextInputStyle.Short);
-
-    const genPostEmbed = (warn?: string): EmbedBuilder => {
-        const post = new EmbedBuilder().setTitle(':gear: Earthquake Notifier Settings');
-        const fields: { name: string; value: string }[] = [];
-
-        if (warn) {
-            post.setColor(Colors.Yellow);
-            fields.push({ name: ':warning: Warning', value: warn });
-        } else {
-            post.setColor(Colors.Blurple);
+    public async prepareCommandData(guild_id: bigint): Promise<void> {
+        this.log('debug', 'prepare.start', { name: this.name, guild: guild_id });
+        const guild = await this.db.getGuild(guild_id);
+        const system_user = await this.db.getUser(BigInt(0));
+        let earthquake = await this.db.findOne(Earthquake, { where: { from_guild: guild! } });
+        if (!earthquake) {
+            const new_settings = new Earthquake();
+            new_settings.is_enabled = false;
+            new_settings.latest_action_from_user = system_user!;
+            new_settings.from_guild = guild!;
+            earthquake = await this.db.save(new_settings);
+            this.log('log', 'prepare.database.success', { name: this.name, guild: guild_id });
         }
-
-        fields.push(
-            {
-                name: 'Enabled',
-                value: earthquake.is_enabled ? ':green_circle: True' : ':red_circle: False',
-            },
-            {
-                name: 'Channel',
-                value: earthquake.channel_id ? `<#${earthquake.channel_id}>` : 'Not set',
-            },
-            {
-                name: 'Magnitude Limit (>= limit)',
-                value: earthquake.magnitude_limit ? `${earthquake.magnitude_limit}` : 'Not set',
-            },
-            {
-                name: 'SeismicPortal API URL',
-                value: earthquake.seismic_portal_api_url ? earthquake.seismic_portal_api_url : 'Not set',
-            },
-            {
-                name: 'Check Interval (in minutes)',
-                value: earthquake.check_interval.toString(),
-            }
-        );
-
-        post.addFields(fields);
-        return post;
-    };
-
-    const genMenuOptions = (): APIActionRowComponent<APIMessageActionRowComponent> => {
-        const menu = new StringSelectMenuBuilder().setCustomId('settings:earthquake:0').addOptions([
-            {
-                label: `${status} Earthquake Notifier System`,
-                description: `${status} the earthquake notifier system`,
-                value: 'settings:earthquake:1',
-            },
-            {
-                label: 'Change Earthquake Notifier Channel',
-                description: 'Change the channel for the earthquake notifier',
-                value: 'settings:earthquake:2',
-            },
-            {
-                label: 'Change Earthquake Magnitude',
-                description: 'Change the magnitude for the earthquake notifier',
-                value: 'settings:earthquake:3',
-            },
-            {
-                label: 'Change SeismicPortal API URL',
-                description: 'Change the SeismicPortal API URL',
-                value: 'settings:earthquake:4',
-            },
-            {
-                label: 'Change Check Interval',
-                description: 'Change the check interval for the earthquake notifier',
-                value: 'settings:earthquake:5',
-            },
-            { label: 'Back', description: 'Go back to the previous menu', value: 'settings' },
-        ]);
-        return new ActionRowBuilder()
-            .addComponents(menu)
-            .toJSON() as APIActionRowComponent<APIMessageActionRowComponent>;
-    };
-
-    let menu_path;
-    if (interaction.isStringSelectMenu()) {
-        menu_path = (interaction as StringSelectMenuInteraction).values[0].split(':').at(-1).split('/');
-    } else if (interaction.isModalSubmit() || interaction.isChannelSelectMenu()) {
-        menu_path = (interaction as ModalSubmitInteraction).customId.split(':').at(-1).split('/');
+        this.enabled = earthquake.is_enabled;
+        this.log('debug', 'prepare.success', { name: this.name, guild: guild_id });
     }
+    // ================================================================ //
 
-    switch (menu_path[0]) {
-        case '1':
-            earthquake.is_enabled = !earthquake.is_enabled;
-            status = earthquake.is_enabled ? 'Disable' : 'Enable';
-            await DatabaseConnection.manager.save(earthquake).catch((err) => {
-                Logger('error', err, interaction);
-            });
-            if (earthquake.is_enabled) {
-                await exec('ready', interaction.guild.id);
-            } else {
-                const interval = intervals.get(interaction.guild.id);
-                if (interval) {
-                    clearInterval(interval);
-                    intervals.delete(interaction.guild.id);
-                }
-            }
-            await (interaction as StringSelectMenuInteraction).update({
-                embeds: [genPostEmbed()],
-                components: [genMenuOptions()],
-            });
-            break;
-        case '2':
-            await (interaction as StringSelectMenuInteraction).update({
-                embeds: [genPostEmbed()],
-                components: [
-                    new ActionRowBuilder()
-                        .addComponents(channel_select_menu)
-                        .toJSON() as APIActionRowComponent<APIMessageActionRowComponent>,
-                ],
-            });
-            break;
-        case '3':
-            await (interaction as StringSelectMenuInteraction).showModal(
-                new ModalBuilder()
-                    .setCustomId('settings:earthquake:31')
-                    .setTitle('Change Earthquake Magnitude')
-                    .addComponents(new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(magnitude))
-            );
-            break;
-        case '4':
-            await (interaction as StringSelectMenuInteraction).showModal(
-                new ModalBuilder()
-                    .setCustomId('settings:earthquake:41')
-                    .setTitle('Change SeismicPortal API URL')
-                    .addComponents(
-                        new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(seismic_portal_api_url)
-                    )
-            );
-            break;
-        case '5':
-            await (interaction as StringSelectMenuInteraction).showModal(
-                new ModalBuilder()
-                    .setCustomId('settings:earthquake:51')
-                    .setTitle('Change Check Interval')
-                    .addComponents(new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(check_interval))
-            );
-            break;
-        case '21':
-            earthquake.channel_id = (interaction as StringSelectMenuInteraction).values[0];
-            await DatabaseConnection.manager.save(earthquake).catch((err) => {
-                Logger('error', err, interaction);
-            });
-            await (interaction as StringSelectMenuInteraction).update({
-                embeds: [genPostEmbed()],
-                components: [genMenuOptions()],
-            });
-            break;
-        case '31': {
-            const magnitude_value = parseFloat(
-                (interaction as ModalSubmitInteraction).fields.getTextInputValue('magnitude')
-            );
-            if (isNaN(magnitude_value)) {
-                await (interaction as StringSelectMenuInteraction).update({
-                    embeds: [genPostEmbed('Invalid Magnitude Value')],
-                    components: [genMenuOptions()],
-                });
-                return;
-            }
-            earthquake.magnitude_limit = magnitude_value;
-            await DatabaseConnection.manager.save(earthquake).catch((err) => {
-                Logger('error', err, interaction);
-            });
-            await (interaction as StringSelectMenuInteraction).update({
-                embeds: [genPostEmbed()],
-                components: [genMenuOptions()],
-            });
-            break;
-        }
-        case '41':
-            earthquake.seismic_portal_api_url = (interaction as ModalSubmitInteraction).fields.getTextInputValue(
-                'seismic_portal_api_url'
-            );
-            await DatabaseConnection.manager.save(earthquake).catch((err) => {
-                Logger('error', err, interaction);
-            });
-            await (interaction as StringSelectMenuInteraction).update({
-                embeds: [genPostEmbed()],
-                components: [genMenuOptions()],
-            });
-            break;
-        case '51': {
-            const check_interval_value = parseInt(
-                (interaction as ModalSubmitInteraction).fields.getTextInputValue('check_interval')
-            );
-            if (isNaN(check_interval_value)) {
-                await (interaction as StringSelectMenuInteraction).update({
-                    embeds: [genPostEmbed('Invalid Check Interval Value')],
-                    components: [genMenuOptions()],
-                });
-                return;
-            }
-            earthquake.check_interval = check_interval_value;
-            await DatabaseConnection.manager.save(earthquake).catch((err) => {
-                Logger('error', err, interaction);
-            });
-            await (interaction as StringSelectMenuInteraction).update({
-                embeds: [genPostEmbed()],
-                components: [genMenuOptions()],
-            });
-            break;
-        }
-        default:
-            await (interaction as StringSelectMenuInteraction).update({
-                embeds: [genPostEmbed()],
-                components: [genMenuOptions()],
-            });
-            break;
-    }
-};
-
-const exec = async (event_name: string, gid: string) => {
-    const existing_interval = intervals.get(gid);
-    if (existing_interval) return;
-    const earthquake = await DatabaseConnection.manager
-        .findOne(Earthquake, {
-            where: { from_guild: { gid: BigInt(gid) } },
-        })
-        .catch((err) => {
-            Logger('error', err);
-            throw err;
-        });
-    const guild = await DatabaseConnection.manager
-        .findOne(Guilds, {
-            where: { gid: BigInt(gid) },
-        })
-        .catch((err) => {
-            Logger('error', err);
-            throw err;
-        });
-    if (!earthquake) return;
-
-    if (earthquake.is_enabled) {
-        if (!earthquake.channel_id) {
-            Logger('warn', `Earthquake Notifier is enabled but no channel is set for guild ${gid}`);
-            return;
-        }
-        if (!earthquake.seismic_portal_api_url) {
-            Logger('warn', `Earthquake Notifier is enabled but no SeismicPortal API URL is set for guild ${gid}`);
+    // =========================== EXECUTE ============================ //
+    /**
+     * Executes the earthquake notification cron job.
+     * This method runs every 5 minutes as defined by the `@Cron` decorator.
+     * It fetches data for all enabled guilds, checks for new earthquakes exceeding the magnitude limit,
+     * reverse-geocodes the location, and sends a notification embed to the configured channel.
+     * It also manages a log of delivered earthquakes to avoid duplicate notifications and prunes old logs.
+     */
+    @Cron({ schedule: '*/5 * * * *' })
+    public async execute(): Promise<void> {
+        this.log('debug', 'cronjob.start');
+        const earthquake = await this.db.find(Earthquake, { where: { is_enabled: true } });
+        if (!earthquake || !earthquake.length) {
+            this.log('debug', 'configuration.missing');
             return;
         }
 
-        const new_interval = setInterval(
-            async () => {
-                const logs = await DatabaseConnection.manager
-                    .find(EarthquakeLogs, {
-                        where: { from_guild: { gid: BigInt(gid) } },
-                    })
-                    .catch((err) => {
-                        Logger('error', err);
-                        throw err;
+        let delivered_count = 0;
+        for (const guild of earthquake) {
+            if (!guild.channel_id || !guild.seismicportal_api_url) continue;
+            const earthquakes = await this.db.find(EarthquakeLogs, { where: { from_guild: guild.from_guild } });
+            const request = (await (await fetch(guild.seismicportal_api_url)).json()) as {
+                features: {
+                    id: string;
+                    properties: { time: Date; mag: number; lat: number; lon: number; auth: string };
+                }[];
+            };
+
+            let recent_earthquakes = request.features.filter((e) => e.properties.mag - guild.magnitude_limit >= 0);
+            if (recent_earthquakes.length === 0) continue;
+
+            if (earthquakes.length) {
+                recent_earthquakes = recent_earthquakes.filter((e) => earthquakes.find((l) => l.source_id === e.id));
+            }
+            for (const eq of recent_earthquakes.slice(0, 25)) {
+                const existing_log = await this.db.findOne(EarthquakeLogs, {
+                    where: { source_id: eq.id, from_guild: guild.from_guild },
+                });
+                if (existing_log?.is_delivered) continue;
+
+                const geo_translate = (
+                    (await (
+                        await fetch(
+                            `https://us1.api-bdc.net/data/reverse-geocode-client?latitude=${eq.properties.lat}&longitude=${eq.properties.lon}&localityLanguage=${guild.region_code}`,
+                        )
+                    ).json()) as { locality: string }
+                ).locality;
+
+                const post = new EmbedBuilder();
+                post.setTitle(
+                    `:warning: ${this.t.commands({ key: 'execute.title', guild_id: BigInt(guild.from_guild.gid) })}`,
+                );
+                post.setColor(Colors.Yellow);
+                post.setTimestamp();
+                post.addFields(
+                    {
+                        name: this.t.commands({ key: 'execute.time', guild_id: BigInt(guild.from_guild.gid) }),
+                        value: new Date(eq.properties.time).toLocaleString(),
+                        inline: true,
+                    },
+                    {
+                        name: this.t.commands({ key: 'execute.id', guild_id: BigInt(guild.from_guild.gid) }),
+                        value: eq.id,
+                        inline: true,
+                    },
+                    {
+                        name: this.t.commands({ key: 'execute.location', guild_id: BigInt(guild.from_guild.gid) }),
+                        value: geo_translate || 'Unknown',
+                        inline: true,
+                    },
+                    {
+                        name: this.t.commands({ key: 'execute.source', guild_id: BigInt(guild.from_guild.gid) }),
+                        value: eq.properties.auth,
+                        inline: true,
+                    },
+                    {
+                        name: this.t.commands({ key: 'execute.magnitude', guild_id: BigInt(guild.from_guild.gid) }),
+                        value: eq.properties.mag.toString(),
+                        inline: true,
+                    },
+                    {
+                        name: this.t.commands({ key: 'execute.coordinates', guild_id: BigInt(guild.from_guild.gid) }),
+                        value: `Lat: ${eq.properties.lat}\nLon: ${eq.properties.lon}`,
+                        inline: true,
+                    },
+                    {
+                        name: this.t.commands({ key: 'execute.link', guild_id: BigInt(guild.from_guild.gid) }),
+                        value: `https://www.seismicportal.eu/eventdetails.html?unid=${eq.id}`,
+                    },
+                    {
+                        name: this.t.commands({
+                            key: 'execute.other_earthquakes',
+                            guild_id: BigInt(guild.from_guild.gid),
+                        }),
+                        value: 'https://deprem.core.xeome.dev',
+                    },
+                );
+                const channel = await BotClient.client.guilds
+                    .fetch(guild.from_guild.gid.toString())
+                    .then((g) => g.channels.fetch(guild.channel_id!));
+                if (channel && channel.isTextBased()) {
+                    const old_logs = await this.db.find(EarthquakeLogs, {
+                        where: { from_guild: guild.from_guild },
+                        order: { timestamp: 'DESC' },
                     });
-                const response = await fetch(earthquake.seismic_portal_api_url);
-                const data = (await response.json()) as {
-                    features: {
-                        id: string;
-                        properties: { time: Date; mag: number; lat: number; lon: number; auth: string };
-                    }[];
-                };
-                const earthquakes = data.features
-                    .filter((eq) => eq.properties.mag >= earthquake.magnitude_limit)
-                    .filter((eq) => logs.find((log) => log.source_id === eq.id) === undefined);
-                if (earthquakes.length > 0) {
-                    for (const eq of earthquakes.slice(0, 5)) {
-                        const post = new EmbedBuilder();
-                        const geo_response = (await (
-                            await fetch(
-                                `https://us1.api-bdc.net/data/reverse-geocode-client?latitude=${eq.properties.lat}&longitude=${eq.properties.lon}&localityLanguage=tr`
-                            )
-                        ).json()) as { locality: string };
-                        const location_name = geo_response.locality;
-                        post.setTitle(':warning: New Earthquake Alert');
-                        post.setColor(Colors.Yellow);
-                        post.setTimestamp();
-                        post.addFields(
-                            {
-                                name: 'Time',
-                                value: new Date(eq.properties.time).toLocaleString(),
-                                inline: true,
-                            },
-                            {
-                                name: 'ID',
-                                value: eq.id,
-                                inline: true,
-                            },
-                            {
-                                name: 'Location',
-                                value: location_name,
-                                inline: true,
-                            },
-                            {
-                                name: 'Source',
-                                value: eq.properties.auth,
-                                inline: true,
-                            },
-                            {
-                                name: 'Magnitude',
-                                value: eq.properties.mag.toString(),
-                                inline: true,
-                            },
-                            {
-                                name: 'Coordinates',
-                                value: `Latitude: ${eq.properties.lat}\nLongitude: ${eq.properties.lon}`,
-                                inline: true,
-                            },
-                            {
-                                name: 'Link',
-                                value: `https://www.seismicportal.eu/eventdetails.html?unid=${eq.id}`,
-                            },
-                            {
-                                name: 'Other Earthquakes',
-                                value: 'https://deprem.core.xeome.dev',
-                            }
-                        );
-                        const channel = await BotClient.guilds.fetch(gid).then((g) => {
-                            return g.channels.fetch(earthquake.channel_id);
-                        });
-                        if (channel && channel.isTextBased()) {
-                            const log = new EarthquakeLogs();
-                            log.source_name = eq.properties.auth;
-                            log.source_id = eq.id;
-                            log.from_guild = guild;
-                            try {
-                                await DatabaseConnection.manager.save(log);
-                                channel.send({ embeds: [post] });
-                            } catch (err) {
-                                Logger('error', `Failed to save earthquake log for ID ${eq.id}: ${err}`);
-                            }
-                        } else {
-                            Logger('warn', `Channel ${earthquake.channel_id} in guild ${gid} is not a text channel`);
-                        }
+                    if (old_logs.length > 50) {
+                        for (const old_log of old_logs.slice(50)) await this.db.remove(old_log);
                     }
+
+                    const logs = new EarthquakeLogs();
+                    logs.source_id = eq.id;
+                    logs.source_name = eq.properties.auth;
+                    logs.from_guild = guild.from_guild;
+                    await channel
+                        .send({ embeds: [post] })
+                        .then(() => {
+                            logs.is_delivered = true;
+                            delivered_count++;
+                        })
+                        .catch(() => {
+                            logs.is_delivered = false;
+                        });
+                    await this.db.save(logs);
                 }
-            },
-            earthquake.check_interval * 1000 * 60
-        );
-        intervals.set(gid, new_interval);
+            }
+        }
+        this.log('debug', 'cronjob.success', { guild: earthquake.length, count: delivered_count });
     }
-};
+    // ================================================================ //
 
-export default {
-    enabled: true,
-    name: 'earthquake',
-    type: 'customizable',
-    description: 'Earthquake Notifier',
+    // =========================== SETTINGS =========================== //
+    /**
+     * Toggles the earthquake notifier on or off for the guild.
+     * @param interaction The interaction from the settings select menu.
+     */
+    @SettingGenericSettingComponent({
+        database: Earthquake,
+        database_key: 'is_enabled',
+        format_specifier: '%s',
+    })
+    public async toggle(interaction: StringSelectMenuInteraction): Promise<void> {
+        this.log('debug', 'settings.toggle.start', { name: this.name, guild: interaction.guild });
+        const earthquake = await this.db.findOne(Earthquake, {
+            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+        });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
 
-    category: 'pseudo',
+        earthquake!.is_enabled = !earthquake!.is_enabled;
+        earthquake!.latest_action_from_user = user;
+        earthquake!.timestamp = new Date();
+        this.enabled = earthquake!.is_enabled;
+        await this.db.save(Earthquake, earthquake!);
+        await this.settingsUI(interaction);
+        this.log('debug', 'settings.toggle.success', {
+            name: this.name,
+            guild: interaction.guild,
+            toggle: this.enabled,
+        });
+    }
 
-    usewithevent: ['ready'],
-    execute_when_event: exec,
-    settings: settings,
-} as Command_t;
+    /**
+     * Sets the channel where earthquake notifications will be sent.
+     * @param interaction The interaction from the channel select menu.
+     */
+    @SettingChannelMenuComponent({
+        database: Earthquake,
+        database_key: 'channel_id',
+        format_specifier: '<#%s>',
+        options: {
+            channel_types: [ChannelType.GuildText],
+        },
+    })
+    public async setNotificationChannel(interaction: ChannelSelectMenuInteraction): Promise<void> {
+        this.log('debug', 'settings.channel.start', { name: this.name, guild: interaction.guild });
+        const earthquake = await this.db.findOne(Earthquake, {
+            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+        });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
+        earthquake!.channel_id = interaction.values[0];
+        earthquake!.latest_action_from_user = user;
+        earthquake!.timestamp = new Date();
+        await this.db.save(Earthquake, earthquake!);
+        await this.settingsUI(interaction);
+        this.log('debug', 'settings.channel.success', {
+            name: this.name,
+            guild: interaction.guild,
+            channel: earthquake!.channel_id,
+        });
+    }
+
+    /**
+     * Sets the minimum magnitude limit for reporting earthquakes.
+     * This is a two-step setting: first, it presents a select menu with magnitude options.
+     * Then, it saves the selected value.
+     * @param interaction The interaction from the string select menu.
+     * @param args The selected magnitude value.
+     */
+    @SettingGenericSettingComponent({
+        database: Earthquake,
+        database_key: 'magnitude_limit',
+        format_specifier: '%s',
+    })
+    public async setMagnitudeLimit(interaction: StringSelectMenuInteraction, args: string): Promise<void> {
+        this.log('debug', 'settings.selectmenu.start', { name: this.name, guild: interaction.guild });
+        const earthquake = (await this.db.findOne(Earthquake, {
+            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+        }))!;
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
+        if (args) {
+            earthquake.magnitude_limit = parseFloat(args);
+            earthquake!.latest_action_from_user = user;
+            earthquake!.timestamp = new Date();
+            await this.db.save(Earthquake, earthquake!);
+            await this.settingsUI(interaction);
+            this.log('debug', 'settings.selectmenu.success', { name: this.name, guild: interaction.guild });
+            return;
+        }
+
+        await interaction.update({
+            components: [
+                new ActionRowBuilder<StringSelectMenuBuilder>()
+                    .addComponents(
+                        new StringSelectMenuBuilder()
+                            .setCustomId('settings:earthquake:setmagnitude')
+                            .setPlaceholder(
+                                this.t.commands({
+                                    key: 'settings.setmagnitudelimit.placeholder',
+                                    guild_id: BigInt(interaction.guildId!),
+                                }),
+                            )
+                            .addOptions(
+                                ['1.0', '1.5', '2.0', '2.5', '3.0', '3.5', '4.0', '4.5', '5.0'].map((magnitude) => ({
+                                    label: magnitude,
+                                    value: `settings:earthquake:setmagnitudelimit:${magnitude}`,
+                                })),
+                            ),
+                    )
+                    .toJSON(),
+            ],
+        });
+    }
+
+    /**
+     * Sets the API URL for the Seismic Portal.
+     * This method is triggered by a modal submission and validates the URL format.
+     * @param interaction The interaction from the modal submission.
+     */
+    @SettingModalComponent({
+        database: Earthquake,
+        database_key: 'seismicportal_api_url',
+        format_specifier: '[API URL](%s)',
+        inputs: [
+            {
+                id: 'seismicportal_api_url',
+                style: TextInputStyle.Short,
+                required: true,
+                max_length: 300,
+            },
+        ],
+    })
+    public async setSeismicportalApiUrl(interaction: ModalSubmitInteraction): Promise<void> {
+        this.log('debug', 'settings.modalsubmit.start', { name: this.name, guild: interaction.guild });
+        const earthquake = await this.db.findOne(Earthquake, {
+            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+        });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
+        const api_url = interaction.fields.getTextInputValue('seismicportal_api_url');
+        if (!api_url.match(/^https?:\/\/(www\.)?seismicportal\.eu\/fdsnws\/event\/1\/query.*/)) {
+            this.log('debug', 'settings.invalid_url', {
+                guild: interaction.guild,
+                user: interaction.user,
+                url: api_url,
+            });
+            this.warning = this.t.commands({
+                key: 'settings.setseismicportalapiurl.invalid_url',
+                guild_id: BigInt(interaction.guildId!),
+            });
+            await this.settingsUI(interaction);
+            return;
+        }
+
+        earthquake!.seismicportal_api_url = api_url;
+        earthquake!.latest_action_from_user = user;
+        earthquake!.timestamp = new Date();
+        await this.db.save(Earthquake, earthquake!);
+        await this.settingsUI(interaction);
+        this.log('debug', 'settings.modalsubmit.success', {
+            name: this.name,
+            guild: interaction.guild,
+        });
+    }
+
+    /**
+     * Sets the region code for reverse-geocoding.
+     * This method is triggered by a modal submission.
+     * @param interaction The interaction from the modal submission.
+     */
+    @SettingModalComponent({
+        database: Earthquake,
+        database_key: 'region_code',
+        format_specifier: '`%s`',
+        inputs: [
+            {
+                id: 'region_code',
+                style: TextInputStyle.Short,
+                required: true,
+                max_length: 5,
+            },
+        ],
+    })
+    public async setRegionCode(interaction: ModalSubmitInteraction): Promise<void> {
+        this.log('debug', 'settings.modalsubmit.start', { name: this.name, guild: interaction.guild });
+        const earthquake = await this.db.findOne(Earthquake, {
+            where: { from_guild: { gid: BigInt(interaction.guildId!) } },
+        });
+        const user = (await this.db.getUser(BigInt(interaction.user.id)))!;
+
+        const region_code = interaction.fields.getTextInputValue('region_code');
+        earthquake!.region_code = region_code;
+        earthquake!.latest_action_from_user = user;
+        earthquake!.timestamp = new Date();
+        await this.db.save(Earthquake, earthquake!);
+        await this.settingsUI(interaction);
+        this.log('debug', 'settings.modalsubmit.success', {
+            name: this.name,
+            guild: interaction.guild,
+        });
+    }
+    // ================================================================ //
+}

@@ -1,0 +1,68 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "afk": {
+        "name": "afk",
+        "pretty_name": "AFK Sistemi",
+        "description": "Kullanıcıların AFK (Uzakta) durumlarını yönetir.",
+        "help": "Kullanıcıların AFK (Uzakta) durumlarını yönetir.\n\n**Kullanım:**\n- `/afk <sebep>` - AFK durumunuzu belirli bir sebep ile ayarlar.\n\n**Örnekler:**\n- `/afk reason:Kısa bir ara veriyorum` - AFK durumunuzu 'Kısa bir ara veriyorum' olarak ayarlar.",
+        "parameters": {
+            "reason": {
+                "name": "sebep",
+                "description": "AFK olma sebebi."
+            }
+        },
+        "execute": {
+            "afk_success": "Artık AFK durumundasınız",
+            "already_afk": "Zaten AFK durumundasınız.",
+            "role_hierarchy_error": "**Uyarı:** Takma adınızı değiştiremiyorum (rol hiyerarşisi nedeniyle olabilir)."
+        },
+        "subcommands": {},
+        "events": {
+            "onmessagecreate": {
+                "afk_info": "Kullanıcı Şu Anda AFK Durumunda",
+                "afk_reason": "**Sebep:** {reason}",
+                "dm_description": "Aşağıda, siz AFK durumundayken size atıfta bulunan mesajların listesi bulunmaktadır:\n{message_list}",
+                "mentions": "Siz AFK durumundayken **{length}** kez etiketlendiniz. Mesaj linklerini DM üzerinden ilettim.",
+                "dm_failed": "Siz AFK durumundayken **{length}** kez etiketlendiniz. Ancak DM kutunuz kapalı olduğu için mesaj linklerini iletemedim.",
+                "no_longer_afk": "Artık AFK değilsiniz."
+            }
+        },
+        "settings": {},
+        "logging": {
+            "debug": {
+                "event": {
+                    "trigger": {
+                        "start": "\"{guild}\" sunucusunda \"{user}\" kullanıcısı tarafından \"{event}\" AFK etkinliği tetiklendi.",
+                        "success": "\"{guild}\" sunucusunda \"{user}\" kullanıcısı için \"{event}\" AFK etkinliği başarıyla işlendi."
+                    }
+                },
+                "execute": {
+                    "start": "\"{guild}\" sunucusunda \"{user}\" kullanıcısı tarafından AFK komutu başlatıldı."
+                },
+                "prepare": {
+                    "start": "\"{guild}\" sunucusu için AFK komutu hazırlanıyor.",
+                    "success": "\"{guild}\" sunucusu için AFK komutu başarıyla hazırlandı."
+                }
+            },
+            "info": {},
+            "warn": {
+                "events": {
+                    "onmessagecreate": {
+                        "dm_failed": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısına \"AFK\" komutu için DM gönderilemedi."
+                    }
+                },
+                "execute": {
+                    "nickname_change_failed": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için \"AFK\" komutu kullanıcı adını değiştirme başarısız oldu."
+                }
+            },
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "\"{guild}\" sunucusu için AFK komutu ayarları veritabanına başarıyla işlendi."
+                    }
+                }
+            }
+        }
+    }
+}

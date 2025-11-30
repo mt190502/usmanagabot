@@ -1,7 +1,7 @@
 {
     "name": "usmanagabot",
-    "version": "1.0.0",
-    "description": "UsmanAga discord bot",
+    "version": "2.2.0",
+    "description": "UsmanAga Discord Bot",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/mt190502/usmanagabot.git"
@@ -20,31 +20,35 @@
     },
     "homepage": "https://github.com/mt190502/usmanagabot#readme",
     "dependencies": {
-        "dayjs": "^1.11.13",
-        "discord.js": "^14.18.0",
-        "glob": "^11.0.2",
-        "pg": "^8.15.5",
+        "cron": "^4.3.4",
+        "dayjs": "^1.11.19",
+        "discord.js": "^14.24.2",
+        "glob": "^11.0.3",
+        "jsonc-parser": "^3.3.1",
+        "moment": "^2.30.1",
+        "pg": "^8.16.3",
         "reflect-metadata": "^0.2.2",
-        "typeorm": "^0.3.22",
+        "typeorm": "^0.3.27",
         "uuid": "^11.1.0",
-        "yaml": "^2.7.1"
+        "yaml": "^2.8.1",
+        "zod": "^4.1.12"
     },
     "devDependencies": {
-        "@eslint/js": "^9.25.1",
-        "@types/node": "^22.15.2",
+        "@eslint/js": "^9.39.1",
+        "@types/node": "^22.19.1",
         "@types/uuid": "^10.0.0",
-        "@typescript-eslint/eslint-plugin": "^8.31.0",
-        "@typescript-eslint/parser": "^8.31.0",
-        "eslint": "^9.25.1",
-        "eslint-config-prettier": "^9.1.0",
-        "eslint-plugin-prettier": "^5.2.6",
+        "@typescript-eslint/eslint-plugin": "^8.46.4",
+        "@typescript-eslint/parser": "^8.46.4",
+        "bun-types": "^1.3.2",
+        "eslint": "^9.39.1",
+        "eslint-config-prettier": "^9.1.2",
+        "eslint-plugin-prettier": "^5.5.4",
         "globals": "^15.15.0",
-        "prettier": "^3.5.3",
+        "prettier": "^3.6.2",
         "ts-node": "^10.9.2",
-        "typescript": "^5.8.3",
-        "typescript-eslint": "^8.31.0"
+        "typescript": "^5.9.3",
+        "typescript-eslint": "^8.46.4"
     },
-    "main": "dist/main.js",
     "scripts": {
         "depInstall": "pnpm install && pnpm update",
         "eslint": "eslint .",
@@ -52,6 +56,10 @@
         "prettier": "prettier --config .prettierrc.json 'src/**/*.ts'",
         "prettier:fix": "prettier --config .pretterrc.json 'src/**/*.ts' --write",
         "start": "bun run src/main.ts",
-        "test": "bun run src/utils/configParser.ts"
+        "typeorm:migration:create": "bunx tsx node_modules/typeorm/cli.js migration:create ./src/types/database/migrations/",
+        "typeorm:migration:generate": "bunx tsx node_modules/typeorm/cli.js migration:generate -d typeorm.config.ts ./src/types/database/migrations/",
+        "typeorm:migration:show": "bunx tsx node_modules/typeorm/cli.js migration:show -d typeorm.config.ts",
+        "typeorm:migration:run": "bunx tsx node_modules/typeorm/cli.js migration:run -d typeorm.config.ts",
+        "typeorm:migration:revert": "bunx tsx node_modules/typeorm/cli.js migration:revert -d typeorm.config.ts"
     }
 }

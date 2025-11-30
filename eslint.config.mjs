@@ -21,7 +21,7 @@ export default [
             '@typescript-eslint': typescriptEslint,
         },
 
-        ignores: ['node_modules', 'dist', 'build', '**/src/types/*/*', 'database', 'eslint.config.mjs'],
+        ignores: ['node_modules', 'dist', 'build', '**/src/types/database/**/*.ts', 'database', 'eslint.config.mjs'],
 
         languageOptions: {
             globals: {

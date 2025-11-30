@@ -1,0 +1,8 @@
+{
+    "$schema": "../../../types/structure/schemas/event.json",
+    "ready": {
+        "log": {
+            "success": "{name} olarak giriş yapıldı."
+        }
+    }
+}

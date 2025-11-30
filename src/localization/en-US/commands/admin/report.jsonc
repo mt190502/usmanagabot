@@ -1,0 +1,108 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "report": {
+        "name": "report",
+        "pretty_name": "Report System",
+        "description": "Reports the specified message to the moderators.",
+        "help": "Reports the specified message to the moderators.\n\n**Usage:**\n- `/report <user> <reason> [message_url_list]` - Reports the specified user and reason to the moderators. Optionally, you can add one or more message URLs to provide context.\n\n**Examples:**\n- `/report user:@User1 reason:Spam message_url:https://discord.com/channels/987654321098765432/123456789012345678/234567890123456789` - Reports @User1 for spam and adds the specified message URL as context.",
+        "parameters": {
+            "message_urls": {
+                "name": "message_url_list",
+                "description": "Message URLs related to the report (comma-separated)"
+            },
+            "reason": {
+                "name": "reason",
+                "description": "The reason for reporting the user."
+            },
+            "user": {
+                "name": "user",
+                "description": "The user to be reported."
+            }
+        },
+        "execute": {
+            "admin_report_description": ":mag: **Report**: {username} (ID {user_id})\n:page_facing_up: **Reason**: {reason}\n:envelope: **Messages**: {message_urls}\n:floppy_disk: **Database Messages**: {in_database_urls}\n:triangular_flag_on_post: **Channel**: <#{channel_id}>",
+            "command_not_configured": "The report command is not configured. Please contact an administrator.",
+            "invalid_url": "Invalid message URL: {url}",
+            "message_logger_disabled": "Message logger is disabled.",
+            "message_not_found": "Could not retrieve the user's last message. Please provide a message URL.",
+            "too_many_urls": "Cannot provide more than 5 message URLs ({count} URLs provided).",
+            "user_reported_description": "**User**: {user} has been successfully reported.\n**Reason**: {reason}"
+        },
+        "subcommands": {},
+        "events": {},
+        "settings": {
+            "changemoderatorrole": {
+                "description": "Changes the moderator role that will receive reports.",
+                "display_name": "Moderator Role",
+                "placeholder": "Select a moderator role",
+                "pretty_name": "Change Moderator Role",
+                "parameters": {}
+            },
+            "changetargetchannel": {
+                "description": "Changes the channel where report notifications will be sent.",
+                "display_name": "Target Channel",
+                "placeholder": "Select a report channel",
+                "pretty_name": "Change Target Channel",
+                "parameters": {}
+            },
+            "removemoderatorrole": {
+                "description": "Removes the moderator role that will receive reports.",
+                "pretty_name": "Remove Moderator Role",
+                "parameters": {}
+            },
+            "toggle": {
+                "description": "Enables or disables the report system on the server.",
+                "pretty_name": "Toggle Report System",
+                "parameters": {}
+            }
+        },
+        "logging": {
+            "debug": {
+                "prepare": {
+                    "start": "Preparing Report command for guild \"{guild}\".",
+                    "success": "Report command for guild \"{guild}\" prepared successfully."
+                },
+                "execute": {
+                    "success": "User {user} was reported in channel {channel} on guild {guild}."
+                },
+                "settings": {
+                    "toggle": {
+                        "start": "Report system toggle setting initiated by user in guild \"{guild}\".",
+                        "success": "Report system toggle setting successfully updated to \"{toggle}\" in guild \"{guild}\"."
+                    },
+                    "channel": {
+                        "start": "Report system channel setting initiated by user in guild \"{guild}\".",
+                        "success": "Report system channel successfully updated to \"{channel}\" in guild \"{guild}\"."
+                    },
+                    "role": {
+                        "start": "Report system role setting initiated by user in guild \"{guild}\".",
+                        "success": "Report system role successfully updated to \"{role}\" in guild \"{guild}\"."
+                    },
+                    "removemoderatorrole": {
+                        "start": "Moderator role removal for \"report\" command initiated in guild \"{guild}\".",
+                        "success": "Moderator role for \"report\" command successfully removed in guild \"{guild}\"."
+                    }
+                }
+            },
+            "info": {},
+            "warn": {
+                "execute": {
+                    "invalid_url": "Invalid message URL shared by user {user} in guild {guild}: {url}.",
+                    "message_not_found": "Message to be reported not found for user {user} in guild {guild}.",
+                    "too_many_urls": "{user} provided too many message URLs ({count}) in guild {guild}."
+                },
+                "configuration": {
+                    "missing": "The report system is not configured in guild \"{guild}\"."
+                }
+            },
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "Report command settings for guild \"{guild}\" successfully processed into the database."
+                    }
+                }
+            }
+        }
+    }
+}
