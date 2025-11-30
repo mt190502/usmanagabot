@@ -1,0 +1,33 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "help": {
+        "name": "help",
+        "pretty_name": "Help",
+        "description": "Displays a list of available commands and detailed information about a specific command.",
+        "help": "Displays how to use available commands and detailed information about a specific command.\n\n**Usage:**\n- `/help` - Shows a list of all commands.",
+        "parameters": {},
+        "execute": {
+            "command_title": "About {command}",
+            "main_title": "Help - Available Commands"
+        },
+        "subcommands": {},
+        "events": {},
+        "settings": {},
+        "logging": {
+            "debug": {
+                "execute": {
+                    "commands_filtered": "\"{length}\" commands filtered for user \"{user}\" in guild \"{guild}\".",
+                    "generating_page": "Generating help page for user \"{user}\" in guild \"{guild}\"..."
+                },
+                "handlePageItem": {
+                    "start": "Processing help page item for user \"{user}\" in guild \"{guild}\"...",
+                    "success": "Help page item successfully processed for user \"{user}\" in guild \"{guild}\"."
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {},
+            "log": {}
+        }
+    }
+}

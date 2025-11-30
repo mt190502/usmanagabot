@@ -1,0 +1,31 @@
+{
+    "$schema": "../../../types/structure/schemas/system.json",
+    "buttons": {
+        "cancel": "İptal",
+        "ok": "Tamam",
+        "yes": "Evet",
+        "no": "Hayır",
+        "previous": "Önceki",
+        "next": "Sonraki",
+        "back": "Geri"
+    },
+    "labels": {
+        "active": "Aktif",
+        "viewInEditMode": "Düzenleme Modunda Görüntüle",
+        "pageStatus": "Sayfa {current_page} / {total_pages}",
+        "cancelOperationDescription": "Mevcut işlemi iptal et.",
+        "backDescription": "Önceki menüye geri dön."
+    },
+    "messages": {
+        "error": "Hata",
+        "success": "Başarılı",
+        "warning": "Uyarı",
+        "operationCancelled": "İşlem iptal edildi.",
+        "operationCancelledByUser": "İşlem kullanıcı tarafından iptal edildi.",
+        "pleaseWait": "Lütfen bekleyin...",
+        "processing": "İşleniyor..."
+    },
+    "placeholders": {
+        "selectItemFromList": "Listeden bir öğe seçin"
+    }
+}

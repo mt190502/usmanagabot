@@ -1,0 +1,17 @@
+{
+    "$schema": "../../../types/structure/schemas/service.json",
+    "event_loader": {
+        "debug": {
+            "loaded": "Yüklenen olay: {event}"
+        },
+        "error": {
+            "load_failed": "{event} olayı yüklenemedi: {message}"
+        },
+        "info": {
+            "disabled": "Etkinlik {event} devre dışı. Atlanıyor..."
+        },
+        "log": {
+            "loading": "Yükleniyor: {event}"
+        }
+    }
+}

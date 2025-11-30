@@ -1,0 +1,31 @@
+{
+    "$schema": "../../../types/structure/schemas/system.json",
+    "buttons": {
+        "cancel": "Cancel",
+        "ok": "OK",
+        "yes": "Yes",
+        "no": "No",
+        "previous": "Previous",
+        "next": "Next",
+        "back": "Back"
+    },
+    "labels": {
+        "active": "Active",
+        "viewInEditMode": "View in Edit Mode",
+        "pageStatus": "Page {current_page} / {total_pages}",
+        "cancelOperationDescription": "Cancel the current operation.",
+        "backDescription": "Go back to the previous menu."
+    },
+    "messages": {
+        "error": "Error",
+        "success": "Success",
+        "warning": "Warning",
+        "operationCancelled": "Operation cancelled.",
+        "operationCancelledByUser": "Operation cancelled by user.",
+        "pleaseWait": "Please wait...",
+        "processing": "Processing..."
+    },
+    "placeholders": {
+        "selectItemFromList": "Select an item from the list"
+    }
+}

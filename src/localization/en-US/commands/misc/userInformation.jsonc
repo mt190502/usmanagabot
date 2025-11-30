@@ -1,0 +1,51 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "user_information": {
+        "name": "user_information",
+        "pretty_name": "User Information",
+        "description": "Retrieves information about the specified user.",
+        "help": "Retrieves detailed information about the specified user.\n\n**Usage:**\n- `/user_information <user>` - Retrieves information about the specified user.\n\n**Examples:**\n- `/user_information @User1` - Retrieves information about @User1.\n- You can also get user information by right-clicking on a user's profile or message and selecting **Apps > User Information**.",
+        "parameters": {
+            "user": {
+                "name": "user",
+                "description": "The user to get information about."
+            }
+        },
+        "execute": {
+            "account_info": "Account Information",
+            "created_at": "Account Creation Date",
+            "header": "About {user}",
+            "id": "ID",
+            "joined_at": "Server Join Date",
+            "nickname": "Nickname",
+            "no_roles": "No Roles",
+            "not_configured": "The introduction system is not properly configured. Please contact the server administrator.",
+            "rate_limited": "The daily introduction command limit has been reached. Please wait until {date}.",
+            "roles": "Roles",
+            "submission_successful": "Introduction submitted successfully.\nYou have **{remaining}** submissions left for today.\nIntroduction URL: {url}",
+            "updated": "Introduction Updated",
+            "user_not_found_in_guild": "User {user} not found in this guild.",
+            "username": "Username",
+            "validation_failed": "Please provide at least one value."
+        },
+        "subcommands": {},
+        "events": {},
+        "settings": {},
+        "logging": {
+            "debug": {
+                "execute": {
+                    "success": "Information for user \"{user_target}\" was retrieved by user {user} in channel {channel} on guild {guild}.",
+                    "fetching_introduction": "Fetching introduction data for user \"{user}\" in guild \"{guild}\"..."
+                }
+            },
+            "info": {},
+            "warn": {
+                "execute": {
+                    "user_not_found": "User with ID \"{id}\" not found in guild \"{guild}\"."
+                }
+            },
+            "error": {},
+            "log": {}
+        }
+    }
+}

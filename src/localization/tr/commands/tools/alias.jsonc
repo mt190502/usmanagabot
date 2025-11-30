@@ -1,0 +1,130 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "alias": {
+        "name": "alias",
+        "pretty_name": "Takma Ad Sistemi",
+        "description": "Çeşitli takma adlar oluşturur ve yönetir.",
+        "help": "Çeşitli takma adlar oluşturur ve yönetir.\n\n**Kullanım:**\n- `/alias add <isim> <içerik> <seçenekler>` - Yeni bir takma ad oluşturur.\n- `/alias list` - Mevcut takma adlarını listeler.\n- `/alias modify <name> <content?> <options?>` - Mevcut bir takma ad üzerinde değişiklik yapar.\n- `/alias remove <name>` - Mevcut bir takma adı kaldırır.",
+        "parameters": {
+            "alias_name": {
+                "name": "takma_ad_ismi",
+                "description": "Takma ad ismi"
+            },
+            "alias_content": {
+                "name": "takma_ad_içeriği",
+                "description": "(değişkenler: {variables})"
+            },
+            "casesensitive": {
+                "name": "harf_duyarlılığı",
+                "description": "Büyük/küçük harf duyarlılığı"
+            },
+            "messageconsistsonlyofword": {
+                "name": "sadece_bu_kelime",
+                "description": "Mesaj sadece bu kelimeden oluşmalı"
+            },
+            "messageincludesthisword": {
+                "name": "bu_kelimeyi_içermeli",
+                "description": "Mesaj bu kelimeyi içermeli"
+            }
+        },
+        "execute": {
+            "add": {
+                "alias_exists": "\"{alias}\" takma adı zaten mevcut. Lütfen farklı bir isim seçin.",
+                "success": "\"{alias}\" takma adı başarıyla oluşturuldu."
+            },
+            "alias_not_found": "\"{alias}\" takma adı bulunamadı.",
+            "handlepageitem": {
+                "casesensitive": "Büyük/Küçük Harf Duyarlılığı",
+                "content": "İçerik",
+                "messageconsistsonlyofword": "Mesaj Sadece Bu Kelimeden Oluşmalı",
+                "messageincludesthisword": "Mesaj Bu Kelimeyi İçermeli",
+                "name": "İsim"
+            },
+            "list": {
+                "no_aliases": "Bu sunucuda tanımlanmış takma ad yok.",
+                "title": "Takma Ad Listesi"
+            },
+            "modify": {
+                "success": "\"{alias}\" takma adı başarıyla güncellendi."
+            },
+            "remove": {
+                "success": "\"{alias}\" takma adı başarıyla kaldırıldı."
+            }
+        },
+        "subcommands": {
+            "add": {
+                "name": "ekle",
+                "description": "Takma ad ekle"
+            },
+            "list": {
+                "name": "alias_listesi",
+                "description": "Takma adları listele"
+            },
+            "modify": {
+                "name": "düzenle",
+                "description": "Takma ad düzenle"
+            },
+            "remove": {
+                "name": "kaldır",
+                "description": "Takma ad kaldır"
+            }
+        },
+        "events": {},
+        "settings": {
+            "toggle": {
+                "description": "Sunucuda takma ad sistemini etkinleştirir veya devre dışı bırakır.",
+                "pretty_name": "Takma Ad Sistemini Aç/Kapat"
+            }
+        },
+        "logging": {
+            "debug": {
+                "execute": {
+                    "add": {
+                        "alias_created": "\"{guild}\" sunucusunda \"{user}\" kullanıcısı tarafından \"{alias}\" takma adı oluşturuldu."
+                    },
+                    "subcommand": {
+                        "start": "\"{guild}\" sunucusunda \"{user}\" kullanıcısı tarafından \"{subcommand}\" takma ad alt komutu başlatıldı.",
+                        "success": "\"{guild}\" sunucusunda \"{user}\" kullanıcısı için \"{subcommand}\" takma ad alt komutu başarıyla yürütüldü."
+                    }
+                },
+                "handlePageItem": {
+                    "start": "\"{guild}\" sunucusunda \"{user}\" kullanıcısı tarafından takma ad sayfalama öğesi etkileşimi başlatıldı.",
+                    "success": "\"{guild}\" sunucusunda \"{user}\" kullanıcısı için takma ad sayfalama öğesi etkileşimi başarıyla işlendi."
+                },
+                "settings": {
+                    "toggle": {
+                        "start": "\"{guild}\" sunucusunda takma ad sistemi açma/kapatma işlemi başlatıldı.",
+                        "success": "\"{guild}\" sunucusunda takma ad sistemi başarıyla \"{toggle}\" olarak güncellendi."
+                    }
+                },
+                "prepare": {
+                    "start": "\"{guild}\" sunucusu için Takma Ad komutu hazırlanıyor.",
+                    "success": "\"{guild}\" sunucusu için Takma Ad komutu başarıyla hazırlandı."
+                }
+            },
+            "info": {},
+            "warn": {
+                "add": {
+                    "alias_exists": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından oluşturulmaya çalışılan \"{alias}\" takma adı zaten mevcut."
+                },
+                "list": {
+                    "no_aliases": "\"{user}\" kullanıcısının \"{guild}\" sunucusu için sorguladığı takma ad listesi boş."
+                },
+                "modify": {
+                    "alias_not_found": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından değiştirilmeye çalışılan \"{alias}\" takma adı bulunamadı."
+                },
+                "remove": {
+                    "alias_not_found": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından silinmeye çalışılan \"{alias}\" takma adı bulunamadı."
+                }
+            },
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "\"{guild}\" sunucusu için Takma Ad komutu ayarları veritabanına başarıyla işlendi."
+                    }
+                }
+            }
+        }
+    }
+}

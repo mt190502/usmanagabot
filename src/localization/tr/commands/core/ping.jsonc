@@ -1,0 +1,30 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "ping": {
+        "name": "ping",
+        "pretty_name": "Ping",
+        "description": "Botun yanıt süresini ölçer.",
+        "help": "Botun yanıt süresini ölçer.\n\n**Kullanım:**\n- `/ping` - Botun gecikme süresini milisaniye cinsinden döndürür.\n\n**Örnek Çıktı:**\n```plain\nPong! 🏓\n123ms\n```",
+        "parameters": {},
+        "execute": {
+            "measuring": "Gecikme ölçülüyor..."
+        },
+        "subcommands": {},
+        "events": {},
+        "settings": {},
+        "logging": {
+            "debug": {
+                "execute": {
+                    "start": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından \"Ping\" komutu yürütülmeye başlandı.",
+                    "success": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından \"Ping\" komutu başarıyla yürütüldü.",
+                    "latency_measured": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından \"Ping\" ölçüldü: {ping}ms.",
+                    "measuring_latency": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından \"Ping\" komutu ile gecikme ölçülüyor..."
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {},
+            "log": {}
+        }
+    }
+}

@@ -1,0 +1,117 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "earthquake": {
+        "pretty_name": "Deprem Bildirici",
+        "description": "Belirtilen bölgede meydana gelen depremler hakkında bildirimler alır.",
+        "help": "Belirtilen bölgede meydana gelen depremler hakkında bildirimler alır.",
+        "parameters": {},
+        "execute": {
+            "coordinates": "Koordinatlar",
+            "id": "Kimlik",
+            "link": "Bağlantı",
+            "location": "Konum",
+            "magnitude": "Büyüklük",
+            "other_earthquakes": "Diğer Depremler İçin",
+            "source": "Kaynak",
+            "time": "Zaman",
+            "title": "Yeni Deprem Uyarısı!"
+        },
+        "subcommands": {},
+        "events": {},
+        "settings": {
+            "setmagnitudelimit": {
+                "description": "Bildirim almak için minimum deprem büyüklüğünü ayarlar.",
+                "display_name": "Büyüklük Limiti",
+                "placeholder": "Minimum deprem büyüklüğünü seçin",
+                "pretty_name": "Büyüklük Limiti",
+                "parameters": {}
+            },
+            "setnotificationchannel": {
+                "description": "Deprem bildirimlerinin gönderileceği kanalı ayarlar.",
+                "display_name": "Bildirim Kanalı",
+                "placeholder": "Deprem bildirim kanalı seçin",
+                "pretty_name": "Bildirim Kanalı",
+                "parameters": {}
+            },
+            "setregioncode": {
+                "description": "Deprem bildirimleri konum bilgisi için bölge kodunu ayarlar.",
+                "display_name": "Bölge Kodu (api-bdc.net)",
+                "placeholder": "Bölge kodunu girin (örneğin: en, tr)",
+                "pretty_name": "Bölge Kodu (api-bdc.net)",
+                "parameters": {
+                    "region_code": {
+                        "name": "Bölge Kodu",
+                        "description": "Deprem bildirimi konum bilgisi için bölge kodu.",
+                        "placeholder": "tr"
+                    }
+                }
+            },
+            "setseismicportalapiurl": {
+                "description": "Kullanılacak Seismic Portal API URL'sini ayarlar.",
+                "display_name": "Seismic Portal API URL'si",
+                "placeholder": "Seismic Portal API URL'sini girin",
+                "pretty_name": "Seismic Portal API URL'si",
+                "invalid_url": "Geçersiz Seismic Portal API URL'si sağlandı.",
+                "parameters": {
+                    "seismicportal_api_url": {
+                        "name": "Seismic Portal API URL'si",
+                        "placeholder": "https://www.seismicportal.eu/fdsnws/event/1/query?..."
+                    }
+                }
+            },
+            "toggle": {
+                "description": "Sunucuda deprem bildirici sistemini etkinleştirir veya devre dışı bırakır.",
+                "pretty_name": "Deprem Bildirici Aktifliği",
+                "parameters": {}
+            }
+        },
+        "logging": {
+            "debug": {
+                "settings": {
+                    "invalid_url": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından sağlanan Sismik Portal API URL'si geçersiz: \"{url}\".",
+                    "channel": {
+                        "start": "\"{guild}\" sunucusunda Deprem Bildirici bildirim kanalı değiştirme işlemi başlatıldı.",
+                        "success": "\"{guild}\" sunucusunda Deprem Bildirici bildirim kanalı başarıyla \"{channel}\" olarak değiştirildi."
+                    },
+                    "modalsubmit": {
+                        "start": "\"{guild}\" sunucusunda Deprem Bildirici modal ayarı değiştirme işlemi başlatıldı.",
+                        "success": "\"{guild}\" sunucusunda Deprem Bildirici modal ayarı başarıyla değiştirildi."
+                    },
+                    "selectmenu": {
+                        "start": "\"{guild}\" sunucusunda Deprem Bildirici seçim menüsü ayarı değiştirme işlemi başlatıldı.",
+                        "success": "\"{guild}\" sunucusunda Deprem Bildirici seçim menüsü ayarı başarıyla değiştirildi."
+                    },
+                    "toggle": {
+                        "start": "\"{guild}\" sunucusunda Deprem Bildirici sistemini açma/kapatma işlemi başlatıldı.",
+                        "success": "\"{guild}\" sunucusunda Deprem Bildirici sistemi başarıyla \"{toggle}\" olarak güncellendi."
+                    }
+                },
+                "configuration": {
+                    "missing": "Deprem komutu için herhangi bir yapılandırma bulunamadı."
+                },
+                "cronjob": {
+                    "start": "Deprem kontrolü başlatılıyor...",
+                    "success": "{guild} sunucularında deprem kontrolü tamamlandı. {count} deprem bildirildi."
+                },
+                "prepare": {
+                    "start": "\"{guild}\" sunucusu için Deprem Bildirici komutu hazırlanıyor.",
+                    "success": "\"{guild}\" sunucusu için Deprem Bildirici komutu başarıyla hazırlandı."
+                }
+            },
+            "info": {},
+            "warn": {
+                "settings": {
+                    "invalid_url": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı tarafından sağlanan Seismic Portal API URL'si geçersiz: \"{url}\"."
+                }
+            },
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "\"{guild}\" sunucusu için Deprem Bildirici komutu ayarları veritabanına başarıyla işlendi."
+                    }
+                }
+            }
+        }
+    }
+}

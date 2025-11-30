@@ -1,0 +1,31 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "settings": {
+        "name": "ayarlar",
+        "pretty_name": "Ayarlar",
+        "description": "Komut ayarlarını yönetir.",
+        "help": "Belirli bir komutun ayarlarını yönetir.\n\n**Kullanım:**\n- `/settings` - Ayarları yönetmek için etkileşimli bir menü açar.",
+        "parameters": {},
+        "execute": {
+            "last_modified_by": "Son etkileşim {user} tarafından {date} tarihinde yapıldı.",
+            "not_set": "Ayarlanmamış",
+            "placeholder": "Bir seçenek seçin...",
+            "title": "{command} Ayarları"
+        },
+        "subcommands": {},
+        "events": {},
+        "settings": {},
+        "logging": {
+            "debug": {
+                "execute": {
+                    "commands_filtered": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için \"{length}\" adet komut filtrelendi.",
+                    "generating_page": "\"{guild}\" sunucusundaki \"{user}\" kullanıcısı için ayarlar sayfası oluşturuluyor..."
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {},
+            "log": {}
+        }
+    }
+}

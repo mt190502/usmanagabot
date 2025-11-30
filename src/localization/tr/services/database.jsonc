@@ -1,0 +1,17 @@
+{
+    "$schema": "../../../types/structure/schemas/service.json",
+    "database": {
+        "debug": {
+            "connecting": "Veritabanına bağlanılıyor...",
+            "connected": "Veritabanı bağlantısı başarılı."
+        },
+        "error": {
+            "connection_failed": "Veritabanı bağlantısı başarısız: {message}"
+        },
+        "info": {
+            "init": {
+                "success": "Veritabanı başarıyla başlatıldı."
+            }
+        }
+    }
+}

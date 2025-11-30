@@ -1,0 +1,44 @@
+{
+    "$schema": "../../../types/structure/schemas/service.json",
+    "command_loader": {
+        "debug": {
+            "loaded": "Loaded command: {command}",
+            "unloaded": "Unloaded command: {command}",
+            "execute": {
+                "start": "Executing command: {name}",
+                "success": "Command executed successfully: {name}"
+            }
+        },
+        "error": {
+            "load_failed": "Failed to load command {command}: {message}",
+            "unload_failed": "Failed to unload command {command}: {message}",
+            "execute": {
+                "failed": "Failed to execute command {name}: {message}"
+            },
+            "registerGuilds": {
+                "no_guilds_found": "No guilds found. The bot may not be in any guilds."
+            },
+            "readCommandFiles": {
+                "database_metadata_missing": "Database metadata is missing. Please check your TypeORM configuration."
+            },
+            "RESTCommandLoader": {
+                "failed": "Failed to deploy commands for guild {guild}. Reason: {message}"
+            }
+        },
+        "info": {
+            "readCommandFiles": {
+                "custom_disabled": "Command {name} is disabled for guild {guild}. Skipping...",
+                "invalid_name": "Command file {name} has an invalid name. Skipping...",
+                "command_disabled": "Command {name} is disabled. Skipping..."
+            }
+        },
+        "log": {
+            "readCommandFiles": {
+                "command_loading": "Loading command {name} from file {filename}"
+            }
+        },
+        "warn": {
+            "not_found": "Command '{command}' not found."
+        }
+    }
+}

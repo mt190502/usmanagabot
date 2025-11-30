@@ -1,0 +1,96 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "message_logger": {
+        "name": "message_logger",
+        "pretty_name": "Message Logger",
+        "description": "Logs the content and attachments of a specified message.",
+        "help": "Manages the message logging system on the server.\n\n**Usage:**\n- `/message_logger <message_id|message_url>`: Returns the saved link of the specified message.\n- You can also log a message by right-clicking on it and selecting **Apps > Message Logger**.",
+        "parameters": {
+            "message_id": {
+                "name": "message",
+                "description": "The ID or URL of the message to be queried from the log."
+            }
+        },
+        "execute": {
+            "invalid_input_description": "The provided value is not a valid message ID or URL: {input}",
+            "invalid_input": "Invalid Input",
+            "message_found_description": "Message with ID `{message_id}` found: https://discord.com/channels/{guild_id}/{channel_id}/{message_in_logger}",
+            "message_found": "Message Found",
+            "message_not_found_description": "Message with ID `{message_id}` has not been logged.",
+            "message_not_found": "Message Not Found"
+        },
+        "subcommands": {},
+        "events": {
+            "onmessagecreate": {
+                "reply": "Reply",
+                "stickers": "Stickers"
+            },
+            "onmessagedelete": {
+                "deleted": "Deleted Message"
+            },
+            "onmessageupdate": {
+                "new_attachments": "New Attachments",
+                "new_message": "New Message",
+                "updated_message": "Updated Message"
+            }
+        },
+        "settings": {
+            "manageignoredchannels": {
+                "description": "Manages the channels that the message logger system will ignore.",
+                "display_name": "Ignored Channels",
+                "placeholder": "Select channels to be ignored by the message logger",
+                "pretty_name": "Manage Ignored Channels",
+                "parameters": {}
+            },
+            "setlogchannel": {
+                "description": "Sets the channel where message log entries will be sent.",
+                "display_name": "Log Channel",
+                "placeholder": "Select a channel for the message logger",
+                "pretty_name": "Set Log Channel",
+                "parameters": {}
+            },
+            "toggle": {
+                "description": "Enables or disables the message logger system on the server.",
+                "pretty_name": "Toggle Message Logger System",
+                "parameters": {}
+            }
+        },
+        "logging": {
+            "debug": {
+                "prepare": {
+                    "start": "Preparing Message Logger command for guild \"{guild}\".",
+                    "success": "Message Logger command for guild \"{guild}\" prepared successfully."
+                },
+                "settings": {
+                    "toggle": {
+                        "start": "Message Logger toggle setting initiated by user in guild \"{guild}\".",
+                        "success": "Message Logger toggle setting successfully updated to \"{toggle}\" in guild \"{guild}\"."
+                    },
+                    "channel": {
+                        "start": "Message Logger channel setting initiated by user in guild \"{guild}\".",
+                        "success": "Message Logger channel successfully updated to \"{channel}\" in guild \"{guild}\"."
+                    },
+                    "ignored_channels": {
+                        "start": "Message Logger ignored channels setting initiated by user in guild \"{guild}\".",
+                        "success": "Message Logger ignored channels successfully updated in guild \"{guild}\"."
+                    }
+                }
+            },
+            "info": {},
+            "warn": {
+                "execute": {
+                    "invalid_input": "Invalid message ID or URL provided by user \"{user}\" in guild \"{guild}\": \"{input}\".",
+                    "message_not_found": "Message not found in logger for user \"{user}\" in guild \"{guild}\": \"{message_id}\"."
+                }
+            },
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "Message Logger command settings for guild \"{guild}\" successfully processed into the database."
+                    }
+                }
+            }
+        }
+    }
+}

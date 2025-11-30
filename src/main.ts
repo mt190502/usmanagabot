@@ -1,44 +1,22 @@
-import { Client, Collection, GatewayIntentBits, Partials } from 'discord.js';
-import { DataSource } from 'typeorm';
-import { CommandLoaderAfterBotReady, RESTCommandLoader } from './commands/loader';
-import { EventLoader } from './events/loader';
-import { Command_t } from './types/interface/commands';
-import { BotConfiguration_t } from './types/interface/config';
-import { DatabaseConfiguration_t } from './types/interface/database';
-import { Event_t } from './types/interface/events';
-import { ConfigLoader } from './utils/config';
-import { DatabaseLoader } from './utils/database';
-import { InitialSetup } from './utils/setup';
+import { BotClient } from '@services/client';
+import { Config } from '@services/config';
+import { Database } from '@services/database';
+import { Logger } from '@services/logger';
+import pkg from '../package.json';
+import { Translator } from './services/translator';
 
-export const BotConfiguration: BotConfiguration_t = ConfigLoader('../config', 'bot.yml');
-export const DatabaseConfiguration: DatabaseConfiguration_t = ConfigLoader('../config', 'database.yml');
-export let DatabaseConnection: DataSource;
-
-export const BotCommands: Collection<bigint, Collection<string, Command_t>> = new Collection();
-export const LoadAfterBotReady: Collection<bigint, string[]> = new Collection();
-export const BotEvents: Collection<string, Event_t> = new Collection();
-
-export const BotClient = new Client({
-    intents: [
-        GatewayIntentBits.DirectMessages,
-        GatewayIntentBits.DirectMessageTyping,
-        GatewayIntentBits.DirectMessageReactions,
-        GatewayIntentBits.GuildEmojisAndStickers,
-        GatewayIntentBits.GuildMessageReactions,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildModeration,
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.MessageContent,
-    ],
-    partials: [Partials.Channel, Partials.GuildMember, Partials.Message, Partials.Reaction, Partials.User],
-});
-
+/**
+ * The main entry point for the application.
+ *
+ * This self-executing asynchronous function orchestrates the initialization of all core services.
+ * It ensures that services are started in the correct order, handling any potential critical failures
+ * during the startup process.
+ */
 (async () => {
-    DatabaseConnection = await DatabaseLoader(DatabaseConfiguration);
-    await InitialSetup();
-    await RESTCommandLoader();
-    await EventLoader();
-    BotClient.login(BotConfiguration.token);
-    await CommandLoaderAfterBotReady();
+    await Translator.init();
+    Logger.setLogLevel = Config.current_botcfg.log_level;
+    Translator.setLanguage = Config.current_botcfg.language;
+    await Database.init();
+    await BotClient.init(Config.current_botcfg.token);
+    Logger.send('services', 'system', 'info', 'started', { name: pkg.name, version: pkg.version });
 })();

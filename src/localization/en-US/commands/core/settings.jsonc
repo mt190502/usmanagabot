@@ -1,0 +1,31 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "settings": {
+        "name": "settings",
+        "pretty_name": "Settings",
+        "description": "Manages command settings.",
+        "help": "Manages the settings for a specific command.\n\n**Usage:**\n- `/settings` - Opens an interactive menu to manage settings.",
+        "parameters": {},
+        "execute": {
+            "last_modified_by": "Last interaction by {user} on {date}.",
+            "not_set": "Not Set",
+            "placeholder": "Select an option...",
+            "title": "{command} Settings"
+        },
+        "subcommands": {},
+        "events": {},
+        "settings": {},
+        "logging": {
+            "debug": {
+                "execute": {
+                    "commands_filtered": "\"{length}\" commands filtered for user \"{user}\" in guild \"{guild}\".",
+                    "generating_page": "Generating settings page for user \"{user}\" in guild \"{guild}\"..."
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {},
+            "log": {}
+        }
+    }
+}

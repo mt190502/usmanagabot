@@ -1,0 +1,119 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "search": {
+        "name": "search",
+        "pretty_name": "Search",
+        "description": "Searches for the specified term and returns the results.",
+        "help": "Returns a search link for the specified term.\n\n**Usage:**\n- `/search <engine> <query>` - Searches for the query on the specified search engine.\n\n**Examples:**\n- `/search engine:Google query:Linus Torvalds` - Searches for 'Linus Torvalds' on Google.\n- `/search engine:DuckDuckGo query:Best programming languages` - Searches for 'Best programming languages' on DuckDuckGo.",
+        "parameters": {
+            "engine": {
+                "name": "engine",
+                "description": "The search engine to use."
+            },
+            "query": {
+                "name": "query",
+                "description": "The term to search for."
+            }
+        },
+        "execute": {},
+        "subcommands": {},
+        "events": {},
+        "settings": {
+            "addengine": {
+                "description": "Adds a new search engine.",
+                "duplicate_engine": "The search engine \"{name}\" already exists.",
+                "invalid_url": "The URL \"{url}\" is not valid. It must start with http:// or https://.",
+                "pretty_name": "Add Search Engine",
+                "parameters": {
+                    "engine_name": {
+                        "name": "Search engine name",
+                        "description": "The name of the new search engine.",
+                        "placeholder": "Google, Bing, DuckDuckGo, etc."
+                    },
+                    "engine_url": {
+                        "name": "Search engine URL",
+                        "description": "The URL of the new search engine.",
+                        "placeholder": "https://www.example.com/search?q="
+                    }
+                }
+            },
+            "editengine": {
+                "description": "Edits an existing search engine.",
+                "display_name": "Search Engines",
+                "invalid_url": "The URL \"{url}\" is not valid. It must start with http:// or https://.",
+                "placeholder": "Select the search engine to edit",
+                "pretty_name": "Edit Search Engine",
+                "title": "Edit Search Engine: {name}",
+                "parameters": {
+                    "engine_name": {
+                        "name": "Search engine name",
+                        "description": "The new name of the search engine."
+                    },
+                    "engine_url": {
+                        "name": "Search engine URL",
+                        "description": "The new URL of the search engine."
+                    }
+                }
+            },
+            "removeengine": {
+                "description": "Removes an existing search engine.",
+                "placeholder": "Select the search engine to remove",
+                "pretty_name": "Remove Search Engine",
+                "parameters": {}
+            },
+            "toggle": {
+                "description": "Enables or disables the search command on the server.",
+                "pretty_name": "Toggle Search Command",
+                "parameters": {}
+            }
+        },
+        "logging": {
+            "debug": {
+                "execute": {
+                    "success": "User {user} performed a search for \"{query}\" on \"{engine}\" in channel {channel} on guild {guild}."
+                },
+                "settings": {
+                    "addengine": {
+                        "success": "User {user} added the search engine \"{engine_name}\" with URL \"{engine_url}\" in channel {channel} on guild {guild}."
+                    },
+                    "editengine": {
+                        "success": "User {user} edited the search engine \"{engine_name}\" with URL \"{engine_url}\" in channel {channel} on guild {guild}."
+                    },
+                    "removeengine": {
+                        "success": "User {user} removed the search engine \"{engine_name}\" in channel {channel} on guild {guild}."
+                    },
+                    "modalsubmit": {
+                        "start": "Search modal setting change process initiated in guild \"{guild}\".",
+                        "success": "Search modal setting successfully changed in guild \"{guild}\"."
+                    },
+                    "selectmenu": {
+                        "start": "Search select menu setting change process initiated in guild \"{guild}\".",
+                        "success": "Search select menu setting successfully changed in guild \"{guild}\"."
+                    },
+                    "toggle": {
+                        "start": "Search system enable/disable process initiated in guild \"{guild}\".",
+                        "success": "Search system successfully updated to \"{toggle}\" in guild \"{guild}\"."
+                    }
+                }
+            },
+            "info": {},
+            "warn": {
+                "addengine": {
+                    "duplicate_engine": "User \"{user}\" in guild \"{guild}\" tried to add a duplicate search engine named \"{engine_name}\".",
+                    "invalid_url": "User \"{user}\" in guild \"{guild}\" tried to add a search engine with an invalid URL: \"{url}\"."
+                },
+                "editengine": {
+                    "invalid_url": "User \"{user}\" in guild \"{guild}\" tried to edit a search engine with an invalid URL: \"{url}\"."
+                }
+            },
+            "error": {},
+            "log": {
+                "prepare": {
+                    "database": {
+                        "success": "Search command settings for guild \"{guild}\" successfully processed into the database."
+                    }
+                }
+            }
+        }
+    }
+}

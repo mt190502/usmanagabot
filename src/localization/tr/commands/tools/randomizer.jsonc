@@ -1,0 +1,40 @@
+{
+    "$schema": "../../../../types/structure/schemas/command.json",
+    "randomizer": {
+        "name": "rastgele",
+        "pretty_name": "Rastgele Seçici",
+        "description": "Belirtilen seçenekler arasından rastgele seçim yapar.",
+        "help": "Belirtilen seçenekler arasından rastgele seçim yapar.\n\n**Kullanım:**\n- `/randomizer <seçenek1> <seçenek2> [seçenek3] ...` - Belirtilen seçenekler arasından rastgele birini seçer.\n\n**Örnekler:**\n- `/randomizer elma muz çilek` - 'elma', 'muz' veya 'çilek' arasından rastgele birini seçer.",
+        "parameters": {
+            "first": {
+                "name": "birinci",
+                "description": "Aralarından seçim yapılacak ilk seçenek."
+            },
+            "second": {
+                "name": "ikinci",
+                "description": "Aralarından seçim yapılacak ikinci seçenek."
+            },
+            "other": {
+                "name": "diğerleri",
+                "description": "Aralarından seçim yapılacak diğer tüm seçenekler (virgülle ayrılmış)."
+            }
+        },
+        "execute": {
+            "result": "Seçtiğim seçenek: {result}"
+        },
+        "subcommands": {},
+        "events": {},
+        "settings": {},
+        "logging": {
+            "debug": {
+                "execute": {
+                    "success": "Kullanıcı \"{user}\" tarafından sunucu \"{guild}\" üzerindeki \"{channel}\" kanalında \"{options}\" seçenekleri arasından rastgele seçim yapıldı. Sonuç: {result}"
+                }
+            },
+            "info": {},
+            "warn": {},
+            "error": {},
+            "log": {}
+        }
+    }
+}

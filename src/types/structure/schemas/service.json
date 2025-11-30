@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/draft/2020-12/schema",
+    "$id": "service.json",
+    "title": "Service Translations",
+    "description": "Translation strings for various services integrated into the application.",
+    "type": "object",
+    "patternProperties": {
+        "^[a-zA-Z0-9_]+$": {
+            "type": "object",
+            "description": "Service name",
+            "properties": {
+                "debug": { "type": "object" },
+                "error": { "type": "object" },
+                "info": { "type": "object" },
+                "log": { "type": "object" },
+                "warn": { "type": "object" }
+            },
+            "additionalProperties": false
+        }
+    }
+}
