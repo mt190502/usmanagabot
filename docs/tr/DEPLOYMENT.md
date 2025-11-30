@@ -21,13 +21,13 @@ Bu kılavuz, UsmanAga botunu Docker ve Docker Compose kullanarak bir üretim ort
 2. **Ortam Değişkenlerini Yapılandırın:**
     Botu üretim için yapılandırmanın önerilen yolu ortam değişkenleridir. `docker-compose.yml` dosyası, ortam değişkenlerini bot ve veritabanı hizmetlerine geçirecek şekilde ayarlanmıştır.
 
-    Projenin kök dizininde bir `.env` dosyası oluşturun:
+    Projenin kök dizininde bir `.envrc` dosyası oluşturun:
 
     ```bash
-    cp .envrc.example .env
+    cp .envrc.example .envrc
     ```
 
-    `.env` dosyasını düzenleyin ve aşağıdaki değerleri sağlayın:
+    `.envrc` dosyasını düzenleyin ve aşağıdaki değerleri sağlayın:
 
     ```bash
     # Bot Yapılandırması
