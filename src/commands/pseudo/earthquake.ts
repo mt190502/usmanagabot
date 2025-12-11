@@ -87,12 +87,14 @@ export default class EarthquakeNotifierCommand extends CustomizableCommand {
                 }[];
             };
 
-            let recent_earthquakes = request.features.filter((e) => e.properties.mag - guild.magnitude_limit >= 0);
+            let recent_earthquakes = request.features
+                .filter((eq) => eq.properties.mag >= guild.magnitude_limit)
+                .slice(0, 25);
             if (recent_earthquakes.length === 0) continue;
-
             if (earthquakes.length) {
-                recent_earthquakes = recent_earthquakes.filter((e) => earthquakes.find((l) => l.source_id === e.id));
+                recent_earthquakes = recent_earthquakes.filter((eq) => !earthquakes.find((e) => e.source_id === eq.id));
             }
+
             for (const eq of recent_earthquakes.slice(0, 25)) {
                 const existing_log = await this.db.findOne(EarthquakeLogs, {
                     where: { source_id: eq.id, from_guild: guild.from_guild },
