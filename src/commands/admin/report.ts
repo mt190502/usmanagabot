@@ -138,7 +138,7 @@ export default class ReportCommand extends CustomizableCommand {
 
         let message_urls: { real: string; in_database: string }[] = [];
         if (message_url) {
-            const list = message_url.split(', ').map((u) => u.trim());
+            const list = message_url.split(' ').map((u) => u.trim());
             if (list.length > 5) {
                 user_post
                     .setTitle(
