@@ -15,6 +15,7 @@ import { ChainEvent } from '../../types/decorator/chainevent';
 import { HandleAction } from '../../types/decorator/command';
 import { SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
 import { CustomizableCommand } from '../../types/structure/command';
+import { ChannelRestricts, RestrictType } from '@src/types/database/entities/channel_restrict';
 
 /**
  * A comprehensive command for creating and managing text-based aliases or macros.
@@ -517,6 +518,10 @@ export default class AliasCommand extends CustomizableCommand {
     @ChainEvent({ type: Events.MessageCreate })
     public async onMessageCreate(message: Message<true>): Promise<void> {
         if (message.author.bot || !message.guild) return;
+        const restrictions = await this.db.findOne(ChannelRestricts, {
+            where: { channel_id: message.channel.id, from_guild: { gid: BigInt(message.guild!.id) } },
+        });
+        if (restrictions && !restrictions?.restricts.includes(RestrictType.TEXT)) return;
         const replace_table = [
             { key: '{{user}}', value: `<@${message.author.id}>` },
             { key: '{{user_id}}', value: message.author.id },

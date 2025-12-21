@@ -1,0 +1,152 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+    tags:
+    paths:
+      - 'src/**'
+      - 'Dockerfile'
+      - 'package.json'
+      - 'tsconfig.json'
+      - 'bun.lock'
+  workflow_dispatch:
+    inputs:
+      version_string:
+        description: 'Custom version (optional)'
+      is_latest:
+        description: 'Apply "latest" tag to this build?'
+        type: boolean
+        default: false
+
+env:
+  REPO: ${{ github.repository }}
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - runs-on: ubuntu-latest
+            platform: linux/amd64
+            targetarch: amd64
+          - runs-on: ubuntu-24.04-arm
+            platform: linux/arm64
+            targetarch: arm64
+    runs-on: ${{ matrix.runs-on }}
+    outputs:
+      final_version: ${{ steps.versioning.outputs.version }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Update package.json version
+        id: versioning
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.version_string }}" ]]; then
+            NEW_VERSION="${{ github.event.inputs.version_string }}"
+          else
+            FULL_SHA="${{ github.sha }}"
+            SHA_SHORT="${FULL_SHA:0:7}"
+            NEW_VERSION="${{ github.ref_name }}-$SHA_SHORT"
+          fi
+          
+          if [[ "${{ github.ref_name }}" != "main" ]]; then
+            updated_json=$(jq ".version = \"$NEW_VERSION\"" package.json) && echo "$updated_json" | tee package.json > /dev/null
+            echo "Package version updated to: $NEW_VERSION"
+          else
+            echo "On main branch, skipping package.json modification."
+            NEW_VERSION="main"
+          fi
+
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "FINAL_TAG=$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ env.REPO }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref_type == 'tag' || github.event.inputs.is_latest == 'true' }}
+            type=raw,value=${{ needs.build.outputs.final_version }},enable=${{ needs.build.outputs.final_version != 'main' && needs.build.outputs.final_version != '' }}
+            type=semver,pattern={{version}},value=${{ needs.build.outputs.final_version }},enable=${{ needs.build.outputs.final_version != '' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.build.outputs.final_version }},enable=${{ needs.build.outputs.final_version != '' }}
+            type=semver,pattern={{major}},value=${{ needs.build.outputs.final_version }},enable=${{ needs.build.outputs.final_version != '' }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=ghcr.io/${{ env.REPO }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Export digest
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          echo "${{ steps.build.outputs.digest }}" > "${{ runner.temp }}/digests/${{ matrix.targetarch }}.digest"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v6
+        with:
+          name: digests-${{ matrix.targetarch }}
+          path: ${{ runner.temp }}/digests/*
+          retention-days: 1
+
+  merge:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      packages: write
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v7
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ env.REPO }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref_type == 'tag' || github.event.inputs.is_latest == 'true' }}
+            type=raw,value=${{ needs.build.outputs.final_version }},enable=${{ needs.build.outputs.final_version != 'main' && needs.build.outputs.final_version != '' }}
+            type=semver,pattern={{version}},value=${{ needs.build.outputs.final_version }},enable=${{ needs.build.outputs.final_version != '' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.build.outputs.final_version }},enable=${{ needs.build.outputs.final_version != '' }}
+            type=semver,pattern={{major}},value=${{ needs.build.outputs.final_version }},enable=${{ needs.build.outputs.final_version != '' }}
+
+      - name: Create manifest list and push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          TAGS=$(echo "${{ steps.meta.outputs.tags }}" | xargs -I {} echo "-t {}")
+          SOURCES=$(printf 'ghcr.io/${{ env.REPO }}@%s ' $(cat *.digest))
+          docker buildx imagetools create $TAGS $SOURCES
