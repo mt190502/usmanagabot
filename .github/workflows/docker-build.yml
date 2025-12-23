@@ -36,12 +36,17 @@ jobs:
     runs-on: ${{ matrix.runs-on }}
     outputs:
       final_version: ${{ steps.versioning.outputs.version }}
+      lower_repo: ${{ steps.repo_fix.outputs.repo }}
     permissions:
       contents: read
       packages: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Lowercase Repo Name
+        id: repo_fix
+        run: echo "repo=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
 
       - name: Update package.json version
         id: versioning
@@ -68,13 +73,13 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ env.REPO }}
+          images: ghcr.io/${{ steps.repo_fix.outputs.repo }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref_type == 'tag' || github.event.inputs.is_latest == 'true' }}
-            type=raw,value=${{ needs.build.outputs.final_version }},enable=${{ needs.build.outputs.final_version != 'main' }}
-            type=semver,pattern={{version}},value=${{ needs.build.outputs.final_version }},enable=${{ github.ref_type == 'tag' || github.event_name == 'workflow_dispatch' }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ needs.build.outputs.final_version }},enable=${{ github.ref_type == 'tag' || github.event_name == 'workflow_dispatch' }}
-            type=semver,pattern={{major}},value=${{ needs.build.outputs.final_version }},enable=${{ github.ref_type == 'tag' || github.event_name == 'workflow_dispatch' }}
+            type=raw,value=${{ steps.versioning.outputs.version }},enable=${{ steps.versioning.outputs.version != 'main' }}
+            type=semver,pattern={{version}},value=${{ steps.versioning.outputs.version }},enable=${{ github.ref_type == 'tag' || github.event_name == 'workflow_dispatch' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.versioning.outputs.version }},enable=${{ github.ref_type == 'tag' || github.event_name == 'workflow_dispatch' }}
+            type=semver,pattern={{major}},value=${{ steps.versioning.outputs.version }},enable=${{ github.ref_type == 'tag' || github.event_name == 'workflow_dispatch' }}
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -89,7 +94,7 @@ jobs:
         with:
           context: .
           platforms: ${{ matrix.platform }}
-          outputs: type=image,name=ghcr.io/${{ env.REPO }},push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,name=ghcr.io/${{ steps.repo_fix.outputs.repo }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -132,7 +137,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ env.REPO }}
+          images: ghcr.io/${{ needs.build.outputs.lower_repo }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref_type == 'tag' || github.event.inputs.is_latest == 'true' }}
             type=raw,value=${{ needs.build.outputs.final_version }},enable=${{ needs.build.outputs.final_version != 'main' }}
@@ -144,5 +149,5 @@ jobs:
         working-directory: ${{ runner.temp }}/digests
         run: |
           TAGS=$(echo "${{ steps.meta.outputs.tags }}" | xargs -I {} echo "-t {}")
-          SOURCES=$(printf 'ghcr.io/${{ env.REPO }}@%s ' $(cat *.digest))
+          SOURCES=$(printf 'ghcr.io/${{ needs.build.outputs.lower_repo }}@%s ' $(cat *.digest))
           docker buildx imagetools create $TAGS $SOURCES
