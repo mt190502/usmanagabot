@@ -14,7 +14,7 @@ Bu kılavuz, UsmanAga botunu Docker ve Docker Compose kullanarak bir üretim ort
     Depoyu sunucunuza klonlayın:
 
     ```bash
-    git clone https://github.com/mt190502/usmanagabot.git
+    git clone https://github.com/LibreTurks/usmanagabot.git
     cd usmanagabot
     ```
 

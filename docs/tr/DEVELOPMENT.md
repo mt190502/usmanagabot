@@ -14,7 +14,7 @@ Bu rehber, geliştirme ortamını kurma, botu yapılandırma ve yerel makinenizd
 1. **Depoyu klonlayın:**
 
     ```bash
-    git clone https://github.com/mt190502/usmanagabot.git
+    git clone https://github.com/LibreTurks/usmanagabot.git
     cd usmanagabot
     ```
 

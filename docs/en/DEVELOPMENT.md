@@ -14,7 +14,7 @@ This guide will walk you through the process of setting up the development envir
 1. **Clone the repository:**
 
     ```bash
-    git clone https://github.com/mt190502/usmanagabot.git
+    git clone https://github.com/LibreTurks/usmanagabot.git
     cd usmanagabot
     ```
 
