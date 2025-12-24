@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    image: ghcr.io/libreturks/usmanagabot:latest
     environment:
       DB__HOST: db
       DB__PORT: "${DB__PORT:-5432}"

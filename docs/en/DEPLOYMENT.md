@@ -14,7 +14,7 @@ This guide explains how to deploy the UsmanAga bot to a production environment u
     Clone the repository to your server:
 
     ```bash
-    git clone https://github.com/mt190502/usmanagabot.git
+    git clone https://github.com/LibreTurks/usmanagabot.git
     cd usmanagabot
     ```
 
