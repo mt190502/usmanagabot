@@ -1,11 +1,11 @@
-import { ModalSubmitInteraction, StringSelectMenuInteraction, TextInputStyle } from 'discord.js';
-import { BotData } from '../../types/database/entities/bot';
+import { BotData } from '@src/types/database/entities/bot';
 import {
     SettingGenericSettingComponent,
     SettingModalComponent,
     SettingStringSelectComponent,
-} from '../../types/decorator/settingcomponents';
-import { CustomizableCommand } from '../../types/structure/command';
+} from '@src/types/decorator/settingcomponents';
+import { CustomizableCommand } from '@src/types/structure/command';
+import { ModalSubmitInteraction, StringSelectMenuInteraction, TextInputStyle } from 'discord.js';
 
 /**
  * A "hidden" command that serves as a settings container for global, bot-owner-only configurations.

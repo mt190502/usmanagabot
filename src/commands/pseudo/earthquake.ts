@@ -1,3 +1,12 @@
+import { BotClient } from '@services/client';
+import { Earthquake, EarthquakeLogs } from '@src/types/database/entities/earthquake';
+import { Cron } from '@src/types/decorator/cronjob';
+import {
+    SettingChannelMenuComponent,
+    SettingGenericSettingComponent,
+    SettingModalComponent,
+} from '@src/types/decorator/settingcomponents';
+import { CustomizableCommand } from '@src/types/structure/command';
 import {
     ActionRowBuilder,
     ChannelSelectMenuInteraction,
@@ -9,15 +18,6 @@ import {
     StringSelectMenuInteraction,
     TextInputStyle,
 } from 'discord.js';
-import { BotClient } from '../../services/client';
-import { Earthquake, EarthquakeLogs } from '../../types/database/entities/earthquake';
-import { Cron } from '../../types/decorator/cronjob';
-import {
-    SettingChannelMenuComponent,
-    SettingGenericSettingComponent,
-    SettingModalComponent,
-} from '../../types/decorator/settingcomponents';
-import { CustomizableCommand } from '../../types/structure/command';
 
 /**
  * A pseudo-command that notifies a channel about recent earthquakes.

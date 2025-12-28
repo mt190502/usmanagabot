@@ -1,8 +1,8 @@
+import { HandleAction } from '@src/types/decorator/command';
+import { BaseCommand } from '@src/types/structure/command';
+import { Paginator } from '@utils/paginator';
 import { ButtonInteraction, ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits } from 'discord.js';
 import { CommandLoader } from '..';
-import { HandleAction } from '../../types/decorator/command';
-import { BaseCommand } from '../../types/structure/command';
-import { Paginator } from '../../utils/paginator';
 
 /**
  * A dynamic, paginated help command.

@@ -1,8 +1,8 @@
 import botcfg from '@config/bot.jsonc';
 import dbcfg from '@config/database.jsonc';
-import { LogLevels } from '@services/logger';
 import { env } from 'process';
 import { z } from 'zod';
+import { LogLevels } from './logger';
 import { SupportedLanguages } from './translator';
 
 /**
@@ -133,7 +133,10 @@ export class Config {
     /**
      * The currently loaded and validated database configuration.
      */
-    public static current_dbcfg: DatabaseConfig_t = Config.parse(dbcfg, database_config_schema as z.ZodType<DatabaseConfig_t>);
+    public static current_dbcfg: DatabaseConfig_t = Config.parse(
+        dbcfg,
+        database_config_schema as z.ZodType<DatabaseConfig_t>,
+    );
 
     /**
      * Parse raw configuration data using the provided Zod schema.
@@ -155,7 +158,8 @@ export class Config {
         try {
             return schema.parse(data);
         } catch (error) {
-            const message = error instanceof z.ZodError ? JSON.stringify(error.issues, null, 2) : (error as Error).message;
+            const message =
+                error instanceof z.ZodError ? JSON.stringify(error.issues, null, 2) : (error as Error).message;
             throw new Error(`Failed to parse configuration: ${message}`);
         }
     }

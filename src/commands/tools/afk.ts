@@ -1,3 +1,6 @@
+import { Afk } from '@src/types/database/entities/afk';
+import { ChainEvent } from '@src/types/decorator/chainevent';
+import { BaseCommand } from '@src/types/structure/command';
 import {
     ChatInputCommandInteraction,
     Colors,
@@ -7,9 +10,6 @@ import {
     MessageFlags,
     SlashCommandBuilder,
 } from 'discord.js';
-import { Afk } from '../../types/database/entities/afk';
-import { ChainEvent } from '../../types/decorator/chainevent';
-import { BaseCommand } from '../../types/structure/command';
 
 /**
  * A command that allows users to set an "Away From Keyboard" (AFK) status.

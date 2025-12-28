@@ -1,17 +1,9 @@
-import {
-    BaseInteraction,
-    Channel,
-    Collection,
-    CommandInteraction,
-    Events,
-    MessageFlags,
-    User,
-} from 'discord.js';
-import { CommandLoader } from '../commands';
-import { BaseCommand, CustomizableCommand } from '../types/structure/command';
-import { BaseEvent } from '../types/structure/event';
-import { RegisterFact } from '../utils/common';
-import { Paginator } from '../utils/paginator';
+import { CommandLoader } from '@commands/index';
+import { BaseCommand, CustomizableCommand } from '@src/types/structure/command';
+import { BaseEvent } from '@src/types/structure/event';
+import { RegisterFact } from '@utils/common';
+import { Paginator } from '@utils/paginator';
+import { BaseInteraction, Channel, Collection, CommandInteraction, Events, MessageFlags, User } from 'discord.js';
 
 /**
  * Routes component-based interactions (buttons, select menus, modals) to the appropriate command method.
@@ -147,7 +139,12 @@ export default class InteractionEvent extends BaseEvent<Events.InteractionCreate
                 if (now < expire) {
                     const left = ((expire - now) / 1000).toFixed();
                     await interaction.reply({
-                        content: this.t.events({ caller: 'interaction', key: 'execute.cooldown', replacements: { command: command.name, left }, guild_id: BigInt(interaction.guildId!) }),
+                        content: this.t.events({
+                            caller: 'interaction',
+                            key: 'execute.cooldown',
+                            replacements: { command: command.name, left },
+                            guild_id: BigInt(interaction.guildId!),
+                        }),
                         flags: MessageFlags.Ephemeral,
                     });
                     return;

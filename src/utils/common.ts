@@ -1,7 +1,7 @@
+import { Database } from '@services/database';
+import { Channels } from '@src/types/database/entities/channels';
+import { Users } from '@src/types/database/entities/users';
 import { Channel, Message, User } from 'discord.js';
-import { Database } from '../services/database';
-import { Channels } from '../types/database/entities/channels';
-import { Users } from '../types/database/entities/users';
 
 export const RegisterFact = async <T extends User | Channel>(
     entity: T,

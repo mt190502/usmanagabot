@@ -1,3 +1,4 @@
+import { Translator } from '@services/translator';
 import {
     ActionRowBuilder,
     ButtonBuilder,
@@ -6,7 +7,6 @@ import {
     EmbedBuilder,
     StringSelectMenuBuilder,
 } from 'discord.js';
-import { Translator } from '../services/translator';
 
 /**
  * A static utility class for creating and managing paginated embeds in Discord.
@@ -109,7 +109,8 @@ export class Paginator {
         const string_select_menu = new StringSelectMenuBuilder()
             .setCustomId(`command:${command_name}:pageitem`)
             .setPlaceholder(
-                select_menu_placeholder || Paginator.t({ caller: 'placeholders', key: 'selectItemFromList', guild_id: BigInt(guild_id!) }),
+                select_menu_placeholder ||
+                    Paginator.t({ caller: 'placeholders', key: 'selectItemFromList', guild_id: BigInt(guild_id!) }),
             );
 
         post.setTitle(title).setColor(color);
@@ -139,7 +140,12 @@ export class Paginator {
         }
         post.setDescription(description.trim());
         post.setFooter({
-            text: Paginator.t({ caller: 'labels', key: 'pageStatus', replacements: { current_page, total_pages }, guild_id: BigInt(guild_id!) }),
+            text: Paginator.t({
+                caller: 'labels',
+                key: 'pageStatus',
+                replacements: { current_page, total_pages },
+                guild_id: BigInt(guild_id!),
+            }),
         });
 
         return {

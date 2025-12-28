@@ -1,10 +1,10 @@
 import { Config, DatabaseConfig_t } from '@services/config';
 import { Logger } from '@services/logger';
+import { Guilds } from '@src/types/database/entities/guilds';
+import { Users } from '@src/types/database/entities/users';
+import { DatabaseManager } from '@src/types/structure/database';
 import { glob } from 'glob';
 import { DataSource } from 'typeorm';
-import { Guilds } from '../types/database/entities/guilds';
-import { Users } from '../types/database/entities/users';
-import { DatabaseManager } from '../types/structure/database';
 
 /**
  * A static class for initializing and managing the TypeORM DataSource.
@@ -105,7 +105,9 @@ export class Database {
             await Database.dataSource.initialize();
             Logger.send('services', 'database', 'info', 'init.success');
         } catch (error) {
-            throw new Error(`Failed to initialize database: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            throw new Error(
+                `Failed to initialize database: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
         }
     }
 }

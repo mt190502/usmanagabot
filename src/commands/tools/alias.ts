@@ -1,3 +1,10 @@
+import { AliasSystem, Aliases } from '@src/types/database/entities/alias';
+import { ChannelRestricts, RestrictType } from '@src/types/database/entities/channel_restrict';
+import { Channels } from '@src/types/database/entities/channels';
+import { ChainEvent } from '@src/types/decorator/chainevent';
+import { HandleAction } from '@src/types/decorator/command';
+import { SettingGenericSettingComponent } from '@src/types/decorator/settingcomponents';
+import { CustomizableCommand } from '@src/types/structure/command';
 import {
     ButtonInteraction,
     ChatInputCommandInteraction,
@@ -9,13 +16,6 @@ import {
     StringSelectMenuInteraction,
 } from 'discord.js';
 import { CommandLoader } from '..';
-import { Aliases, AliasSystem } from '../../types/database/entities/alias';
-import { Channels } from '../../types/database/entities/channels';
-import { ChainEvent } from '../../types/decorator/chainevent';
-import { HandleAction } from '../../types/decorator/command';
-import { SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
-import { CustomizableCommand } from '../../types/structure/command';
-import { ChannelRestricts, RestrictType } from '@src/types/database/entities/channel_restrict';
 
 /**
  * A comprehensive command for creating and managing text-based aliases or macros.

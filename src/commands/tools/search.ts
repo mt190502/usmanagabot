@@ -1,3 +1,6 @@
+import { Search, SearchEngines } from '@src/types/database/entities/search';
+import { SettingGenericSettingComponent, SettingModalComponent } from '@src/types/decorator/settingcomponents';
+import { CustomizableCommand } from '@src/types/structure/command';
 import {
     ActionRowBuilder,
     ChatInputCommandInteraction,
@@ -8,9 +11,6 @@ import {
     TextInputStyle,
 } from 'discord.js';
 import { CommandLoader } from '..';
-import { Search, SearchEngines } from '../../types/database/entities/search';
-import { SettingGenericSettingComponent, SettingModalComponent } from '../../types/decorator/settingcomponents';
-import { CustomizableCommand } from '../../types/structure/command';
 
 /**
  * A highly customizable search command that allows users to query different search engines.

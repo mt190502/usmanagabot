@@ -1,7 +1,4 @@
-import {
-    BaseInteraction,
-    InteractionResponse,
-} from 'discord.js';
+import { BaseInteraction, InteractionResponse } from 'discord.js';
 
 interface StoredInteractionResponse {
     response: InteractionResponse;
@@ -27,11 +24,7 @@ export class InteractionResponseRegistry {
      * @param {string} property_key The name of the decorated method (property key).
      * @returns {string} A unique key for the registry.
      */
-    static generateKey(
-        interaction: BaseInteraction,
-        command_name: string,
-        property_key: string
-    ): string {
+    static generateKey(interaction: BaseInteraction, command_name: string, property_key: string): string {
         return `${command_name}:${property_key}:${interaction.user.id}:${interaction.channelId}`;
     }
 
@@ -45,7 +38,7 @@ export class InteractionResponseRegistry {
         this.responses.set(key, {
             response,
             timestamp: Date.now(),
-            ttl
+            ttl,
         });
 
         if (!this.cleanup_interval) {

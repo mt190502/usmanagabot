@@ -1,3 +1,9 @@
+import { ChannelRestrictSystem, ChannelRestricts, RestrictType } from '@src/types/database/entities/channel_restrict';
+import { MessageLogger } from '@src/types/database/entities/message_logger';
+import { Messages } from '@src/types/database/entities/messages';
+import { ChainEvent } from '@src/types/decorator/chainevent';
+import { SettingChannelMenuComponent, SettingGenericSettingComponent } from '@src/types/decorator/settingcomponents';
+import { CustomizableCommand } from '@src/types/structure/command';
 import {
     ActionRowBuilder,
     ChannelSelectMenuInteraction,
@@ -13,12 +19,6 @@ import {
     User,
 } from 'discord.js';
 import timers from 'timers/promises';
-import { ChannelRestricts, ChannelRestrictSystem, RestrictType } from '../../types/database/entities/channel_restrict';
-import { MessageLogger } from '../../types/database/entities/message_logger';
-import { Messages } from '../../types/database/entities/messages';
-import { ChainEvent } from '../../types/decorator/chainevent';
-import { SettingChannelMenuComponent, SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
-import { CustomizableCommand } from '../../types/structure/command';
 
 /**
  * A pseudo-command that restricts the types of content allowed in specified channels.

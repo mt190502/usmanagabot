@@ -1,3 +1,10 @@
+import { Introduction, IntroductionSubmit } from '@src/types/database/entities/introduction';
+import {
+    SettingChannelMenuComponent,
+    SettingGenericSettingComponent,
+    SettingModalComponent,
+} from '@src/types/decorator/settingcomponents';
+import { CustomizableCommand } from '@src/types/structure/command';
 import {
     ChannelSelectMenuInteraction,
     ChannelType,
@@ -15,13 +22,6 @@ import {
 import 'reflect-metadata';
 import yaml from 'yaml';
 import { CommandLoader } from '..';
-import { Introduction, IntroductionSubmit } from '../../types/database/entities/introduction';
-import {
-    SettingChannelMenuComponent,
-    SettingGenericSettingComponent,
-    SettingModalComponent,
-} from '../../types/decorator/settingcomponents';
-import { CustomizableCommand } from '../../types/structure/command';
 
 /**
  * A highly customizable command for server member introductions.

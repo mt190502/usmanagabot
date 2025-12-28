@@ -1,6 +1,6 @@
+import { BotData } from '@src/types/database/entities/bot';
 import { BaseEvent } from '@src/types/structure/event';
 import { ActivityType, Client, Events } from 'discord.js';
-import { BotData } from '../types/database/entities/bot';
 
 /**
  * Handles the `clientReady` event.

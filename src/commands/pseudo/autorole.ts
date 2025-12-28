@@ -1,12 +1,9 @@
+import { BotClient } from '@services/client';
+import { Autorole } from '@src/types/database/entities/autorole';
+import { ChainEvent } from '@src/types/decorator/chainevent';
+import { SettingGenericSettingComponent, SettingRoleSelectMenuComponent } from '@src/types/decorator/settingcomponents';
+import { CustomizableCommand } from '@src/types/structure/command';
 import { Events, GuildMember, RoleSelectMenuInteraction, StringSelectMenuInteraction } from 'discord.js';
-import { BotClient } from '../../services/client';
-import { Autorole } from '../../types/database/entities/autorole';
-import { ChainEvent } from '../../types/decorator/chainevent';
-import {
-    SettingGenericSettingComponent,
-    SettingRoleSelectMenuComponent,
-} from '../../types/decorator/settingcomponents';
-import { CustomizableCommand } from '../../types/structure/command';
 
 /**
  * A pseudo-command that automatically assigns a role to new members when they join a guild.

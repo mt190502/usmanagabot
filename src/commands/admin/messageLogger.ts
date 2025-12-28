@@ -1,3 +1,8 @@
+import { MessageLogger } from '@src/types/database/entities/message_logger';
+import { Messages } from '@src/types/database/entities/messages';
+import { ChainEvent } from '@src/types/decorator/chainevent';
+import { SettingChannelMenuComponent, SettingGenericSettingComponent } from '@src/types/decorator/settingcomponents';
+import { CustomizableCommand } from '@src/types/structure/command';
 import {
     ApplicationCommandType,
     ChannelSelectMenuInteraction,
@@ -19,11 +24,6 @@ import {
 } from 'discord.js';
 import { setTimeout } from 'timers/promises';
 import { CommandLoader } from '..';
-import { MessageLogger } from '../../types/database/entities/message_logger';
-import { Messages } from '../../types/database/entities/messages';
-import { ChainEvent } from '../../types/decorator/chainevent';
-import { SettingChannelMenuComponent, SettingGenericSettingComponent } from '../../types/decorator/settingcomponents';
-import { CustomizableCommand } from '../../types/structure/command';
 
 /**
  * A comprehensive message logging and tracking command.
@@ -303,9 +303,7 @@ export default class MessageLoggerCommand extends CustomizableCommand {
             where: { message_id: BigInt(message.id) },
         });
         const embed = new EmbedBuilder()
-            .setTitle(
-                this.t.commands({ key: 'events.onmessagedelete.deleted', guild_id: BigInt(message.guildId!) }),
-            )
+            .setTitle(this.t.commands({ key: 'events.onmessagedelete.deleted', guild_id: BigInt(message.guildId!) }))
             .setColor(Colors.Red)
             .setTimestamp();
         if (db_message?.logged_message_id) {

@@ -1,3 +1,5 @@
+import { CommandQuestionPrompt } from '@src/types/decorator/commandquestionprompt';
+import { BaseCommand } from '@src/types/structure/command';
 import {
     ApplicationCommandType,
     ButtonInteraction,
@@ -10,8 +12,6 @@ import {
     PermissionFlagsBits,
     SlashCommandBuilder,
 } from 'discord.js';
-import { CommandQuestionPrompt } from '../../types/decorator/commandquestionprompt';
-import { BaseCommand } from '../../types/structure/command';
 
 /**
  * A command for bulk-deleting messages in a channel.
@@ -41,7 +41,7 @@ export default class PurgeCommand extends BaseCommand {
                     .setDescription(this.t.commands({ key: 'parameters.message_id.description' }))
                     .setNameLocalizations(this.getLocalizations('parameters.message_id.name'))
                     .setDescriptionLocalizations(this.getLocalizations('parameters.message_id.description'))
-                    .setRequired(true)
+                    .setRequired(true),
             )
             .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages);
         this.push_cmd_data = new ContextMenuCommandBuilder()

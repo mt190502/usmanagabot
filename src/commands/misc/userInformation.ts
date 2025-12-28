@@ -1,3 +1,5 @@
+import { Introduction, IntroductionSubmit } from '@src/types/database/entities/introduction';
+import { BaseCommand } from '@src/types/structure/command';
 import {
     ApplicationCommandType,
     ChatInputCommandInteraction,
@@ -10,8 +12,6 @@ import {
     SlashCommandBuilder,
     User,
 } from 'discord.js';
-import { Introduction, IntroductionSubmit } from '../../types/database/entities/introduction';
-import { BaseCommand } from '../../types/structure/command';
 
 /**
  * Displays comprehensive information about a user.

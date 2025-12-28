@@ -1,7 +1,10 @@
 import { Config } from '@services/config';
 import { Database } from '@services/database';
 import { Logger } from '@services/logger';
+import { Translator } from '@services/translator';
 import { Guilds } from '@src/types/database/entities/guilds';
+import { Users } from '@src/types/database/entities/users';
+import { BaseCommand, CustomizableCommand } from '@src/types/structure/command';
 import {
     Client,
     Collection,
@@ -14,11 +17,8 @@ import {
 } from 'discord.js';
 import { globSync } from 'glob';
 import path from 'path';
-import timers from 'timers/promises';
+import { setTimeout } from 'timers/promises';
 import { TypeORMError } from 'typeorm';
-import { Translator } from '../services/translator';
-import { Users } from '../types/database/entities/users';
-import { BaseCommand, CustomizableCommand } from '../types/structure/command';
 
 /**
  * Manages the loading, registration, and deployment of application commands.
@@ -78,7 +78,7 @@ export class CommandLoader {
 
         const client = new Client({ intents: [GatewayIntentBits.Guilds] });
         await client.login(CommandLoader.config.current_botcfg.token);
-        await timers.setTimeout(1000);
+        await setTimeout(1000);
 
         if (!client.guilds.cache.size) {
             CommandLoader.logger.send('services', 'command_loader', 'error', 'registerGuilds.no_guilds_found');

@@ -1,6 +1,6 @@
+import { BaseCommand } from '@src/types/structure/command';
 import { CommandInteraction } from 'discord.js';
-import timers from 'timers/promises';
-import { BaseCommand } from '../../types/structure/command';
+import { setTimeout } from 'timers/promises';
 
 /**
  * A simple command to measure the bot's WebSocket and API latency.
@@ -33,7 +33,7 @@ export default class PingCommand extends BaseCommand {
         let ping = interaction.client.ws.ping;
         while (ping === -1) {
             ping = interaction.client.ws.ping;
-            await timers.setTimeout(250);
+            await setTimeout(250);
         }
         this.log('debug', 'ping.execute.latency_measured', {
             guild: interaction.guild,

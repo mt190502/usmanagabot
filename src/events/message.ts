@@ -1,7 +1,7 @@
+import { Messages } from '@src/types/database/entities/messages';
+import { BaseEvent } from '@src/types/structure/event';
+import { RegisterFact } from '@utils/common';
 import { Channel, Events, Message, User } from 'discord.js';
-import { Messages } from '../types/database/entities/messages';
-import { BaseEvent } from '../types/structure/event';
-import { RegisterFact } from '../utils/common';
 
 /**
  * Handles the `messageCreate` event.

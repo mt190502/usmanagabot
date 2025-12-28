@@ -3,7 +3,7 @@ import { Config } from '@services/config';
 import { Database } from '@services/database';
 import { Logger } from '@services/logger';
 import pkg from '../package.json';
-import { Translator } from './services/translator';
+import { Translator } from '@services/translator';
 
 /**
  * The main entry point for the application.

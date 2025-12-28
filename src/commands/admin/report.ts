@@ -1,3 +1,12 @@
+import { MessageLogger } from '@src/types/database/entities/message_logger';
+import { Messages } from '@src/types/database/entities/messages';
+import { Reports } from '@src/types/database/entities/reports';
+import {
+    SettingChannelMenuComponent,
+    SettingGenericSettingComponent,
+    SettingRoleSelectMenuComponent,
+} from '@src/types/decorator/settingcomponents';
+import { CustomizableCommand } from '@src/types/structure/command';
 import {
     ChannelSelectMenuInteraction,
     ChannelType,
@@ -11,15 +20,6 @@ import {
     TextChannel,
 } from 'discord.js';
 import { CommandLoader } from '..';
-import { MessageLogger } from '../../types/database/entities/message_logger';
-import { Messages } from '../../types/database/entities/messages';
-import { Reports } from '../../types/database/entities/reports';
-import {
-    SettingChannelMenuComponent,
-    SettingGenericSettingComponent,
-    SettingRoleSelectMenuComponent,
-} from '../../types/decorator/settingcomponents';
-import { CustomizableCommand } from '../../types/structure/command';
 
 /**
  * A command for users to report other users to the server administration.
@@ -245,9 +245,9 @@ export default class ReportCommand extends CustomizableCommand {
                         in_database_urls: msg_logger
                             ? message_urls.map((mu) => mu.in_database).join(', ')
                             : this.t.commands({
-                                key: 'execute.message_logger_disabled',
-                                guild_id: BigInt(interaction.guildId!),
-                            }),
+                                  key: 'execute.message_logger_disabled',
+                                  guild_id: BigInt(interaction.guildId!),
+                              }),
                         channel_id: interaction.channel!.id,
                     },
                     guild_id: BigInt(interaction.guildId!),

@@ -1,8 +1,8 @@
 import { CommandLoader } from '@commands/index';
 import { EventLoader } from '@events/index';
-import { BotConfig_t } from '@services/config';
-import { Logger } from '@services/logger';
 import { Client, GatewayIntentBits, Partials } from 'discord.js';
+import { BotConfig_t } from './config';
+import { Logger } from './logger';
 
 /**
  * A static class responsible for initializing and managing the Discord.js client.

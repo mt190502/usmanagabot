@@ -1,6 +1,6 @@
+import { BaseEvent } from '@src/types/structure/event';
+import { RegisterFact } from '@utils/common';
 import { Events, GuildMember, User } from 'discord.js';
-import { BaseEvent } from '../types/structure/event';
-import { RegisterFact } from '../utils/common';
 
 /**
  * Handles the `guildMemberAdd` event.

@@ -1,3 +1,15 @@
+import { BotClient } from '@services/client';
+import { Guilds } from '@src/types/database/entities/guilds';
+import { Verification, VerificationSystem } from '@src/types/database/entities/verification';
+import { ChainEvent } from '@src/types/decorator/chainevent';
+import { Cron } from '@src/types/decorator/cronjob';
+import {
+    SettingChannelMenuComponent,
+    SettingGenericSettingComponent,
+    SettingModalComponent,
+    SettingRoleSelectMenuComponent,
+} from '@src/types/decorator/settingcomponents';
+import { CustomizableCommand } from '@src/types/structure/command';
 import {
     ChannelSelectMenuInteraction,
     ChannelType,
@@ -8,18 +20,6 @@ import {
     StringSelectMenuInteraction,
     TextInputStyle,
 } from 'discord.js';
-import { BotClient } from '../../services/client';
-import { Guilds } from '../../types/database/entities/guilds';
-import { Verification, VerificationSystem } from '../../types/database/entities/verification';
-import { ChainEvent } from '../../types/decorator/chainevent';
-import { Cron } from '../../types/decorator/cronjob';
-import {
-    SettingChannelMenuComponent,
-    SettingGenericSettingComponent,
-    SettingModalComponent,
-    SettingRoleSelectMenuComponent,
-} from '../../types/decorator/settingcomponents';
-import { CustomizableCommand } from '../../types/structure/command';
 
 /**
  * A pseudo-command that implements a verification system for new members.
